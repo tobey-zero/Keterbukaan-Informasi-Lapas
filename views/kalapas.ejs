@@ -1,0 +1,472 @@
+<!DOCTYPE html>
+<html lang="id">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
+    <meta http-equiv="Pragma" content="no-cache">
+    <meta http-equiv="Expires" content="0">
+    <title>DEMO - Dashboard Kalapas</title>
+    <link rel="stylesheet" href="/css/style.css?v=<%= Date.now() %>">
+    <style>
+        /* ── Kalapas-specific layout ── */
+        .kalapas-grid {
+            display: grid;
+            grid-template-columns: 1fr 1.6fr 1.4fr;
+            gap: 12px;
+            width: 100%;
+            margin: 12px auto;
+            padding: 0 15px;
+            flex: 1;
+            min-height: 0;
+            align-items: stretch;
+        }
+
+        .kalapas-col {
+            display: flex;
+            flex-direction: column;
+            gap: 12px;
+            min-height: 0;
+        }
+
+        .kalapas-col>.panel {
+            flex: 1;
+            min-height: 0;
+        }
+
+        /* KPI strip under header */
+        .kpi-strip {
+            display: grid;
+            grid-template-columns: repeat(4, 1fr);
+            gap: 10px;
+            padding: 8px 15px;
+        }
+
+        .kpi-card {
+            background: rgba(255, 255, 255, 0.12);
+            border: 1px solid rgba(255, 255, 255, 0.25);
+            border-radius: 6px;
+            padding: 6px 10px;
+            text-align: center;
+            color: white;
+        }
+
+        .kpi-card .kpi-card-label {
+            font-size: 9px;
+            opacity: 0.85;
+            font-weight: bold;
+            letter-spacing: 0.5px;
+        }
+
+        .kpi-card .kpi-card-value {
+            font-size: 20px;
+            font-weight: bold;
+            line-height: 1.2;
+            margin-top: 2px;
+        }
+
+        .kpi-card .kpi-card-sub {
+            font-size: 8px;
+            opacity: 0.7;
+            margin-top: 1px;
+        }
+
+        .kpi-card.danger {
+            background: rgba(220, 38, 38, 0.4);
+            border-color: rgba(248, 113, 113, 0.4);
+        }
+
+        .kpi-card.warn {
+            background: rgba(217, 119, 6, 0.4);
+            border-color: rgba(251, 191, 36, 0.4);
+        }
+
+        .kpi-card.ok {
+            background: rgba(5, 150, 105, 0.4);
+            border-color: rgba(52, 211, 153, 0.4);
+        }
+
+        .kpi-card.info {
+            background: rgba(37, 99, 235, 0.4);
+            border-color: rgba(96, 165, 250, 0.4);
+        }
+
+        /* Compact table sizing for kalapas */
+        .kalapas-grid .panel-header,
+        .kalapas-grid .panel-header.red {
+            padding: 6px 12px;
+            font-size: 11px;
+        }
+
+        .kalapas-grid .panel-header-with-date {
+            padding: 6px 12px;
+        }
+
+        .kalapas-grid .panel-title {
+            font-size: 11px;
+        }
+
+        .kalapas-grid .panel-date {
+            font-size: 10px;
+        }
+
+        .kalapas-grid table th {
+            padding: 5px 6px;
+            font-size: 9px;
+        }
+
+        .kalapas-grid table td {
+            padding: 4px 6px;
+            font-size: 9px;
+        }
+    </style>
+</head>
+
+<body class="page-umum">
+    <!-- Header -->
+    <header class="header">
+        <div class="header-content">
+            <div class="logo-section">
+                <div class="logo">
+                    <h1>DEMO</h1>
+                    <p>KALAPAS</p>
+                </div>
+                <div class="header-info">
+                    <h2>DASHBOARD PIMPINAN – KETERBUKAAN INFORMASI LAPAS</h2>
+                    <h3>RINGKASAN OPERASIONAL & KESEHATAN WBP</h3>
+                    <p class="address">Lapas Rutan | Informasi Strategis untuk Kepala Lapas</p>
+                    <p class="contact">
+                        <%= tanggal %>
+                    </p>
+                </div>
+            </div>
+            <div class="stats">
+                <div class="stat-item">
+                    <div class="stat-label">Total Penghuni</div>
+                    <div class="stat-value">
+                        <%= totalPenghuni %>
+                    </div>
+                </div>
+                <div class="stat-item">
+                    <div class="stat-label">Kapasitas</div>
+                    <div class="stat-value">
+                        <%= kapasitas %>
+                    </div>
+                </div>
+                <div class="stat-item bebas">
+                    <div class="stat-label">Bebas Hari Ini</div>
+                    <div class="stat-value">
+                        <%= bebasHariIni %> Orang
+                    </div>
+                </div>
+            </div>
+        </div>
+        <!-- KPI Strip -->
+        <div class="kpi-strip">
+            <div class="kpi-card info">
+                <div class="kpi-card-label">OKUPANSI HUNIAN</div>
+                <div class="kpi-card-value">
+                    <%= okupansi %>%
+                </div>
+                <div class="kpi-card-sub">dari kapasitas <%= kapasitas %>
+                </div>
+            </div>
+            <div class="kpi-card warn">
+                <div class="kpi-card-label">WBP BEROBAT</div>
+                <div class="kpi-card-value">
+                    <%= clinicSummary.totalWbpBerobat %>
+                </div>
+                <div class="kpi-card-sub">R. Jalan: <%= clinicSummary.rawatJalan %> | R. Inap: <%=
+                            clinicSummary.rawatInapAktif %>
+                </div>
+            </div>
+            <div class="kpi-card danger">
+                <div class="kpi-card-label">PENYAKIT KRONIS</div>
+                <div class="kpi-card-value">
+                    <%= clinicSummary.totalKronis %>
+                </div>
+                <div class="kpi-card-sub">TB: <%= clinicSummary.tb %> | Paru: <%= clinicSummary.paru %> | HIV: <%=
+                                clinicSummary.hiv %>
+                </div>
+            </div>
+            <div class="kpi-card ok">
+                <div class="kpi-card-label">TENAGA MEDIS</div>
+                <div class="kpi-card-value">
+                    <%= clinicSummary.totalTenagaMedis %>
+                </div>
+                <div class="kpi-card-sub">Blok Lansia: <%= clinicSummary.blokLansia %> WBP</div>
+            </div>
+        </div>
+    </header>
+
+    <!-- 3-column main grid -->
+    <div class="kalapas-grid">
+
+        <!-- Kolom 1: Remisi + Jadwal Kegiatan -->
+        <div class="kalapas-col">
+            <div class="panel">
+                <div class="panel-header red">BESARAN REMISI WBP</div>
+                <div class="panel-content">
+                    <table>
+                        <thead>
+                            <tr>
+                                <th>JENIS</th>
+                                <th>NAMA WBP</th>
+                                <th>BESARAN</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <% topRemisi.forEach(item=> { %>
+                                <tr>
+                                    <td>
+                                        <%= item.jenis %>
+                                    </td>
+                                    <td>
+                                        <%= item.nama %>
+                                    </td>
+                                    <td style="text-align:center;font-weight:bold;">
+                                        <%= item.besaran %>
+                                    </td>
+                                </tr>
+                                <% }) %>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+            <div class="panel">
+                <div class="panel-header red">JADWAL KEGIATAN PEMBINAAN</div>
+                <div class="panel-content">
+                    <table class="table-jadwal">
+                        <thead>
+                            <tr>
+                                <th>KEGIATAN</th>
+                                <th>HARI</th>
+                                <th>WAKTU</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <% jadwalKegiatan.forEach(item=> { %>
+                                <tr>
+                                    <td>
+                                        <%= item.kegiatan %>
+                                    </td>
+                                    <td>
+                                        <%= item.selasa %>
+                                    </td>
+                                    <td>
+                                        <%= item.rabu %>
+                                    </td>
+                                </tr>
+                                <% }) %>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+
+        <!-- Kolom 2: WBP Berobat + Pentahapan Pembinaan -->
+        <div class="kalapas-col">
+            <div class="panel">
+                <div class="panel-header-with-date">
+                    <span class="panel-title">WBP BEROBAT (TERKINI)</span>
+                    <span class="panel-date">
+                        <%= tanggal %>
+                    </span>
+                </div>
+                <div class="panel-content">
+                    <table>
+                        <thead>
+                            <tr>
+                                <th>NO REG</th>
+                                <th>NAMA WBP</th>
+                                <th>DIAGNOSA</th>
+                                <th>BLOK</th>
+                                <th>STATUS</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <% wbpBerobat.slice(0, 8).forEach(item=> { %>
+                                <tr>
+                                    <td>
+                                        <%= item.noReg %>
+                                    </td>
+                                    <td>
+                                        <%= item.namaWbp %>
+                                    </td>
+                                    <td>
+                                        <%= item.diagnosa %>
+                                    </td>
+                                    <td>
+                                        <%= item.blok %>
+                                    </td>
+                                    <td><strong>
+                                            <%= item.statusPerawatan %>
+                                        </strong></td>
+                                </tr>
+                                <% }) %>
+                                    <% if (!wbpBerobat.length) { %>
+                                        <tr>
+                                            <td colspan="5" style="text-align:center;color:#aaa;padding:10px;">Tidak ada
+                                                data</td>
+                                        </tr>
+                                        <% } %>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+            <div class="panel">
+                <div class="panel-header-with-date">
+                    <span class="panel-title">DAFTAR PENTAHAPAN PEMBINAAN</span>
+                    <span class="panel-date">
+                        <%= tanggal %>
+                    </span>
+                </div>
+                <div class="panel-content">
+                    <table class="table-pembinaan">
+                        <thead>
+                            <tr>
+                                <th>NAMA WBP</th>
+                                <th>STATUS INTEGRASI</th>
+                                <th>NAMA WBP</th>
+                                <th>STATUS INTEGRASI</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <% pentahapanPembinaan.slice(0, 5).forEach(item=> { %>
+                                <tr>
+                                    <td><strong>
+                                            <%= item.namaWbp %>
+                                        </strong>
+                                    </td>
+                                    <td>
+                                        <%= item.statusIntegrasi %>
+                                    </td>
+                                    <td>
+                                        <%= item.namaWbp2 %>
+                                    </td>
+                                    <td>
+                                        <%= item.statusIntegrasi2 %>
+                                    </td>
+                                </tr>
+                                <% }) %>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+
+        <!-- Kolom 3: On Call + Kontrol + Tenaga Medis -->
+        <div class="kalapas-col">
+            <div class="panel">
+                <div class="panel-header red">ON CALL PETUGAS MEDIS</div>
+                <div class="panel-content">
+                    <table>
+                        <thead>
+                            <tr>
+                                <th>HARI</th>
+                                <th>SHIFT</th>
+                                <th>PETUGAS</th>
+                                <th>PROFESI</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <% topOnCall.forEach(item=> { %>
+                                <tr>
+                                    <td>
+                                        <%= item.hari %>
+                                    </td>
+                                    <td>
+                                        <%= item.shift %>
+                                    </td>
+                                    <td>
+                                        <%= item.petugas %>
+                                    </td>
+                                    <td>
+                                        <%= item.profesi %>
+                                    </td>
+                                </tr>
+                                <% }) %>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+            <div class="panel">
+                <div class="panel-header red">JADWAL KONTROL KESEHATAN BLOK</div>
+                <div class="panel-content">
+                    <table>
+                        <thead>
+                            <tr>
+                                <th>HARI</th>
+                                <th>WAKTU</th>
+                                <th>LOKASI</th>
+                                <th>PETUGAS</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <% topKontrol.forEach(item=> { %>
+                                <tr>
+                                    <td>
+                                        <%= item.hari %>
+                                    </td>
+                                    <td>
+                                        <%= item.waktu %>
+                                    </td>
+                                    <td>
+                                        <%= item.lokasiBlok %>
+                                    </td>
+                                    <td>
+                                        <%= item.petugas %>
+                                    </td>
+                                </tr>
+                                <% }) %>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+            <div class="panel">
+                <div class="panel-header red">TENAGA MEDIS KLINIK</div>
+                <div class="panel-content">
+                    <table>
+                        <thead>
+                            <tr>
+                                <th>NAMA</th>
+                                <th>PROFESI</th>
+                                <th>STATUS</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <% tenagaMedis.forEach(item=> { %>
+                                <tr>
+                                    <td>
+                                        <%= item.nama %>
+                                    </td>
+                                    <td>
+                                        <%= item.profesi %>
+                                    </td>
+                                    <td><span
+                                            style="color:<%= item.statusTugas==='On Duty'?'#059669':'#6b7280' %>;font-weight:bold;">
+                                            <%= item.statusTugas %>
+                                        </span></td>
+                                </tr>
+                                <% }) %>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Footer -->
+    <footer class="footer">
+        <div class="footer-bottom" style="display: flex; justify-content: space-between; align-items: center;">
+            <p style="flex:1; max-width:60%;"><strong>DEMO</strong> - Dashboard Pimpinan berisi indikator strategis
+                operasional dan kesehatan WBP.</p>
+            <p style="text-align:right; flex:1;">Dashboard Pimpinan Lapas Rutan<br>
+                Copyright &copy; 2023, by Dimstatons. All Right Reserved</p>
+        </div>
+    </footer>
+    <script src="/js/display-mode.js?v=<%= Date.now() %>"></script>
+</body>
+
+</html>

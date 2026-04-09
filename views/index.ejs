@@ -1,0 +1,306 @@
+<!DOCTYPE html>
+<html lang="id">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
+    <meta http-equiv="Pragma" content="no-cache">
+    <meta http-equiv="Expires" content="0">
+    <title>DEMO - Sistem Informasi Narapidana</title>
+    <link rel="stylesheet" href="/css/style.css?v=<%= Date.now() %>">
+</head>
+
+<body class="page-umum">
+    <!-- Header Full Width -->
+    <header class="header">
+        <div class="header-content">
+            <div class="logo-section">
+                <div class="logo">
+                    <h1>DEMO</h1>
+                    <p>SISTEM</p>
+                </div>
+                <div class="header-info">
+                    <h2>KETERBUKAAN INFORMASI NARAPIDANA</h2>
+                    <h3>LAPAS RUTAN</h3>
+                    <p class="address">Alamat Lengkap Lapas Rutan</p>
+                    <p class="contact">Phone: (021) 1234567890 | Email: emaillapasrutan@gmail.com</p>
+                </div>
+            </div>
+            <div class="stats">
+                <div class="stat-item">
+                    <div class="stat-label">Total Penghuni</div>
+                    <div class="stat-value">
+                        <%= totalPenghuni %>
+                    </div>
+                </div>
+                <div class="stat-item">
+                    <div class="stat-label">Kapasitas</div>
+                    <div class="stat-value">
+                        <%= kapasitas %>
+                    </div>
+                </div>
+                <div class="stat-item bebas">
+                    <div class="stat-label">Bebas Hari Ini</div>
+                    <div class="stat-value">
+                        <%= bebasHariIni %> Orang
+                    </div>
+                </div>
+            </div>
+        </div>
+    </header>
+
+
+    <!-- Main Container dengan 2 Kolom (4:8) -->
+    <div class="main-container">
+        <!-- Kolom Kiri (4) -->
+        <div class="left-column">
+            <!-- Panel Atas Kiri: Besaran Remisi -->
+            <div class="panel">
+                <div class="panel-header red">BESARAN REMISI</div>
+                <div class="panel-content">
+                    <table class="table-remisi">
+                        <thead>
+                            <tr>
+                                <th>JENIS REMISI</th>
+                                <th>NAMA WBP</th>
+                                <th>BESARAN</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <% besaranRemisi.forEach(item=> { %>
+                                <tr>
+                                    <td>
+                                        <%= item.jenis %>
+                                    </td>
+                                    <td>
+                                        <%= item.nama %>
+                                    </td>
+                                    <td>
+                                        <%= item.besaran %>
+                                    </td>
+                                </tr>
+                                <% }) %>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+
+            <!-- Panel Bawah Kiri: Menu Makan -->
+            <div class="panel">
+                <div class="panel-header red">DAFTAR MENU MAKAN HARI INI</div>
+                <div class="panel-content">
+                    <table class="table-menu">
+                        <tbody>
+                            <% menuMakan.forEach(item=> { %>
+                                <tr class="<%= item.waktu === 'SNACK' ? 'snack' : '' %>">
+                                    <td class="waktu">
+                                        <%= item.waktu %>
+                                    </td>
+                                    <td class="menu-photo-cell">
+                                        <% if (item.photoPath) { %>
+                                            <img src="<%= item.photoPath %>" alt="Foto menu" class="menu-photo">
+                                            <% } else { %>
+                                                <div class="menu-photo-placeholder">-</div>
+                                                <% } %>
+                                    </td>
+                                    <td class="menu">
+                                        <%= item.menu %>
+                                    </td>
+                                </tr>
+                                <% }) %>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+
+        </div>
+
+        <!-- Kolom Kanan (8) -->
+        <div class="right-column">
+            <!-- Panel Atas Kanan: Pentahapan Pembinaan -->
+            <div class="panel">
+                <div class="panel-header-with-date">
+                    <span class="panel-title">DAFTAR PENTAHAPAN PEMBINAAN</span>
+                    <span class="panel-date">
+                        <%= tanggal %>
+                    </span>
+                </div>
+                <div class="panel-content">
+                    <table class="table-pembinaan">
+                        <thead>
+                            <tr>
+                                <th>NAMA WBP</th>
+                                <th>STATUS INTEGRASI</th>
+                                <th>NAMA WBP</th>
+                                <th>STATUS INTEGRASI</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <% pentahapanPembinaan.forEach(item=> { %>
+                                <tr>
+                                    <td>
+                                        <%= item.namaWbp %>
+                                    </td>
+                                    <td>
+                                        <%= item.statusIntegrasi %>
+                                    </td>
+                                    <td>
+                                        <%= item.namaWbp2 %>
+                                    </td>
+                                    <td>
+                                        <%= item.statusIntegrasi2 %>
+                                    </td>
+                                </tr>
+                                <% }) %>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+
+            <!-- Panel Tengah Kanan: Detail Pentahapan Pembinaan -->
+            <div class="panel">
+                <div class="panel-header-with-date"
+                    style="padding: 10px 15px; font-weight: bold; font-size: 14px; background-color: #1e3a8a; color: white;">
+                    <span class="panel-title">DETAIL PENTAHAPAN PEMBINAAN</span>
+                </div>
+                <div class="panel-content">
+                    <table class="table-pembinaan-detail">
+                        <thead>
+                            <tr>
+                                <th>NO. REG</th>
+                                <th>NAMA WBP</th>
+                                <th>TANGGAL 1/2</th>
+                                <th>TANGGAL 2/3</th>
+                                <th>TANGGAL</th>
+                                <th>TANGGAL EKSPIRASI</th>
+                                <th>TOTAL REMISI</th>
+                                <th>KETERANGAN KEHADIRAN PEMBINAAN</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <% pentahapanPembinaanDetail.forEach(item=> { %>
+                                <tr>
+                                    <td>
+                                        <%= item.noReg %>
+                                    </td>
+                                    <td>
+                                        <%= item.namaWbp %>
+                                    </td>
+                                    <td>
+                                        <%= item.tanggal1 %>
+                                    </td>
+                                    <td>
+                                        <%= item.tanggal2 %>
+                                    </td>
+                                    <td>
+                                        <%= item.tanggal3 %>
+                                    </td>
+                                    <td>
+                                        <%= item.tanggal4 %>
+                                    </td>
+                                    <td>
+                                        <%= item.totalRemisi %>
+                                    </td>
+                                    <td>
+                                        <%= item.keterangan %>
+                                    </td>
+                                </tr>
+                                <% }) %>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+
+            <!-- Panel Bawah Kanan: 2 Sub-panel -->
+            <div class="bottom-panels">
+                <!-- Sub-panel Kiri: Jadwal Kegiatan -->
+                <div class="panel sub-panel">
+                    <div class="panel-header red">JADWAL KEGIATAN PEMBINAAN</div>
+                    <div class="panel-content">
+                        <table class="table-jadwal">
+                            <thead>
+                                <tr>
+                                    <th colspan="3">SELASA</th>
+                                </tr>
+                                <tr>
+                                    <th>KEGIATAN</th>
+                                    <th>HARI</th>
+                                    <th>WAKTU</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                <tr class="section-header">
+                                    <td colspan="3"><strong>KEGIATAN OLAHRAGA & WARAKAWIRI</strong></td>
+                                </tr>
+                                <tr>
+                                    <td>Relaksai Jiwa</td>
+                                    <td>Rabu</td>
+                                    <td>Ruangan Lapas</td>
+                                </tr>
+                                <tr>
+                                    <td>Voli, Basket, Futsal</td>
+                                    <td></td>
+                                    <td>Lapangan Lapas</td>
+                                </tr>
+                                <tr class="section-header">
+                                    <td colspan="3"><strong>KEGIATAN PELATIHAN & BELAJAR MENGAJAR</strong></td>
+                                </tr>
+                                <tr>
+                                    <td>Therapeutic Community, Ceramah, Terapi Kognitif</td>
+                                    <td>Ruangan Kelas Gedung 3</td>
+                                    <td>Petugas Bimbingan</td>
+                                </tr>
+                                <tr>
+                                    <td>PNPM, Pramuka, Kader Kesehatan</td>
+                                    <td>Lapangan Lapas, Ruangan Kelas</td>
+                                    <td>Petugas Bimbingan</td>
+                                </tr>
+                                <tr class="section-header">
+                                    <td colspan="3"><strong>KEGIATAN KEROHANIAN</strong></td>
+                                </tr>
+                                <tr>
+                                    <td>Sholat Juhar, Sholat Ashar, Tawarrudu</td>
+                                    <td>Masjid Darawaruya</td>
+                                    <td>Petugas Bimbingan</td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+
+                <!-- Sub-panel Kanan: Dokumentasi -->
+                <div class="panel sub-panel">
+                    <div class="panel-header red">DOKUMENTASI KEGIATAN PEMBINAAN HARIAN</div>
+                    <div class="panel-content documentation"
+                        style="padding: 0; align-items: stretch; justify-content: stretch;">
+                        <% if (dokumentasiVideo) { %>
+                            <video src="<%= dokumentasiVideo %>" autoplay muted loop
+                                style="width: 100%; height: 100%; object-fit: cover; border-bottom-left-radius: 8px; border-bottom-right-radius: 8px; display: block;"></video>
+                            <% } else { %>
+                                <div class="photo-placeholder"
+                                    style="border-radius: 0 0 8px 8px; height: 100%; aspect-ratio: auto;">
+                                    <p>Video Dokumentasi Kegiatan</p>
+                                </div>
+                                <% } %>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Footer -->
+    <footer class="footer">
+        <div class="footer-bottom"
+            style="display: flex; justify-content: space-between; align-items: center; text-align: left;">
+            <p style="flex: 1; max-width: 60%;"><strong>DEMO</strong> adalah sistem Keterbukaan Informasi Narapidana di
+                Lapas Narkotika Kelas IIA Jakarta. Jika ingin mengetahui informasi terkait pengurusan Pembebasan
+                Bersyarat, Cuti Menjelang</p>
+            <p style="text-align: right; flex: 1;">Keterbukaan Informasi Narapidana Lapas Rutan<br>
+                Copyright &copy; 2023, by Dimstatons. All Right Reserved</p>
+        </div>
+    </footer>
+    <script src="/js/display-mode.js?v=<%= Date.now() %>"></script>
+</body>
+
+</html>

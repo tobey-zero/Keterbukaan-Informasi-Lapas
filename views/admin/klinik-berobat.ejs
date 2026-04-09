@@ -1,0 +1,149 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+  <meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>WBP Berobat – Admin Klinik</title>
+  <link rel="stylesheet" href="/css/admin.css">
+</head>
+<body>
+<div class="admin-wrapper">
+  <%- include('_sidebar') %>
+  <div class="main-content">
+    <div class="topbar">
+      <div class="topbar-title"><h2>🏥 WBP Berobat</h2><p>Kelola data WBP yang berobat</p></div>
+      <div class="topbar-actions"><a href="/klinik" target="_blank" class="btn-public">🌐 Lihat Klinik</a></div>
+    </div>
+    <div class="content-area">
+      <% if (success) { %><div class="alert alert-success">✅ Data berhasil disimpan.</div><% } %>
+
+      <div class="card">
+        <div class="card-header"><h3>➕ Tambah Data WBP Berobat</h3></div>
+        <div class="card-body">
+          <form method="POST" action="/admin/klinik-berobat/add">
+            <div class="form-grid col-3" style="margin-bottom:12px;">
+              <div class="form-group">
+                <label>No. Registrasi</label>
+                <input type="text" name="no_reg" placeholder="cth: BI.150-A/2023" required>
+              </div>
+              <div class="form-group">
+                <label>Nama WBP</label>
+                <input type="text" name="nama_wbp" placeholder="Nama lengkap" required>
+              </div>
+              <div class="form-group">
+                <label>Layanan</label>
+                <input type="text" name="layanan" placeholder="cth: Poliklinik" required>
+              </div>
+              <div class="form-group">
+                <label>Diagnosa</label>
+                <input type="text" name="diagnosa" placeholder="cth: ISPA, TB Paru" required>
+              </div>
+              <div class="form-group">
+                <label>Blok</label>
+                <input type="text" name="blok" placeholder="cth: Blok A1" required>
+              </div>
+              <div class="form-group">
+                <label>Status Perawatan</label>
+                <select name="status_perawatan" required>
+                  <option value="Rawat Jalan">Rawat Jalan</option>
+                  <option value="Rawat Inap">Rawat Inap</option>
+                  <option value="Selesai">Selesai</option>
+                </select>
+              </div>
+              <div class="form-group">
+                <label>Tanggal</label>
+                <input type="text" name="tanggal" placeholder="cth: 15 Maret 2026" required>
+              </div>
+            </div>
+            <button type="submit" class="btn btn-primary btn-sm">➕ Tambah</button>
+          </form>
+        </div>
+      </div>
+
+      <% if (edit) { %>
+      <div class="edit-panel">
+        <h4>✏️ Edit Data WBP Berobat (ID: <%= edit.id %>)</h4>
+        <form method="POST" action="/admin/klinik-berobat/<%= edit.id %>/update">
+          <div class="form-grid col-3" style="margin-bottom:12px;">
+            <div class="form-group">
+              <label>No. Registrasi</label>
+              <input type="text" name="no_reg" value="<%= edit.no_reg %>" required>
+            </div>
+            <div class="form-group">
+              <label>Nama WBP</label>
+              <input type="text" name="nama_wbp" value="<%= edit.nama_wbp %>" required>
+            </div>
+            <div class="form-group">
+              <label>Layanan</label>
+              <input type="text" name="layanan" value="<%= edit.layanan %>" required>
+            </div>
+            <div class="form-group">
+              <label>Diagnosa</label>
+              <input type="text" name="diagnosa" value="<%= edit.diagnosa %>" required>
+            </div>
+            <div class="form-group">
+              <label>Blok</label>
+              <input type="text" name="blok" value="<%= edit.blok %>" required>
+            </div>
+            <div class="form-group">
+              <label>Status Perawatan</label>
+              <select name="status_perawatan" required>
+                <option value="Rawat Jalan" <%= edit.status_perawatan==='Rawat Jalan'?'selected':'' %>>Rawat Jalan</option>
+                <option value="Rawat Inap" <%= edit.status_perawatan==='Rawat Inap'?'selected':'' %>>Rawat Inap</option>
+                <option value="Selesai" <%= edit.status_perawatan==='Selesai'?'selected':'' %>>Selesai</option>
+              </select>
+            </div>
+            <div class="form-group">
+              <label>Tanggal</label>
+              <input type="text" name="tanggal" value="<%= edit.tanggal %>" required>
+            </div>
+          </div>
+          <div style="display:flex;gap:8px;">
+            <button type="submit" class="btn btn-success btn-sm">💾 Simpan</button>
+            <a href="/admin/klinik-berobat" class="btn btn-secondary btn-sm">✕ Batal</a>
+          </div>
+        </form>
+      </div>
+      <% } %>
+
+      <div class="card">
+        <div class="card-header"><h3>Daftar WBP Berobat (<%= list.length %> data)</h3></div>
+        <div class="card-body" style="padding:0;">
+          <div class="table-wrap">
+            <table class="admin-table">
+              <thead>
+                <tr><th>#</th><th>No Reg</th><th>Nama WBP</th><th>Layanan</th><th>Diagnosa</th><th>Blok</th><th>Status</th><th>Tanggal</th><th>Aksi</th></tr>
+              </thead>
+              <tbody>
+                <% list.forEach((item, i) => { %>
+                <tr>
+                  <td><%= i+1 %></td>
+                  <td><%= item.no_reg %></td>
+                  <td><%= item.nama_wbp %></td>
+                  <td><%= item.layanan %></td>
+                  <td><%= item.diagnosa %></td>
+                  <td><%= item.blok %></td>
+                  <td><%= item.status_perawatan %></td>
+                  <td><%= item.tanggal %></td>
+                  <td>
+                    <div class="actions">
+                      <a href="/admin/klinik-berobat?edit=<%= item.id %>" class="btn btn-warning btn-xs">✏️ Edit</a>
+                      <form method="POST" action="/admin/klinik-berobat/<%= item.id %>/delete" style="display:inline" onsubmit="return confirm('Hapus data ini?')">
+                        <button type="submit" class="btn btn-danger btn-xs">🗑 Hapus</button>
+                      </form>
+                    </div>
+                  </td>
+                </tr>
+                <% }) %>
+                <% if (!list.length) { %>
+                <tr><td colspan="9" style="text-align:center;color:#aaa;padding:20px;">Belum ada data</td></tr>
+                <% } %>
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+</body>
+</html>

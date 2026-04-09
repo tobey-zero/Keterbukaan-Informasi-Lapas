@@ -1,0 +1,195 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
+    <meta http-equiv="Pragma" content="no-cache">
+    <meta http-equiv="Expires" content="0">
+    <title>DEMO - Tampilan Klinik</title>
+    <link rel="stylesheet" href="/css/style.css?v=<%= Date.now() %>">
+</head>
+<body>
+    <header class="header">
+        <div class="header-content">
+            <div class="logo-section">
+                <div class="logo">
+                    <h1>DEMO</h1>
+                    <p>KLINIK</p>
+                </div>
+                <div class="header-info">
+                    <h2>KETERBUKAAN INFORMASI KLINIK LAYANAN KESEHATAN</h2>
+                    <h3>LAPAS RUTAN</h3>
+                    <p class="address">Layanan Medis WBP, On Call, dan Kontrol Blok Hunian</p>
+                    <p class="contact">Hotline Klinik: (021) 1234567890 | Email: kliniklapas@example.com</p>
+                </div>
+            </div>
+            <div class="stats">
+                <div class="stat-item">
+                    <div class="stat-label">Tenaga Medis</div>
+                    <div class="stat-value"><%= clinicSummary.totalTenagaMedis %></div>
+                </div>
+                <div class="stat-item">
+                    <div class="stat-label">WBP Berobat</div>
+                    <div class="stat-value"><%= clinicSummary.totalWbpBerobat %></div>
+                </div>
+                <div class="stat-item bebas">
+                    <div class="stat-label">Rawat Inap</div>
+                    <div class="stat-value"><%= clinicSummary.rawatInapStat %> Orang</div>
+                </div>
+            </div>
+        </div>
+    </header>
+
+
+    <div class="main-container">
+        <div class="left-column">
+            <div class="panel">
+                <div class="panel-header red">TENAGA MEDIS</div>
+                <div class="panel-content">
+                    <table>
+                        <thead>
+                            <tr>
+                                <th>NAMA</th>
+                                <th>PROFESI</th>
+                                <th>STATUS</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <% tenagaMedis.forEach(item => { %>
+                            <tr>
+                                <td><%= item.nama %></td>
+                                <td><%= item.profesi %></td>
+                                <td><%= item.statusTugas %></td>
+                            </tr>
+                            <% }) %>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+
+            <div class="panel">
+                <div class="panel-header red">RINGKASAN KESEHATAN WBP</div>
+                <div class="panel-content">
+                    <div class="kpi-grid">
+                        <div class="kpi-item">
+                            <div class="kpi-label">WBP Rawat Jalan</div>
+                            <div class="kpi-value"><%= clinicSummary.rawatJalan %></div>
+                        </div>
+                        <div class="kpi-item">
+                            <div class="kpi-label">WBP Rawat Inap Aktif</div>
+                            <div class="kpi-value"><%= clinicSummary.rawatInapAktif %></div>
+                        </div>
+                        <div class="kpi-item full">
+                            <div class="kpi-label">WBP di Blok Lansia</div>
+                            <div class="kpi-value"><%= clinicSummary.blokLansia %></div>
+                        </div>
+                        <div class="kpi-item full">
+                            <div class="kpi-label">WBP Penyakit Kronis (TB, Paru, HIV, lainnya)</div>
+                            <div class="kpi-value"><%= clinicSummary.totalKronis %></div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="right-column">
+            <div class="panel">
+                <div class="panel-header-with-date">
+                    <span class="panel-title">WBP BEROBAT</span>
+                    <span class="panel-date">Update Harian</span>
+                </div>
+                <div class="panel-content">
+                    <table>
+                        <thead>
+                            <tr>
+                                <th>NO REG</th>
+                                <th>NAMA WBP</th>
+                                <th>LAYANAN</th>
+                                <th>DIAGNOSA</th>
+                                <th>BLOK</th>
+                                <th>STATUS</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <% wbpBerobat.forEach(item => { %>
+                            <tr>
+                                <td><%= item.noReg %></td>
+                                <td><%= item.namaWbp %></td>
+                                <td><%= item.layanan %></td>
+                                <td><%= item.diagnosa %></td>
+                                <td><%= item.blok %></td>
+                                <td><%= item.statusPerawatan %></td>
+                            </tr>
+                            <% }) %>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+
+            <div class="bottom-panels">
+                <div class="panel sub-panel">
+                    <div class="panel-header red">JADWAL ON CALL PETUGAS</div>
+                    <div class="panel-content">
+                        <table>
+                            <thead>
+                                <tr>
+                                    <th>HARI</th>
+                                    <th>SHIFT</th>
+                                    <th>PETUGAS</th>
+                                    <th>PROFESI</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                <% jadwalOnCall.forEach(item => { %>
+                                <tr>
+                                    <td><%= item.hari %></td>
+                                    <td><%= item.shift %></td>
+                                    <td><%= item.petugas %></td>
+                                    <td><%= item.profesi %></td>
+                                </tr>
+                                <% }) %>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+
+                <div class="panel sub-panel">
+                    <div class="panel-header red">JADWAL KONTROL KESEHATAN KE BLOK</div>
+                    <div class="panel-content">
+                        <table>
+                            <thead>
+                                <tr>
+                                    <th>HARI</th>
+                                    <th>WAKTU</th>
+                                    <th>BLOK/KAMAR</th>
+                                    <th>PETUGAS</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                <% jadwalKontrol.forEach(item => { %>
+                                <tr>
+                                    <td><%= item.hari %></td>
+                                    <td><%= item.waktu %></td>
+                                    <td><%= item.lokasiBlok %></td>
+                                    <td><%= item.petugas %></td>
+                                </tr>
+                                <% }) %>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <footer class="footer">
+        <div class="footer-bottom" style="display: flex; justify-content: space-between; align-items: center; text-align: left;">
+            <p style="flex: 1; max-width: 60%;"><strong>DEMO</strong> - Tampilan Klinik untuk keterbukaan informasi layanan kesehatan WBP.</p>
+            <p style="text-align: right; flex: 1;">Keterbukaan Informasi Klinik Lapas Rutan<br>
+            Copyright &copy; 2023, by Dimstatons. All Right Reserved</p>
+        </div>
+    </footer>
+    <script src="/js/display-mode.js?v=<%= Date.now() %>"></script>
+</body>
+</html>

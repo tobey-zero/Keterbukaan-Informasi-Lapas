@@ -1,0 +1,112 @@
+<aside class="sidebar">
+  <div class="sidebar-brand">
+    <h1>🏛 LAPAS<br>NARKOTIKA</h1>
+    <p>Panel Administrasi</p>
+  </div>
+  <div class="sidebar-user">
+    <div class="user-avatar"><%= user.username[0].toUpperCase() %></div>
+    <div class="user-info">
+      <div class="name"><%= user.username %></div>
+      <div class="role" style="text-transform:capitalize"><%= user.role %></div>
+    </div>
+  </div>
+  <nav class="sidebar-nav">
+    <div class="nav-label">Utama</div>
+    <a href="/admin/dashboard" class="nav-item <%= active==='dashboard'?'active':'' %>">
+      <span class="icon">📊</span><span>Dashboard</span>
+    </a>
+    <a href="/" target="_blank" class="nav-item">
+      <span class="icon">🌐</span><span>Lihat Publik</span>
+    </a>
+
+    <% if (['statistik','remisi','menu','video','pembinaan','pembinaan-detail','jadwal'].some(p => allowed.includes(p))) { %>
+    <div class="nav-label">Kelola Data</div>
+    <% } %>
+
+    <% if (allowed.includes('statistik')) { %>
+    <a href="/admin/statistik" class="nav-item <%= active==='statistik'?'active':'' %>">
+      <span class="icon">📈</span><span>Statistik</span>
+    </a>
+    <% } %>
+
+    <% if (allowed.includes('remisi')) { %>
+    <a href="/admin/remisi" class="nav-item <%= active==='remisi'?'active':'' %>">
+      <span class="icon">📋</span><span>Besaran Remisi</span>
+    </a>
+    <% } %>
+
+    <% if (allowed.includes('menu')) { %>
+    <a href="/admin/menu" class="nav-item <%= active==='menu'?'active':'' %>">
+      <span class="icon">🍽</span><span>Menu Makan</span>
+    </a>
+    <% } %>
+
+    <% if (allowed.includes('video')) { %>
+    <a href="/admin/video" class="nav-item <%= typeof active !== 'undefined' && active==='video' ? 'active' : '' %>">
+      <span class="icon">🎥</span><span>Video Dokumentasi</span>
+    </a>
+    <% } %>
+
+    <% if (allowed.includes('pembinaan')) { %>
+    <a href="/admin/pembinaan" class="nav-item <%= active==='pembinaan'?'active':'' %>">
+      <span class="icon">👥</span><span>Pentahapan Pembinaan</span>
+    </a>
+    <% } %>
+
+    <% if (allowed.includes('pembinaan-detail')) { %>
+    <a href="/admin/pembinaan-detail" class="nav-item <%= active==='pembinaan-detail'?'active':'' %>">
+      <span class="icon">📝</span><span>Detail Pembinaan</span>
+    </a>
+    <% } %>
+
+    <% if (allowed.includes('jadwal')) { %>
+    <a href="/admin/jadwal" class="nav-item <%= active==='jadwal'?'active':'' %>">
+      <span class="icon">📅</span><span>Jadwal Kegiatan</span>
+    </a>
+    <% } %>
+
+    <% if (['klinik-medis','klinik-berobat','klinik-oncall','klinik-kontrol','klinik-statistik'].some(p => allowed.includes(p))) { %>
+    <div class="nav-label">Kelola Klinik</div>
+    <% } %>
+
+    <% if (allowed.includes('klinik-medis')) { %>
+    <a href="/admin/klinik-medis" class="nav-item <%= active==='klinik-medis'?'active':'' %>">
+      <span class="icon">🩺</span><span>Tenaga Medis</span>
+    </a>
+    <% } %>
+
+    <% if (allowed.includes('klinik-berobat')) { %>
+    <a href="/admin/klinik-berobat" class="nav-item <%= active==='klinik-berobat'?'active':'' %>">
+      <span class="icon">🏥</span><span>WBP Berobat</span>
+    </a>
+    <% } %>
+
+    <% if (allowed.includes('klinik-oncall')) { %>
+    <a href="/admin/klinik-oncall" class="nav-item <%= active==='klinik-oncall'?'active':'' %>">
+      <span class="icon">📞</span><span>Jadwal On Call</span>
+    </a>
+    <% } %>
+
+    <% if (allowed.includes('klinik-kontrol')) { %>
+    <a href="/admin/klinik-kontrol" class="nav-item <%= active==='klinik-kontrol'?'active':'' %>">
+      <span class="icon">🔍</span><span>Jadwal Kontrol</span>
+    </a>
+    <% } %>
+
+    <% if (allowed.includes('klinik-statistik')) { %>
+    <a href="/admin/klinik-statistik" class="nav-item <%= active==='klinik-statistik'?'active':'' %>">
+      <span class="icon">📊</span><span>Statistik Klinik</span>
+    </a>
+    <% } %>
+
+    <% if (allowed.includes('users')) { %>
+    <div class="nav-label">Sistem</div>
+    <a href="/admin/users" class="nav-item <%= active==='users'?'active':'' %>">
+      <span class="icon">👤</span><span>Kelola User</span>
+    </a>
+    <% } %>
+  </nav>
+  <div class="sidebar-footer">
+    <a href="/admin/logout">🚪 <span>Logout</span></a>
+  </div>
+</aside>

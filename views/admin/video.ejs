@@ -1,0 +1,54 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+  <meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Video Dokumentasi – Admin Lapas</title>
+  <link rel="stylesheet" href="/css/admin.css">
+  <style>
+    .video-preview { margin-top: 15px; border-radius: 5px; max-width: 100%; height: auto; border: 1px solid #ccc; background: #000; }
+  </style>
+</head>
+<body>
+<div class="admin-wrapper">
+  <%- include('_sidebar') %>
+  <div class="main-content">
+    <div class="topbar">
+      <div class="topbar-title"><h2>🎥 Video Dokumentasi</h2><p>Kelola video kegiatan harian untuk ditampilkan di layar publik</p></div>
+      <div class="topbar-actions"><a href="/" target="_blank" class="btn-public">🌐 Lihat Publik</a></div>
+    </div>
+    <div class="content-area">
+      <% if (success) { %>
+      <div class="alert alert-success">✅ Video berhasil diunggah dan diperbarui.</div>
+      <% } %>
+      <% if (error) { %>
+      <div class="alert alert-danger">❌ <%= error %></div>
+      <% } %>
+      <div class="card">
+        <div class="card-header"><h3>Upload Video Baru</h3><p>Maksimal ukuran file 50 MB. Format yang didukung: MP4, WebM.</p></div>
+        <div class="card-body">
+          <form method="POST" action="/admin/video/update" enctype="multipart/form-data">
+            <div class="form-group" style="margin-bottom:16px;">
+              <label>Pilih File Video Baru</label>
+              <input type="file" name="video" accept="video/mp4,video/webm" required>
+            </div>
+            <button type="submit" class="btn btn-primary">📤 Upload & Simpan</button>
+          </form>
+        </div>
+      </div>
+      <div class="card">
+        <div class="card-header"><h3>Pratinjau Video Saat Ini</h3><p>Video ini diputar otomatis tanpa suara pada menu layar publik (looping)</p></div>
+        <div class="card-body">
+          <% if (data && data.video_path) { %>
+            <video src="<%= data.video_path %>" controls autoplay muted loop class="video-preview"></video>
+          <% } else { %>
+            <div style="padding: 20px; text-align: center; color: #888; font-style: italic; border: 1px dashed #ccc; border-radius: 5px;">
+              Belum ada video yang diunggah. Placeholder video digunakan di tampilan publik.
+            </div>
+          <% } %>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+</body>
+</html>

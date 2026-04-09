@@ -1,0 +1,163 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+  <meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Detail Pembinaan – Admin Lapas</title>
+  <link rel="stylesheet" href="/css/admin.css">
+</head>
+<body>
+<div class="admin-wrapper">
+  <%- include('_sidebar') %>
+  <div class="main-content">
+    <div class="topbar">
+      <div class="topbar-title"><h2>📝 Detail Pentahapan Pembinaan</h2><p>Kelola detail jadwal & remisi WBP</p></div>
+      <div class="topbar-actions"><a href="/" target="_blank" class="btn-public">🌐 Lihat Publik</a></div>
+    </div>
+    <div class="content-area">
+      <% if (success) { %><div class="alert alert-success">✅ Data berhasil disimpan.</div><% } %>
+
+      <!-- Form Tambah -->
+      <div class="card">
+        <div class="card-header"><h3>➕ Tambah Detail</h3></div>
+        <div class="card-body">
+          <form method="POST" action="/admin/pembinaan-detail/add">
+            <div class="form-grid col-4" style="margin-bottom:12px;">
+              <div class="form-group">
+                <label>No. Registrasi</label>
+                <input type="text" name="no_reg" placeholder="cth: BI.15-PK/PD/2023" required>
+              </div>
+              <div class="form-group">
+                <label>Nama WBP</label>
+                <input type="text" name="nama_wbp" placeholder="Nama lengkap" required>
+              </div>
+              <div class="form-group">
+                <label>Tanggal 1/2</label>
+                <input type="text" name="tanggal1" placeholder="cth: 19 Feb 2020">
+              </div>
+              <div class="form-group">
+                <label>Tanggal 2/3</label>
+                <input type="text" name="tanggal2" placeholder="cth: 15 Oct 2020">
+              </div>
+              <div class="form-group">
+                <label>Tanggal</label>
+                <input type="text" name="tanggal3" placeholder="cth: 17 Oct 2020">
+              </div>
+              <div class="form-group">
+                <label>Tanggal Ekspirasi</label>
+                <input type="text" name="tanggal4" placeholder="cth: 28 Dec 2023">
+              </div>
+              <div class="form-group">
+                <label>Total Remisi</label>
+                <input type="text" name="total_remisi" placeholder="cth: 3 Bulan, 9 Hari">
+              </div>
+              <div class="form-group">
+                <label>Keterangan</label>
+                <select name="keterangan">
+                  <option value="HADIR">HADIR</option>
+                  <option value="TIDAK HADIR">TIDAK HADIR</option>
+                  <option value="IZIN">IZIN</option>
+                </select>
+              </div>
+            </div>
+            <button type="submit" class="btn btn-primary btn-sm">➕ Tambah</button>
+          </form>
+        </div>
+      </div>
+
+      <!-- Form Edit -->
+      <% if (edit) { %>
+      <div class="edit-panel">
+        <h4>✏️ Edit Detail (ID: <%= edit.id %>)</h4>
+        <form method="POST" action="/admin/pembinaan-detail/<%= edit.id %>/update">
+          <div class="form-grid col-4" style="margin-bottom:12px;">
+            <div class="form-group">
+              <label>No. Registrasi</label>
+              <input type="text" name="no_reg" value="<%= edit.no_reg %>" required>
+            </div>
+            <div class="form-group">
+              <label>Nama WBP</label>
+              <input type="text" name="nama_wbp" value="<%= edit.nama_wbp %>" required>
+            </div>
+            <div class="form-group">
+              <label>Tanggal 1/2</label>
+              <input type="text" name="tanggal1" value="<%= edit.tanggal1 || '' %>">
+            </div>
+            <div class="form-group">
+              <label>Tanggal 2/3</label>
+              <input type="text" name="tanggal2" value="<%= edit.tanggal2 || '' %>">
+            </div>
+            <div class="form-group">
+              <label>Tanggal</label>
+              <input type="text" name="tanggal3" value="<%= edit.tanggal3 || '' %>">
+            </div>
+            <div class="form-group">
+              <label>Tanggal Ekspirasi</label>
+              <input type="text" name="tanggal4" value="<%= edit.tanggal4 || '' %>">
+            </div>
+            <div class="form-group">
+              <label>Total Remisi</label>
+              <input type="text" name="total_remisi" value="<%= edit.total_remisi || '' %>">
+            </div>
+            <div class="form-group">
+              <label>Keterangan</label>
+              <select name="keterangan">
+                <% ['HADIR','TIDAK HADIR','IZIN'].forEach(k => { %>
+                <option value="<%= k %>" <%= edit.keterangan===k?'selected':'' %>><%= k %></option>
+                <% }) %>
+              </select>
+            </div>
+          </div>
+          <div style="display:flex;gap:8px;">
+            <button type="submit" class="btn btn-success btn-sm">💾 Simpan</button>
+            <a href="/admin/pembinaan-detail" class="btn btn-secondary btn-sm">✕ Batal</a>
+          </div>
+        </form>
+      </div>
+      <% } %>
+
+      <!-- Tabel -->
+      <div class="card">
+        <div class="card-header"><h3>Data Detail Pembinaan (<%= list.length %> entri)</h3></div>
+        <div class="card-body" style="padding:0;">
+          <div class="table-wrap">
+            <table class="admin-table">
+              <thead>
+                <tr>
+                  <th>#</th><th>No. Reg</th><th>Nama WBP</th>
+                  <th>Tgl 1/2</th><th>Tgl 2/3</th><th>Tgl</th><th>Ekspirasi</th>
+                  <th>Total Remisi</th><th>Ket.</th><th>Aksi</th>
+                </tr>
+              </thead>
+              <tbody>
+                <% list.forEach((item, i) => { %>
+                <tr>
+                  <td><%= i+1 %></td>
+                  <td><%= item.no_reg %></td>
+                  <td><%= item.nama_wbp %></td>
+                  <td><%= item.tanggal1||'-' %></td>
+                  <td><%= item.tanggal2||'-' %></td>
+                  <td><%= item.tanggal3||'-' %></td>
+                  <td><%= item.tanggal4||'-' %></td>
+                  <td><%= item.total_remisi||'-' %></td>
+                  <td><%= item.keterangan||'-' %></td>
+                  <td>
+                    <div class="actions">
+                      <a href="/admin/pembinaan-detail?edit=<%= item.id %>" class="btn btn-warning btn-xs">✏️</a>
+                      <form method="POST" action="/admin/pembinaan-detail/<%= item.id %>/delete" style="display:inline" onsubmit="return confirm('Hapus?')">
+                        <button class="btn btn-danger btn-xs">🗑</button>
+                      </form>
+                    </div>
+                  </td>
+                </tr>
+                <% }) %>
+                <% if (!list.length) { %><tr><td colspan="10" style="text-align:center;color:#aaa;padding:20px;">Belum ada data</td></tr><% } %>
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+</body>
+</html>

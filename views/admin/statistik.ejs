@@ -1,0 +1,70 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+  <meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Statistik – Admin Lapas</title>
+  <link rel="stylesheet" href="/css/admin.css">
+</head>
+<body>
+<div class="admin-wrapper">
+  <%- include('_sidebar') %>
+  <div class="main-content">
+    <div class="topbar">
+      <div class="topbar-title"><h2>📈 Statistik</h2><p>Data statistik penghuni lapas</p></div>
+      <div class="topbar-actions"><a href="/" target="_blank" class="btn-public">🌐 Lihat Publik</a></div>
+    </div>
+    <div class="content-area">
+      <% if (success) { %>
+      <div class="alert alert-success">✅ Data statistik berhasil diperbarui.</div>
+      <% } %>
+      <div class="card">
+        <div class="card-header"><h3>Edit Data Statistik</h3><p>Data ini ditampilkan di bagian header halaman publik</p></div>
+        <div class="card-body">
+          <form method="POST" action="/admin/statistik/update">
+            <div class="form-grid col-2" style="gap:16px;margin-bottom:16px;">
+              <div class="form-group">
+                <label>Total Penghuni</label>
+                <input type="text" name="total_penghuni" value="<%= data.total_penghuni %>" required>
+              </div>
+              <div class="form-group">
+                <label>Kapasitas</label>
+                <input type="text" name="kapasitas" value="<%= data.kapasitas %>" required>
+              </div>
+              <div class="form-group">
+                <label>Bebas Hari Ini (Orang)</label>
+                <input type="text" name="bebas_hari_ini" value="<%= data.bebas_hari_ini %>" required>
+              </div>
+              <div class="form-group">
+                <label>Tanggal (tampil di header)</label>
+                <input type="text" name="tanggal" value="<%= data.tanggal %>" placeholder="cth: Kamis, 14 September 2023" required>
+              </div>
+            </div>
+            <button type="submit" class="btn btn-primary">💾 Simpan Perubahan</button>
+          </form>
+        </div>
+      </div>
+      <div class="card">
+        <div class="card-header"><h3>Pratinjau</h3></div>
+        <div class="card-body">
+          <div style="display:flex;gap:12px;flex-wrap:wrap;">
+            <div style="background:#1a365d;color:#fff;padding:12px 20px;border-radius:5px;border:2px solid #fff;text-align:center;min-width:130px;">
+              <div style="font-size:11px;font-weight:bold;margin-bottom:4px;">Total Penghuni</div>
+              <div style="font-size:24px;font-weight:bold;"><%= data.total_penghuni %></div>
+            </div>
+            <div style="background:#1a365d;color:#fff;padding:12px 20px;border-radius:5px;border:2px solid #fff;text-align:center;min-width:130px;">
+              <div style="font-size:11px;font-weight:bold;margin-bottom:4px;">Kapasitas</div>
+              <div style="font-size:24px;font-weight:bold;"><%= data.kapasitas %></div>
+            </div>
+            <div style="background:#2563eb;color:#fff;padding:12px 20px;border-radius:5px;border:2px solid #fff;text-align:center;min-width:130px;">
+              <div style="font-size:11px;font-weight:bold;margin-bottom:4px;">Bebas Hari Ini</div>
+              <div style="font-size:24px;font-weight:bold;"><%= data.bebas_hari_ini %> Orang</div>
+            </div>
+          </div>
+          <p style="font-size:11px;color:#888;margin-top:12px;">Tanggal tampil: <strong><%= data.tanggal %></strong></p>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+</body>
+</html>

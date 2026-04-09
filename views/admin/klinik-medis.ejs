@@ -1,0 +1,122 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+  <meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Tenaga Medis – Admin Klinik</title>
+  <link rel="stylesheet" href="/css/admin.css">
+</head>
+<body>
+<div class="admin-wrapper">
+  <%- include('_sidebar') %>
+  <div class="main-content">
+    <div class="topbar">
+      <div class="topbar-title"><h2>🩺 Tenaga Medis</h2><p>Kelola data tenaga medis klinik</p></div>
+      <div class="topbar-actions"><a href="/klinik" target="_blank" class="btn-public">🌐 Lihat Klinik</a></div>
+    </div>
+    <div class="content-area">
+      <% if (success) { %><div class="alert alert-success">✅ Data berhasil disimpan.</div><% } %>
+
+      <div class="card">
+        <div class="card-header"><h3>➕ Tambah Tenaga Medis</h3></div>
+        <div class="card-body">
+          <form method="POST" action="/admin/klinik-medis/add">
+            <div class="form-grid col-4" style="margin-bottom:12px;">
+              <div class="form-group">
+                <label>Nama</label>
+                <input type="text" name="nama" placeholder="Nama lengkap" required>
+              </div>
+              <div class="form-group">
+                <label>Profesi</label>
+                <input type="text" name="profesi" placeholder="cth: Dokter, Perawat" required>
+              </div>
+              <div class="form-group">
+                <label>Status Tugas</label>
+                <select name="status_tugas" required>
+                  <option value="On Duty">On Duty</option>
+                  <option value="Office Hour">Office Hour</option>
+                  <option value="Cuti">Cuti</option>
+                </select>
+              </div>
+              <div class="form-group">
+                <label>Kontak</label>
+                <input type="text" name="kontak" placeholder="No. HP">
+              </div>
+            </div>
+            <button type="submit" class="btn btn-primary btn-sm">➕ Tambah</button>
+          </form>
+        </div>
+      </div>
+
+      <% if (edit) { %>
+      <div class="edit-panel">
+        <h4>✏️ Edit Tenaga Medis (ID: <%= edit.id %>)</h4>
+        <form method="POST" action="/admin/klinik-medis/<%= edit.id %>/update">
+          <div class="form-grid col-4" style="margin-bottom:12px;">
+            <div class="form-group">
+              <label>Nama</label>
+              <input type="text" name="nama" value="<%= edit.nama %>" required>
+            </div>
+            <div class="form-group">
+              <label>Profesi</label>
+              <input type="text" name="profesi" value="<%= edit.profesi %>" required>
+            </div>
+            <div class="form-group">
+              <label>Status Tugas</label>
+              <select name="status_tugas" required>
+                <option value="On Duty" <%= edit.status_tugas==='On Duty'?'selected':'' %>>On Duty</option>
+                <option value="Office Hour" <%= edit.status_tugas==='Office Hour'?'selected':'' %>>Office Hour</option>
+                <option value="Cuti" <%= edit.status_tugas==='Cuti'?'selected':'' %>>Cuti</option>
+              </select>
+            </div>
+            <div class="form-group">
+              <label>Kontak</label>
+              <input type="text" name="kontak" value="<%= edit.kontak %>">
+            </div>
+          </div>
+          <div style="display:flex;gap:8px;">
+            <button type="submit" class="btn btn-success btn-sm">💾 Simpan</button>
+            <a href="/admin/klinik-medis" class="btn btn-secondary btn-sm">✕ Batal</a>
+          </div>
+        </form>
+      </div>
+      <% } %>
+
+      <div class="card">
+        <div class="card-header"><h3>Daftar Tenaga Medis (<%= list.length %> data)</h3></div>
+        <div class="card-body" style="padding:0;">
+          <div class="table-wrap">
+            <table class="admin-table">
+              <thead>
+                <tr><th>#</th><th>Nama</th><th>Profesi</th><th>Status</th><th>Kontak</th><th>Aksi</th></tr>
+              </thead>
+              <tbody>
+                <% list.forEach((item, i) => { %>
+                <tr>
+                  <td><%= i+1 %></td>
+                  <td><%= item.nama %></td>
+                  <td><%= item.profesi %></td>
+                  <td><%= item.status_tugas %></td>
+                  <td><%= item.kontak %></td>
+                  <td>
+                    <div class="actions">
+                      <a href="/admin/klinik-medis?edit=<%= item.id %>" class="btn btn-warning btn-xs">✏️ Edit</a>
+                      <form method="POST" action="/admin/klinik-medis/<%= item.id %>/delete" style="display:inline" onsubmit="return confirm('Hapus data ini?')">
+                        <button type="submit" class="btn btn-danger btn-xs">🗑 Hapus</button>
+                      </form>
+                    </div>
+                  </td>
+                </tr>
+                <% }) %>
+                <% if (!list.length) { %>
+                <tr><td colspan="6" style="text-align:center;color:#aaa;padding:20px;">Belum ada data</td></tr>
+                <% } %>
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+</body>
+</html>

@@ -1,0 +1,23 @@
+{
+  "name": "keterbukaan-informasi-lapas",
+  "version": "1.0.0",
+  "description": "Sistem Keterbukaan Informasi Narapidana Lapas Narkotika",
+  "main": "server.js",
+  "scripts": {
+    "start": "node server.js",
+    "dev": "nodemon server.js"
+  },
+  "keywords": ["lapas", "narapidana", "informasi"],
+  "author": "",
+  "license": "ISC",
+  "dependencies": {
+    "express": "^4.18.2",
+    "ejs": "^3.1.9",
+    "express-session": "^1.17.3",
+    "bcryptjs": "^2.4.3",
+    "multer": "^1.4.5-lts.1"
+  },
+  "devDependencies": {
+    "nodemon": "^3.0.1"
+  }
+}

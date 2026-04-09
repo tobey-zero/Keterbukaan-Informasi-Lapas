@@ -1,0 +1,135 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+  <meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Jadwal Kontrol – Admin Klinik</title>
+  <link rel="stylesheet" href="/css/admin.css">
+</head>
+<body>
+<div class="admin-wrapper">
+  <%- include('_sidebar') %>
+  <div class="main-content">
+    <div class="topbar">
+      <div class="topbar-title"><h2>🔍 Jadwal Kontrol Kesehatan</h2><p>Kelola jadwal kontrol ke blok hunian</p></div>
+      <div class="topbar-actions"><a href="/klinik" target="_blank" class="btn-public">🌐 Lihat Klinik</a></div>
+    </div>
+    <div class="content-area">
+      <% if (success) { %><div class="alert alert-success">✅ Data berhasil disimpan.</div><% } %>
+
+      <div class="card">
+        <div class="card-header"><h3>➕ Tambah Jadwal Kontrol</h3></div>
+        <div class="card-body">
+          <form method="POST" action="/admin/klinik-kontrol/add">
+            <div class="form-grid col-3" style="margin-bottom:12px;">
+              <div class="form-group">
+                <label>Hari</label>
+                <select name="hari" required>
+                  <option value="Senin">Senin</option>
+                  <option value="Selasa">Selasa</option>
+                  <option value="Rabu">Rabu</option>
+                  <option value="Kamis">Kamis</option>
+                  <option value="Jumat">Jumat</option>
+                  <option value="Sabtu">Sabtu</option>
+                  <option value="Minggu">Minggu</option>
+                </select>
+              </div>
+              <div class="form-group">
+                <label>Waktu</label>
+                <input type="text" name="waktu" placeholder="cth: 09.00 WIB" required>
+              </div>
+              <div class="form-group">
+                <label>Lokasi / Blok</label>
+                <input type="text" name="lokasi_blok" placeholder="cth: Blok Lansia" required>
+              </div>
+              <div class="form-group">
+                <label>Petugas</label>
+                <input type="text" name="petugas" placeholder="Nama petugas" required>
+              </div>
+              <div class="form-group">
+                <label>Keterangan</label>
+                <input type="text" name="keterangan" placeholder="Keterangan tambahan">
+              </div>
+            </div>
+            <button type="submit" class="btn btn-primary btn-sm">➕ Tambah</button>
+          </form>
+        </div>
+      </div>
+
+      <% if (edit) { %>
+      <div class="edit-panel">
+        <h4>✏️ Edit Jadwal Kontrol (ID: <%= edit.id %>)</h4>
+        <form method="POST" action="/admin/klinik-kontrol/<%= edit.id %>/update">
+          <div class="form-grid col-3" style="margin-bottom:12px;">
+            <div class="form-group">
+              <label>Hari</label>
+              <select name="hari" required>
+                <% ['Senin','Selasa','Rabu','Kamis','Jumat','Sabtu','Minggu'].forEach(h => { %>
+                <option value="<%= h %>" <%= edit.hari===h?'selected':'' %>><%= h %></option>
+                <% }) %>
+              </select>
+            </div>
+            <div class="form-group">
+              <label>Waktu</label>
+              <input type="text" name="waktu" value="<%= edit.waktu %>" required>
+            </div>
+            <div class="form-group">
+              <label>Lokasi / Blok</label>
+              <input type="text" name="lokasi_blok" value="<%= edit.lokasi_blok %>" required>
+            </div>
+            <div class="form-group">
+              <label>Petugas</label>
+              <input type="text" name="petugas" value="<%= edit.petugas %>" required>
+            </div>
+            <div class="form-group">
+              <label>Keterangan</label>
+              <input type="text" name="keterangan" value="<%= edit.keterangan %>">
+            </div>
+          </div>
+          <div style="display:flex;gap:8px;">
+            <button type="submit" class="btn btn-success btn-sm">💾 Simpan</button>
+            <a href="/admin/klinik-kontrol" class="btn btn-secondary btn-sm">✕ Batal</a>
+          </div>
+        </form>
+      </div>
+      <% } %>
+
+      <div class="card">
+        <div class="card-header"><h3>Daftar Jadwal Kontrol (<%= list.length %> data)</h3></div>
+        <div class="card-body" style="padding:0;">
+          <div class="table-wrap">
+            <table class="admin-table">
+              <thead>
+                <tr><th>#</th><th>Hari</th><th>Waktu</th><th>Blok/Kamar</th><th>Petugas</th><th>Keterangan</th><th>Aksi</th></tr>
+              </thead>
+              <tbody>
+                <% list.forEach((item, i) => { %>
+                <tr>
+                  <td><%= i+1 %></td>
+                  <td><%= item.hari %></td>
+                  <td><%= item.waktu %></td>
+                  <td><%= item.lokasi_blok %></td>
+                  <td><%= item.petugas %></td>
+                  <td><%= item.keterangan %></td>
+                  <td>
+                    <div class="actions">
+                      <a href="/admin/klinik-kontrol?edit=<%= item.id %>" class="btn btn-warning btn-xs">✏️ Edit</a>
+                      <form method="POST" action="/admin/klinik-kontrol/<%= item.id %>/delete" style="display:inline" onsubmit="return confirm('Hapus data ini?')">
+                        <button type="submit" class="btn btn-danger btn-xs">🗑 Hapus</button>
+                      </form>
+                    </div>
+                  </td>
+                </tr>
+                <% }) %>
+                <% if (!list.length) { %>
+                <tr><td colspan="7" style="text-align:center;color:#aaa;padding:20px;">Belum ada data</td></tr>
+                <% } %>
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+</body>
+</html>

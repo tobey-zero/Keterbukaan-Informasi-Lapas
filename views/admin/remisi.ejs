@@ -1,0 +1,108 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+  <meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Besaran Remisi – Admin Lapas</title>
+  <link rel="stylesheet" href="/css/admin.css">
+</head>
+<body>
+<div class="admin-wrapper">
+  <%- include('_sidebar') %>
+  <div class="main-content">
+    <div class="topbar">
+      <div class="topbar-title"><h2>📋 Besaran Remisi</h2><p>Kelola data besaran remisi WBP</p></div>
+      <div class="topbar-actions"><a href="/" target="_blank" class="btn-public">🌐 Lihat Publik</a></div>
+    </div>
+    <div class="content-area">
+      <% if (success) { %><div class="alert alert-success">✅ Data berhasil disimpan.</div><% } %>
+
+      <!-- Form Tambah -->
+      <div class="card">
+        <div class="card-header"><h3>➕ Tambah Data Remisi</h3></div>
+        <div class="card-body">
+          <form method="POST" action="/admin/remisi/add">
+            <div class="form-grid col-3" style="margin-bottom:12px;">
+              <div class="form-group">
+                <label>Jenis Remisi</label>
+                <input type="text" name="jenis" placeholder="cth: REMISI UMUM" required>
+              </div>
+              <div class="form-group">
+                <label>Nama WBP</label>
+                <input type="text" name="nama" placeholder="Nama lengkap WBP" required>
+              </div>
+              <div class="form-group">
+                <label>Besaran</label>
+                <input type="text" name="besaran" placeholder="cth: 4 BULAN" required>
+              </div>
+            </div>
+            <button type="submit" class="btn btn-primary btn-sm">➕ Tambah</button>
+          </form>
+        </div>
+      </div>
+
+      <!-- Form Edit -->
+      <% if (edit) { %>
+      <div class="edit-panel">
+        <h4>✏️ Edit Data Remisi (ID: <%= edit.id %>)</h4>
+        <form method="POST" action="/admin/remisi/<%= edit.id %>/update">
+          <div class="form-grid col-3" style="margin-bottom:12px;">
+            <div class="form-group">
+              <label>Jenis Remisi</label>
+              <input type="text" name="jenis" value="<%= edit.jenis %>" required>
+            </div>
+            <div class="form-group">
+              <label>Nama WBP</label>
+              <input type="text" name="nama" value="<%= edit.nama %>" required>
+            </div>
+            <div class="form-group">
+              <label>Besaran</label>
+              <input type="text" name="besaran" value="<%= edit.besaran %>" required>
+            </div>
+          </div>
+          <div style="display:flex;gap:8px;">
+            <button type="submit" class="btn btn-success btn-sm">💾 Simpan</button>
+            <a href="/admin/remisi" class="btn btn-secondary btn-sm">✕ Batal</a>
+          </div>
+        </form>
+      </div>
+      <% } %>
+
+      <!-- Tabel -->
+      <div class="card">
+        <div class="card-header"><h3>Daftar Besaran Remisi (<%= list.length %> data)</h3></div>
+        <div class="card-body" style="padding:0;">
+          <div class="table-wrap">
+            <table class="admin-table">
+              <thead>
+                <tr><th>#</th><th>Jenis</th><th>Nama WBP</th><th>Besaran</th><th>Aksi</th></tr>
+              </thead>
+              <tbody>
+                <% list.forEach((item, i) => { %>
+                <tr>
+                  <td><%= i+1 %></td>
+                  <td><%= item.jenis %></td>
+                  <td><%= item.nama %></td>
+                  <td><strong><%= item.besaran %></strong></td>
+                  <td>
+                    <div class="actions">
+                      <a href="/admin/remisi?edit=<%= item.id %>" class="btn btn-warning btn-xs">✏️ Edit</a>
+                      <form method="POST" action="/admin/remisi/<%= item.id %>/delete" style="display:inline" onsubmit="return confirm('Hapus data ini?')">
+                        <button type="submit" class="btn btn-danger btn-xs">🗑 Hapus</button>
+                      </form>
+                    </div>
+                  </td>
+                </tr>
+                <% }) %>
+                <% if (!list.length) { %>
+                <tr><td colspan="5" style="text-align:center;color:#aaa;padding:20px;">Belum ada data</td></tr>
+                <% } %>
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+</body>
+</html>

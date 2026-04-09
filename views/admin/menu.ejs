@@ -1,0 +1,128 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+  <meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Menu Makan – Admin Lapas</title>
+  <link rel="stylesheet" href="/css/admin.css">
+</head>
+<body>
+<div class="admin-wrapper">
+  <%- include('_sidebar') %>
+  <div class="main-content">
+    <div class="topbar">
+      <div class="topbar-title"><h2>🍽 Menu Makan</h2><p>Kelola menu makan hari ini</p></div>
+      <div class="topbar-actions"><a href="/" target="_blank" class="btn-public">🌐 Lihat Publik</a></div>
+    </div>
+    <div class="content-area">
+      <% if (success) { %><div class="alert alert-success">✅ Data berhasil disimpan.</div><% } %>
+      <% if (error) { %><div class="alert alert-danger">❌ <%= error %></div><% } %>
+
+      <!-- Form Tambah -->
+      <div class="card">
+        <div class="card-header"><h3>➕ Tambah Menu</h3></div>
+        <div class="card-body">
+          <form method="POST" action="/admin/menu/add" enctype="multipart/form-data">
+            <div class="form-grid col-2" style="margin-bottom:12px;">
+              <div class="form-group">
+                <label>Waktu Makan</label>
+                <select name="waktu" required>
+                  <option value="">-- Pilih --</option>
+                  <option value="MAKAN PAGI">MAKAN PAGI</option>
+                  <option value="SNACK">SNACK</option>
+                  <option value="MAKAN SIANG">MAKAN SIANG</option>
+                  <option value="MAKAN SORE">MAKAN SORE</option>
+                </select>
+              </div>
+              <div class="form-group">
+                <label>Menu</label>
+                <input type="text" name="menu" placeholder="Deskripsi menu makanan" required>
+              </div>
+              <div class="form-group full">
+                <label>Foto Menu (opsional)</label>
+                <input type="file" name="photo" accept="image/*">
+                <small style="color:#888;">Format gambar apa pun didukung, akan ditampilkan ukuran tetap.</small>
+              </div>
+            </div>
+            <button type="submit" class="btn btn-primary btn-sm">➕ Tambah</button>
+          </form>
+        </div>
+      </div>
+
+      <!-- Form Edit -->
+      <% if (edit) { %>
+      <div class="edit-panel">
+        <h4>✏️ Edit Menu (ID: <%= edit.id %>)</h4>
+        <form method="POST" action="/admin/menu/<%= edit.id %>/update" enctype="multipart/form-data">
+          <div class="form-grid col-2" style="margin-bottom:12px;">
+            <div class="form-group">
+              <label>Waktu Makan</label>
+              <select name="waktu" required>
+                <% ['MAKAN PAGI','SNACK','MAKAN SIANG','MAKAN SORE'].forEach(w => { %>
+                <option value="<%= w %>" <%= edit.waktu===w?'selected':'' %>><%= w %></option>
+                <% }) %>
+              </select>
+            </div>
+            <div class="form-group">
+              <label>Menu</label>
+              <input type="text" name="menu" value="<%= edit.menu %>" required>
+            </div>
+            <div class="form-group full">
+              <label>Foto Menu (opsional, upload untuk mengganti)</label>
+              <input type="file" name="photo" accept="image/*">
+            </div>
+            <% if (edit.photo_path) { %>
+            <div class="form-group full">
+              <label>Foto Saat Ini</label>
+              <img src="<%= edit.photo_path %>" alt="Foto menu" class="admin-menu-photo-preview">
+            </div>
+            <% } %>
+          </div>
+          <div style="display:flex;gap:8px;">
+            <button type="submit" class="btn btn-success btn-sm">💾 Simpan</button>
+            <a href="/admin/menu" class="btn btn-secondary btn-sm">✕ Batal</a>
+          </div>
+        </form>
+      </div>
+      <% } %>
+
+      <!-- Tabel -->
+      <div class="card">
+        <div class="card-header"><h3>Daftar Menu (<%= list.length %> item)</h3></div>
+        <div class="card-body" style="padding:0;">
+          <div class="table-wrap">
+            <table class="admin-table">
+              <thead><tr><th>#</th><th>Foto</th><th>Waktu</th><th>Menu</th><th>Aksi</th></tr></thead>
+              <tbody>
+                <% list.forEach((item, i) => { %>
+                <tr>
+                  <td><%= i+1 %></td>
+                  <td>
+                    <% if (item.photo_path) { %>
+                      <img src="<%= item.photo_path %>" alt="Foto menu" class="admin-menu-photo-thumb">
+                    <% } else { %>
+                      <span style="color:#aaa;">-</span>
+                    <% } %>
+                  </td>
+                  <td><strong><%= item.waktu %></strong></td>
+                  <td><%= item.menu %></td>
+                  <td>
+                    <div class="actions">
+                      <a href="/admin/menu?edit=<%= item.id %>" class="btn btn-warning btn-xs">✏️ Edit</a>
+                      <form method="POST" action="/admin/menu/<%= item.id %>/delete" style="display:inline" onsubmit="return confirm('Hapus?')">
+                        <button class="btn btn-danger btn-xs">🗑 Hapus</button>
+                      </form>
+                    </div>
+                  </td>
+                </tr>
+                <% }) %>
+                <% if (!list.length) { %><tr><td colspan="5" style="text-align:center;color:#aaa;padding:20px;">Belum ada data</td></tr><% } %>
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+</body>
+</html>

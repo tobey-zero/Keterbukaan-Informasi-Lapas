@@ -1,0 +1,28 @@
+# Dependensi Node.js
+node_modules/
+npm-debug.log*
+
+# Database SQLite (Jangan simpan ini di Git kalau bukan template bawaan)
+data.db
+data.db-wal
+data.db-shm
+*.sqlite
+*.sqlite3
+*.db
+*.db3
+
+# Folder Upload Media (Video dan Foto Menu)
+public/uploads/menu/*
+public/uploads/video/*
+!public/uploads/menu/.gitkeep
+!public/uploads/video/.gitkeep
+
+# Output Script (Log & PID)
+app.log
+app.pid
+
+# IDE dan Sistem Operasi
+.vscode/
+.idea/
+.DS_Store
+Thumbs.db
