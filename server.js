@@ -141,10 +141,16 @@ function getPublicData() {
   }
 
   const pentahapanPembinaanDetail = db
-    .prepare(`SELECT no_reg AS noReg, nama_wbp AS namaWbp,
-                     tanggal1, tanggal2, tanggal3, tanggal4,
-                     total_remisi AS totalRemisi, keterangan
-              FROM pentahapan_pembinaan_detail ORDER BY nama_wbp COLLATE NOCASE ASC`)
+      .prepare(`SELECT d.no_reg AS noReg,
+        d.nama_wbp AS namaWbp,
+        d.tanggal1,
+        d.tanggal2,
+        d.tanggal4,
+        d.keterangan,
+        COALESCE(p.status_integrasi, '-') AS statusIntegrasi
+      FROM pentahapan_pembinaan_detail d
+      LEFT JOIN pentahapan_pembinaan p ON p.nama_wbp = d.nama_wbp
+      ORDER BY d.nama_wbp COLLATE NOCASE ASC`)
     .all();
 
   const jadwalKegiatan = db

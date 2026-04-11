@@ -116,45 +116,8 @@
 
         <!-- Kolom Kanan (8) -->
         <div class="right-column">
-            <!-- Panel Atas Kanan: Pentahapan Pembinaan -->
-            <div class="panel">
-                <div class="panel-header-with-date">
-                    <span class="panel-title">DAFTAR PENTAHAPAN PEMBINAAN</span>
-                </div>
-                <div class="panel-content">
-                    <table class="table-pembinaan">
-                        <thead>
-                            <tr>
-                                <th>NAMA WARGA BINAAN</th>
-                                <th>STATUS INTEGRASI</th>
-                                <th>NAMA WARGA BINAAN</th>
-                                <th>STATUS INTEGRASI</th>
-                            </tr>
-                        </thead>
-                        <tbody>
-                            <% pentahapanPembinaan.forEach(item=> { %>
-                                <tr>
-                                    <td>
-                                        <%= item.namaWbp %>
-                                    </td>
-                                    <td>
-                                        <%= item.statusIntegrasi %>
-                                    </td>
-                                    <td>
-                                        <%= item.namaWbp2 %>
-                                    </td>
-                                    <td>
-                                        <%= item.statusIntegrasi2 %>
-                                    </td>
-                                </tr>
-                                <% }) %>
-                        </tbody>
-                    </table>
-                </div>
-            </div>
-
-            <!-- Panel Tengah Kanan: Detail Pentahapan Pembinaan -->
-            <div class="panel">
+            <!-- Panel Atas Kanan: Detail Pentahapan Pembinaan -->
+            <div class="panel panel-pembinaan-detail">
                 <div class="panel-header-with-date"
                     style="padding: 10px 15px; font-weight: bold; font-size: 14px; background-color: #1e3a8a; color: white;">
                     <span class="panel-title">DETAIL PENTAHAPAN PEMBINAAN</span>
@@ -167,10 +130,9 @@
                                 <th>NAMA WARGA BINAAN</th>
                                 <th>TANGGAL 1/2</th>
                                 <th>TANGGAL 2/3</th>
-                                <th>TANGGAL</th>
                                 <th>TANGGAL EKSPIRASI</th>
-                                <th>TOTAL REMISI</th>
                                 <th>KETERANGAN PROGRAM PEMBINAAN</th>
+                                <th>STATUS INTEGRASI</th>
                             </tr>
                         </thead>
                         <tbody>
@@ -189,17 +151,12 @@
                                         <%= item.tanggal2 %>
                                     </td>
                                     <td>
-                                        <%= item.tanggal3 %>
-                                    </td>
-                                    <td>
                                         <%= item.tanggal4 %>
-                                    </td>
-                                    <td>
-                                        <%= item.totalRemisi %>
                                     </td>
                                     <td>
                                         <%= item.keterangan %>
                                     </td>
+                                    <td><%= item.statusIntegrasi %></td>
                                 </tr>
                                 <% }) %>
                         </tbody>

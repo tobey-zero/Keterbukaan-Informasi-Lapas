@@ -301,12 +301,20 @@ body.page-umum .left-column .panel {
     flex: 1;
 }
 
-body.page-umum .right-column > .panel {
-    flex: 1.25;
+body.page-umum .right-column > .panel:not(.bottom-panels) {
+    flex: 1 1 0;
+    max-height: none;
 }
 
-body.page-umum .bottom-panels {
-    flex: 1;
+body.page-umum .right-column > .panel.panel-pembinaan-detail {
+    flex: 1.7 1 0;
+    max-height: none;
+}
+
+body.page-umum .right-column > .bottom-panels {
+    flex: 1.3 1 0;
+    max-height: none;
+    min-height: 0;
 }
 
 body.page-umum .bottom-panels .sub-panel {
