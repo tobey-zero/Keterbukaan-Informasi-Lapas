@@ -293,5 +293,6 @@ seedIfEmpty('dokumentasi_video', () => {
 
 db.prepare('INSERT OR IGNORE INTO app_settings (key, value) VALUES (?, ?)').run('remisi_title', 'BESARAN REMISI');
 db.prepare('INSERT OR IGNORE INTO app_settings (key, value) VALUES (?, ?)').run('kata_bijak_text', 'KRISNA adalah sistem Keterbukaan Informasi Warga Binaan di Lapas Kelas I Medan.');
+db.prepare('INSERT OR IGNORE INTO app_settings (key, value) VALUES (?, ?)').run('menu_title', 'DAFTAR MENU MAKAN HARI INI');
 
 module.exports = db;

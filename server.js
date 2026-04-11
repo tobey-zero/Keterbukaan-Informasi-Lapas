@@ -116,6 +116,7 @@ function requireAccess(page) {
 function getPublicData() {
   const statistik = db.prepare('SELECT * FROM statistik WHERE id = 1').get();
   const remisiTitle = getAppSetting('remisi_title', 'BESARAN REMISI');
+  const menuTitle = getAppSetting('menu_title', 'DAFTAR MENU MAKAN HARI INI');
   const kataBijak = getAppSetting('kata_bijak_text', 'KRISNA adalah sistem Keterbukaan Informasi Warga Binaan di Lapas Kelas I Medan.');
 
   const besaranRemisi = db
@@ -158,6 +159,7 @@ function getPublicData() {
     bebasHariIni: statistik.bebas_hari_ini,
     tanggal: new Intl.DateTimeFormat('id-ID', { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' }).format(new Date()),
     remisiTitle,
+    menuTitle,
     kataBijak,
     besaranRemisi,
     menuMakan,
@@ -397,14 +399,27 @@ app.post('/admin/kata-bijak/update', requireAccess('kata-bijak'), (req, res) => 
 app.get('/admin/menu', requireAccess('menu'), (req, res) => {
   const list = db.prepare('SELECT * FROM menu_makan ORDER BY id').all();
   const edit = req.query.edit ? db.prepare('SELECT * FROM menu_makan WHERE id=?').get(Number(req.query.edit)) : null;
+  const menuTitle = getAppSetting('menu_title', 'DAFTAR MENU MAKAN HARI INI');
   res.render('admin/menu', {
     user: req.session.user,
     list,
     edit,
+    menuTitle,
     active: 'menu',
     success: req.query.success,
+    titleSuccess: req.query.titleSuccess,
     error: req.query.error
   });
+});
+
+app.post('/admin/menu/title/update', requireAccess('menu'), (req, res) => {
+  const nextTitle = (req.body.menu_title || '').trim() || 'DAFTAR MENU MAKAN HARI INI';
+  db.prepare(`
+    INSERT INTO app_settings (key, value)
+    VALUES (?, ?)
+    ON CONFLICT(key) DO UPDATE SET value=excluded.value
+  `).run('menu_title', nextTitle);
+  res.redirect('/admin/menu?titleSuccess=1');
 });
 
 app.post('/admin/menu/add', requireAccess('menu'), menuUpload.single('photo'), (req, res) => {

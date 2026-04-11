@@ -15,7 +15,21 @@
     </div>
     <div class="content-area">
       <% if (success) { %><div class="alert alert-success">✅ Data berhasil disimpan.</div><% } %>
+      <% if (titleSuccess) { %><div class="alert alert-success">✅ Judul menu berhasil diperbarui.</div><% } %>
       <% if (error) { %><div class="alert alert-danger">❌ <%= error %></div><% } %>
+
+      <div class="card">
+        <div class="card-header"><h3>📝 Judul Menu (Publik)</h3></div>
+        <div class="card-body">
+          <form method="POST" action="/admin/menu/title/update">
+            <div class="form-group" style="margin-bottom:12px;">
+              <label>Judul Panel Menu</label>
+              <input type="text" name="menu_title" value="<%= menuTitle %>" placeholder="Contoh: DAFTAR MENU MAKAN HARI INI" required>
+            </div>
+            <button type="submit" class="btn btn-primary btn-sm">💾 Simpan Judul</button>
+          </form>
+        </div>
+      </div>
 
       <!-- Form Tambah -->
       <div class="card">
