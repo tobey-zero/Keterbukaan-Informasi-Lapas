@@ -327,12 +327,43 @@ body.page-klinik {
     flex-direction: column;
 }
 
+body.page-klinik .header {
+    padding: 10px 20px;
+}
+
+body.page-klinik .header-info h2 {
+    font-size: 18px;
+}
+
+body.page-klinik .header-info h3 {
+    font-size: 15px;
+}
+
+body.page-klinik .header-info .address,
+body.page-klinik .header-info .contact {
+    font-size: 11px;
+}
+
+body.page-klinik .stat-item {
+    min-width: 130px;
+    padding: 7px 15px;
+}
+
+body.page-klinik .stat-label {
+    font-size: 11px;
+}
+
+body.page-klinik .stat-value {
+    font-size: 28px;
+}
+
 body.page-klinik .main-container {
     flex: 1;
     align-items: stretch;
     grid-template-columns: 1fr 1.9fr;
-    height: calc(100vh - 185px);
-    min-height: 560px;
+    height: calc(100vh - 220px);
+    min-height: 520px;
+    margin: 12px auto;
 }
 
 body.page-klinik .left-column,
@@ -381,14 +412,6 @@ body.page-klinik .clinic-bottom-panels {
     max-height: none;
 }
 
-body.page-klinik .panel-clinic-berobat {
-    flex: 1 1 0;
-}
-
-body.page-klinik .clinic-bottom-panels {
-    flex: 1 1 0;
-}
-
 body.page-klinik .panel-clinic-berobat .panel-content,
 body.page-klinik .clinic-bottom-panels .panel-content {
     overflow-y: auto;
@@ -416,7 +439,7 @@ body.page-klinik .clinic-summary-tile {
     background: #f8fafc;
     border: 1px solid #dbe3ee;
     border-radius: 8px;
-    padding: 12px;
+    padding: 16px;
     min-height: 92px;
 }
 
@@ -430,7 +453,7 @@ body.page-klinik .clinic-summary-tile-wide {
 }
 
 body.page-klinik .clinic-summary-tile-title {
-    font-size: 14px;
+    font-size: 16px;
     line-height: 1.2;
     color: #1a365d;
     font-weight: 800;
@@ -446,12 +469,31 @@ body.page-klinik .clinic-summary-tile-value {
 }
 
 body.page-klinik table {
-    font-size: 12px;
+    font-size: 16px;
 }
 
 body.page-klinik table th,
 body.page-klinik table td {
-    padding: 9px 10px;
+    padding: 10px 10px;
+}
+
+body.page-klinik .footer {
+    padding: 9px 20px;
+    margin-top: 8px;
+    font-size: 12px;
+}
+
+body.page-klinik .footer-running {
+    padding: 4px 0 8px;
+}
+
+body.page-klinik .footer-running-track {
+    font-size: 14px;
+}
+
+body.page-klinik .footer-bottom {
+    margin-top: 8px;
+    padding-top: 8px;
 }
 
 /* Table Styles */
