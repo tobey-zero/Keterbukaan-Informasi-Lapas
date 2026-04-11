@@ -19,7 +19,7 @@
       <span class="icon">🌐</span><span>Lihat Publik</span>
     </a>
 
-    <% if (['statistik','remisi','menu','video','pembinaan','pembinaan-detail','jadwal'].some(p => allowed.includes(p))) { %>
+    <% if (['statistik','remisi','kata-bijak','menu','video','pembinaan','pembinaan-detail','jadwal'].some(p => allowed.includes(p))) { %>
     <div class="nav-label">Kelola Data</div>
     <% } %>
 
@@ -32,6 +32,12 @@
     <% if (allowed.includes('remisi')) { %>
     <a href="/admin/remisi" class="nav-item <%= active==='remisi'?'active':'' %>">
       <span class="icon">📋</span><span>Besaran Remisi</span>
+    </a>
+    <% } %>
+
+    <% if (allowed.includes('kata-bijak')) { %>
+    <a href="/admin/kata-bijak" class="nav-item <%= active==='kata-bijak'?'active':'' %>">
+      <span class="icon">💬</span><span>Kata Bijak</span>
     </a>
     <% } %>
 

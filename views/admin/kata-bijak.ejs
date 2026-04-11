@@ -1,0 +1,37 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+  <meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Kata Bijak – Admin Lapas</title>
+  <link rel="stylesheet" href="/css/admin.css">
+</head>
+<body>
+<div class="admin-wrapper">
+  <%- include('_sidebar') %>
+  <div class="main-content">
+    <div class="topbar">
+      <div class="topbar-title"><h2>💬 Kata Bijak</h2><p>Kelola teks kata bijak di footer halaman publik</p></div>
+      <div class="topbar-actions"><a href="/" target="_blank" class="btn-public">🌐 Lihat Publik</a></div>
+    </div>
+    <div class="content-area">
+      <% if (success) { %>
+      <div class="alert alert-success">✅ Kata bijak berhasil diperbarui.</div>
+      <% } %>
+
+      <div class="card">
+        <div class="card-header"><h3>Edit Kata Bijak</h3><p>Teks ini tampil di bagian footer halaman publik</p></div>
+        <div class="card-body">
+          <form method="POST" action="/admin/kata-bijak/update">
+            <div class="form-group" style="margin-bottom:12px;">
+              <label>Isi Kata Bijak</label>
+              <textarea name="kata_bijak" rows="4" required><%= kataBijak %></textarea>
+            </div>
+            <button type="submit" class="btn btn-primary">💾 Simpan Perubahan</button>
+          </form>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+</body>
+</html>

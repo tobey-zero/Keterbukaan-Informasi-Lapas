@@ -487,6 +487,34 @@ table tbody tr:hover {
     margin: 5px 0;
 }
 
+.footer-running {
+    position: relative;
+    overflow: hidden;
+    white-space: nowrap;
+    padding: 2px 0 8px;
+}
+
+.footer-running-track {
+    display: inline-block;
+    padding-left: 100%;
+    animation: footerMarquee 36s linear infinite;
+    font-weight: bold;
+}
+
+.footer-running-track span {
+    display: inline-block;
+    padding-right: 40px;
+}
+
+@keyframes footerMarquee {
+    0% {
+        transform: translateX(0);
+    }
+    100% {
+        transform: translateX(-100%);
+    }
+}
+
 .footer-bottom {
     display: flex;
     justify-content: space-between;

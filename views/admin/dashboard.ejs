@@ -54,6 +54,7 @@
         <div class="card-body" style="display:grid;grid-template-columns:repeat(auto-fill,minmax(180px,1fr));gap:10px;">
           <% if(allowed.includes('statistik'))        { %><a href="/admin/statistik" class="btn btn-primary">📈 Statistik</a><% } %>
           <% if(allowed.includes('remisi'))           { %><a href="/admin/remisi"    class="btn btn-primary">📋 Besaran Remisi</a><% } %>
+          <% if(allowed.includes('kata-bijak'))       { %><a href="/admin/kata-bijak" class="btn btn-primary">💬 Kata Bijak</a><% } %>
           <% if(allowed.includes('menu'))             { %><a href="/admin/menu"      class="btn btn-success">🍽 Menu Makan</a><% } %>
           <% if(allowed.includes('pembinaan'))        { %><a href="/admin/pembinaan" class="btn btn-warning">👥 Pentahapan Pembinaan</a><% } %>
           <% if(allowed.includes('pembinaan-detail')) { %><a href="/admin/pembinaan-detail" class="btn btn-warning">📝 Detail Pembinaan</a><% } %>

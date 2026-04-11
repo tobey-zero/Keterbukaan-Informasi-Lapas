@@ -89,12 +89,12 @@ app.use(session({
 const ROLES = ['superadmin', 'registrasi', 'pembinaan', 'klinik', 'dapur', 'humas'];
 
 const roleAccess = {
-  superadmin: ['dashboard', 'statistik', 'remisi', 'menu', 'pembinaan', 'pembinaan-detail', 'jadwal', 'users', 'video', 'klinik-medis', 'klinik-berobat', 'klinik-oncall', 'klinik-kontrol', 'klinik-statistik'],
-  registrasi: ['dashboard', 'statistik', 'remisi'],
+  superadmin: ['dashboard', 'statistik', 'remisi', 'kata-bijak', 'menu', 'pembinaan', 'pembinaan-detail', 'jadwal', 'users', 'video', 'klinik-medis', 'klinik-berobat', 'klinik-oncall', 'klinik-kontrol', 'klinik-statistik'],
+  registrasi: ['dashboard', 'statistik', 'remisi', 'kata-bijak'],
   pembinaan: ['dashboard', 'pembinaan', 'pembinaan-detail', 'jadwal'],
   klinik: ['dashboard', 'klinik-medis', 'klinik-berobat', 'klinik-oncall', 'klinik-kontrol', 'klinik-statistik'],
   dapur: ['dashboard', 'menu'],
-  humas: ['dashboard', 'video'],
+  humas: ['dashboard', 'video', 'kata-bijak'],
 };
 
 // ─── Auth Middleware ──────────────────────────────────────────────────────────
@@ -116,6 +116,7 @@ function requireAccess(page) {
 function getPublicData() {
   const statistik = db.prepare('SELECT * FROM statistik WHERE id = 1').get();
   const remisiTitle = getAppSetting('remisi_title', 'BESARAN REMISI');
+  const kataBijak = getAppSetting('kata_bijak_text', 'KRISNA adalah sistem Keterbukaan Informasi Warga Binaan di Lapas Kelas I Medan.');
 
   const besaranRemisi = db
     .prepare('SELECT jenis, nama, besaran FROM besaran_remisi ORDER BY nama COLLATE NOCASE ASC')
@@ -157,6 +158,7 @@ function getPublicData() {
     bebasHariIni: statistik.bebas_hari_ini,
     tanggal: new Intl.DateTimeFormat('id-ID', { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' }).format(new Date()),
     remisiTitle,
+    kataBijak,
     besaranRemisi,
     menuMakan,
     pentahapanPembinaan,
@@ -368,6 +370,27 @@ app.post('/admin/remisi/:id/update', requireAccess('remisi'), (req, res) => {
 app.post('/admin/remisi/:id/delete', requireAccess('remisi'), (req, res) => {
   db.prepare('DELETE FROM besaran_remisi WHERE id=?').run(Number(req.params.id));
   res.redirect('/admin/remisi');
+});
+
+// ── Kata Bijak ────────────────────────────────────────────────────
+app.get('/admin/kata-bijak', requireAccess('kata-bijak'), (req, res) => {
+  const kataBijak = getAppSetting('kata_bijak_text', 'KRISNA adalah sistem Keterbukaan Informasi Warga Binaan di Lapas Kelas I Medan.');
+  res.render('admin/kata-bijak', {
+    user: req.session.user,
+    kataBijak,
+    active: 'kata-bijak',
+    success: req.query.success
+  });
+});
+
+app.post('/admin/kata-bijak/update', requireAccess('kata-bijak'), (req, res) => {
+  const nextText = (req.body.kata_bijak || '').trim() || 'KRISNA adalah sistem Keterbukaan Informasi Warga Binaan di Lapas Kelas I Medan.';
+  db.prepare(`
+    INSERT INTO app_settings (key, value)
+    VALUES (?, ?)
+    ON CONFLICT(key) DO UPDATE SET value=excluded.value
+  `).run('kata_bijak_text', nextText);
+  res.redirect('/admin/kata-bijak?success=1');
 });
 
 // ── Menu Makan ────────────────────────────────────────────────────

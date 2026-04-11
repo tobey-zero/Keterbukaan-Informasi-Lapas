@@ -297,13 +297,19 @@
 
     <!-- Footer -->
     <footer class="footer">
-        <!-- Kata Bijak-->
+        <!-- Kata Bijak Running Text -->
+        <div class="footer-running">
+            <div class="footer-running-track">
+                <span><h2><%= kataBijak %></h2></span>
+            </div>
+        </div>
+
+        <!-- Footer Bottom -->
         <div class="footer-bottom"
             style="display: flex; justify-content: space-between; align-items: center; text-align: left;">
             <p style="flex: 1; max-width: 60%;"><strong>KRISNA</strong> adalah sistem Keterbukaan Informasi Warga Binaan di
                 Lapas Kelas I Medan.</p>
-            <p style="text-align: right; flex: 1;">Keterbukaan Informasi Warga Binaan Lapas Kelas I Medan<br>
-                Copyright &copy; <%= new Date().getFullYear() %>, by Dimstatons. All Right Reserved</p>
+            <p style="text-align: right; flex: 1;">Copyright &copy; <%= new Date().getFullYear() %>, by Dimstatons. All Right Reserved</p>
         </div>
     </footer>
     <script src="/js/display-mode.js?v=<%= Date.now() %>"></script>
