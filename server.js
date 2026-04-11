@@ -149,7 +149,7 @@ function getPublicData() {
     totalPenghuni: statistik.total_penghuni,
     kapasitas: statistik.kapasitas,
     bebasHariIni: statistik.bebas_hari_ini,
-    tanggal: statistik.tanggal,
+    tanggal: new Intl.DateTimeFormat('id-ID', { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' }).format(new Date()),
     besaranRemisi,
     menuMakan,
     pentahapanPembinaan,

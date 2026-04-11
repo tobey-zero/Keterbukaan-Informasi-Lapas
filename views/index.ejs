@@ -7,7 +7,7 @@
     <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
     <meta http-equiv="Pragma" content="no-cache">
     <meta http-equiv="Expires" content="0">
-    <title>DEMO - Sistem Informasi Narapidana</title>
+    <title>KRISNA - Sistem Informasi Warga Binaan</title>
     <link rel="stylesheet" href="/css/style.css?v=<%= Date.now() %>">
 </head>
 
@@ -17,14 +17,15 @@
         <div class="header-content">
             <div class="logo-section">
                 <div class="logo">
-                    <h1>DEMO</h1>
-                    <p>SISTEM</p>
+                    <P>&nbsp;</P>
+                    <h1>KRISNA</h1>
+                    <P>&nbsp;</P>
                 </div>
                 <div class="header-info">
-                    <h2>KETERBUKAAN INFORMASI NARAPIDANA</h2>
-                    <h3>LAPAS RUTAN</h3>
-                    <p class="address">Alamat Lengkap Lapas Rutan</p>
-                    <p class="contact">Phone: (021) 1234567890 | Email: emaillapasrutan@gmail.com</p>
+                    <h2>KETERBUKAAN INFORMASI WARGA BINAAN</h2>
+                    <h3>LAPAS KELAS 1 MEDAN</h3>
+                    <p class="address">Jl. Lembaga Pemasyarakatan No.27, Tj. Gusta, Kec. Medan Helvetia, Kota Medan, Sumatera Utara 20125</p>
+                    <p class="contact">Phone: (061) 8452195 | Email: lapas1medan27@yahoo.co.id</p>
                 </div>
             </div>
             <div class="stats">
@@ -40,10 +41,17 @@
                         <%= kapasitas %>
                     </div>
                 </div>
-                <div class="stat-item bebas">
+                <div class="stat-item">
                     <div class="stat-label">Bebas Hari Ini</div>
                     <div class="stat-value">
                         <%= bebasHariIni %> Orang
+                    </div>
+                </div>
+                <!-- Tampilan tanggal hari ini -->
+                <div class="stat-item bebas">
+                    <div class="stat-label">Tanggal</div>
+                    <div class="stat-value">
+                        <%= tanggal %>
                     </div>
                 </div>
             </div>
@@ -63,7 +71,7 @@
                         <thead>
                             <tr>
                                 <th>JENIS REMISI</th>
-                                <th>NAMA WBP</th>
+                                <th>NAMA WARGA BINAAN</th>
                                 <th>BESARAN</th>
                             </tr>
                         </thead>
@@ -88,30 +96,20 @@
 
             <!-- Panel Bawah Kiri: Menu Makan -->
             <div class="panel">
-                <div class="panel-header red">DAFTAR MENU MAKAN HARI INI</div>
-                <div class="panel-content">
-                    <table class="table-menu">
-                        <tbody>
-                            <% menuMakan.forEach(item=> { %>
-                                <tr class="<%= item.waktu === 'SNACK' ? 'snack' : '' %>">
-                                    <td class="waktu">
-                                        <%= item.waktu %>
-                                    </td>
-                                    <td class="menu-photo-cell">
-                                        <% if (item.photoPath) { %>
-                                            <img src="<%= item.photoPath %>" alt="Foto menu" class="menu-photo">
-                                            <% } else { %>
-                                                <div class="menu-photo-placeholder">-</div>
-                                                <% } %>
-                                    </td>
-                                    <td class="menu">
-                                        <%= item.menu %>
-                                    </td>
-                                </tr>
-                                <% }) %>
-                        </tbody>
-                    </table>
-                </div>
+                <div class="panel-header red">DOKUMENTASI KEGIATAN PEMBINAAN HARIAN</div>
+                
+                    <div class="panel-content documentation"
+                        style="padding: 0; align-items: stretch; justify-content: stretch;">
+                        <% if (dokumentasiVideo) { %>
+                            <video src="<%= dokumentasiVideo %>" autoplay muted loop
+                                style="width: 100%; height: 100%; object-fit: cover; border-bottom-left-radius: 8px; border-bottom-right-radius: 8px; display: block;"></video>
+                            <% } else { %>
+                                <div class="photo-placeholder"
+                                    style="border-radius: 0 0 8px 8px; height: 100%; aspect-ratio: auto;">
+                                    <p>Video Dokumentasi Kegiatan</p>
+                                </div>
+                                <% } %>
+                    </div>
             </div>
 
         </div>
@@ -122,17 +120,14 @@
             <div class="panel">
                 <div class="panel-header-with-date">
                     <span class="panel-title">DAFTAR PENTAHAPAN PEMBINAAN</span>
-                    <span class="panel-date">
-                        <%= tanggal %>
-                    </span>
                 </div>
                 <div class="panel-content">
                     <table class="table-pembinaan">
                         <thead>
                             <tr>
-                                <th>NAMA WBP</th>
+                                <th>NAMA WARGA BINAAN</th>
                                 <th>STATUS INTEGRASI</th>
-                                <th>NAMA WBP</th>
+                                <th>NAMA WARGA BINAAN</th>
                                 <th>STATUS INTEGRASI</th>
                             </tr>
                         </thead>
@@ -169,13 +164,13 @@
                         <thead>
                             <tr>
                                 <th>NO. REG</th>
-                                <th>NAMA WBP</th>
+                                <th>NAMA WARGA BINAAN</th>
                                 <th>TANGGAL 1/2</th>
                                 <th>TANGGAL 2/3</th>
                                 <th>TANGGAL</th>
                                 <th>TANGGAL EKSPIRASI</th>
                                 <th>TOTAL REMISI</th>
-                                <th>KETERANGAN KEHADIRAN PEMBINAAN</th>
+                                <th>KETERANGAN PROGRAM PEMBINAAN</th>
                             </tr>
                         </thead>
                         <tbody>
@@ -216,17 +211,17 @@
             <div class="bottom-panels">
                 <!-- Sub-panel Kiri: Jadwal Kegiatan -->
                 <div class="panel sub-panel">
-                    <div class="panel-header red">JADWAL KEGIATAN PEMBINAAN</div>
+                    <div class="panel-header-with-date" style="background: linear-gradient(135deg, #1a365d 0%, #2563eb 100%);">
+                        <span class="panel-title">JADWAL KEGIATAN PEMBINAAN</span>
+                        <span class="panel-date" style="font-size: 14px; font-weight: bold; color: white;">SELASA</span>
+                    </div>
                     <div class="panel-content">
                         <table class="table-jadwal">
                             <thead>
                                 <tr>
-                                    <th colspan="3">SELASA</th>
-                                </tr>
-                                <tr>
                                     <th>KEGIATAN</th>
-                                    <th>HARI</th>
-                                    <th>WAKTU</th>
+                                    <th>TEMPAT KEGIATAN</th>
+                                    <th>PENANGGUNG JAWAB</th>
                                 </tr>
                             </thead>
                             <tbody>
@@ -271,19 +266,30 @@
 
                 <!-- Sub-panel Kanan: Dokumentasi -->
                 <div class="panel sub-panel">
-                    <div class="panel-header red">DOKUMENTASI KEGIATAN PEMBINAAN HARIAN</div>
-                    <div class="panel-content documentation"
-                        style="padding: 0; align-items: stretch; justify-content: stretch;">
-                        <% if (dokumentasiVideo) { %>
-                            <video src="<%= dokumentasiVideo %>" autoplay muted loop
-                                style="width: 100%; height: 100%; object-fit: cover; border-bottom-left-radius: 8px; border-bottom-right-radius: 8px; display: block;"></video>
-                            <% } else { %>
-                                <div class="photo-placeholder"
-                                    style="border-radius: 0 0 8px 8px; height: 100%; aspect-ratio: auto;">
-                                    <p>Video Dokumentasi Kegiatan</p>
-                                </div>
-                                <% } %>
-                    </div>
+                    <div class="panel-header red">DAFTAR MENU MAKAN HARI INI</div>
+                    <div class="panel-content">
+                    <table class="table-menu">
+                        <tbody>
+                            <% menuMakan.forEach(item=> { %>
+                                <tr class="<%= item.waktu === 'SNACK' ? 'snack' : '' %>">
+                                    <td class="waktu">
+                                        <%= item.waktu %>
+                                    </td>
+                                    <td class="menu-photo-cell">
+                                        <% if (item.photoPath) { %>
+                                            <img src="<%= item.photoPath %>" alt="Foto menu" class="menu-photo">
+                                            <% } else { %>
+                                                <div class="menu-photo-placeholder">-</div>
+                                                <% } %>
+                                    </td>
+                                    <td class="menu">
+                                        <%= item.menu %>
+                                    </td>
+                                </tr>
+                                <% }) %>
+                        </tbody>
+                    </table>
+                </div>
                 </div>
             </div>
         </div>
@@ -293,11 +299,10 @@
     <footer class="footer">
         <div class="footer-bottom"
             style="display: flex; justify-content: space-between; align-items: center; text-align: left;">
-            <p style="flex: 1; max-width: 60%;"><strong>DEMO</strong> adalah sistem Keterbukaan Informasi Narapidana di
-                Lapas Narkotika Kelas IIA Jakarta. Jika ingin mengetahui informasi terkait pengurusan Pembebasan
-                Bersyarat, Cuti Menjelang</p>
-            <p style="text-align: right; flex: 1;">Keterbukaan Informasi Narapidana Lapas Rutan<br>
-                Copyright &copy; 2023, by Dimstatons. All Right Reserved</p>
+            <p style="flex: 1; max-width: 60%;"><strong>KRISNA</strong> adalah sistem Keterbukaan Informasi Warga Binaan di
+                Lapas Kelas I Medan.</p>
+            <p style="text-align: right; flex: 1;">Keterbukaan Informasi Warga Binaan Lapas Kelas I Medan<br>
+                Copyright &copy; <%= new Date().getFullYear() %>, by Dimstatons. All Right Reserved</p>
         </div>
     </footer>
     <script src="/js/display-mode.js?v=<%= Date.now() %>"></script>

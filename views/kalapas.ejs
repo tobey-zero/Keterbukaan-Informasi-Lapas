@@ -129,12 +129,13 @@
         <div class="header-content">
             <div class="logo-section">
                 <div class="logo">
-                    <h1>DEMO</h1>
-                    <p>KALAPAS</p>
+                    <P>&nbsp;</P>
+                    <h1>KRISNA</h1>
+                    <P>&nbsp;</P>
                 </div>
                 <div class="header-info">
                     <h2>DASHBOARD PIMPINAN – KETERBUKAAN INFORMASI LAPAS</h2>
-                    <h3>RINGKASAN OPERASIONAL & KESEHATAN WBP</h3>
+                    <h3>RINGKASAN OPERASIONAL & KESEHATAN WARGA BINAAN</h3>
                     <p class="address">Lapas Rutan | Informasi Strategis untuk Kepala Lapas</p>
                     <p class="contact">
                         <%= tanggal %>
@@ -173,7 +174,7 @@
                 </div>
             </div>
             <div class="kpi-card warn">
-                <div class="kpi-card-label">WBP BEROBAT</div>
+                <div class="kpi-card-label">WARGA BINAAN BEROBAT</div>
                 <div class="kpi-card-value">
                     <%= clinicSummary.totalWbpBerobat %>
                 </div>
@@ -195,7 +196,7 @@
                 <div class="kpi-card-value">
                     <%= clinicSummary.totalTenagaMedis %>
                 </div>
-                <div class="kpi-card-sub">Blok Lansia: <%= clinicSummary.blokLansia %> WBP</div>
+                <div class="kpi-card-sub">Blok Lansia: <%= clinicSummary.blokLansia %> WARGA BINAAN</div>
             </div>
         </div>
     </header>
@@ -206,13 +207,13 @@
         <!-- Kolom 1: Remisi + Jadwal Kegiatan -->
         <div class="kalapas-col">
             <div class="panel">
-                <div class="panel-header red">BESARAN REMISI WBP</div>
+                <div class="panel-header red">BESARAN REMISI WARGA BINAAN</div>
                 <div class="panel-content">
                     <table>
                         <thead>
                             <tr>
                                 <th>JENIS</th>
-                                <th>NAMA WBP</th>
+                                <th>NAMA WARGA BINAAN</th>
                                 <th>BESARAN</th>
                             </tr>
                         </thead>
@@ -235,7 +236,10 @@
                 </div>
             </div>
             <div class="panel">
-                <div class="panel-header red">JADWAL KEGIATAN PEMBINAAN</div>
+                <div class="panel-header-with-date" style="background: linear-gradient(135deg, #1a365d 0%, #2563eb 100%);">
+                    <span class="panel-title">JADWAL KEGIATAN PEMBINAAN</span>
+                    <span class="panel-date" style="font-size: 14px; font-weight: bold; color: white;">SELASA</span>
+                </div>
                 <div class="panel-content">
                     <table class="table-jadwal">
                         <thead>
@@ -269,7 +273,7 @@
         <div class="kalapas-col">
             <div class="panel">
                 <div class="panel-header-with-date">
-                    <span class="panel-title">WBP BEROBAT (TERKINI)</span>
+                    <span class="panel-title">WARGA BINAAN BEROBAT (TERKINI)</span>
                     <span class="panel-date">
                         <%= tanggal %>
                     </span>
@@ -279,7 +283,7 @@
                         <thead>
                             <tr>
                                 <th>NO REG</th>
-                                <th>NAMA WBP</th>
+                                <th>NAMA WARGA BINAAN</th>
                                 <th>DIAGNOSA</th>
                                 <th>BLOK</th>
                                 <th>STATUS</th>
@@ -326,9 +330,9 @@
                     <table class="table-pembinaan">
                         <thead>
                             <tr>
-                                <th>NAMA WBP</th>
+                                <th>NAMA WARGA BINAAN</th>
                                 <th>STATUS INTEGRASI</th>
-                                <th>NAMA WBP</th>
+                                <th>NAMA WARGA BINAAN</th>
                                 <th>STATUS INTEGRASI</th>
                             </tr>
                         </thead>
@@ -463,7 +467,7 @@
             <p style="flex:1; max-width:60%;"><strong>DEMO</strong> - Dashboard Pimpinan berisi indikator strategis
                 operasional dan kesehatan WBP.</p>
             <p style="text-align:right; flex:1;">Dashboard Pimpinan Lapas Rutan<br>
-                Copyright &copy; 2023, by Dimstatons. All Right Reserved</p>
+                Copyright &copy; <%= new Date().getFullYear() %>, by Dimstatons. All Right Reserved</p>
         </div>
     </footer>
     <script src="/js/display-mode.js?v=<%= Date.now() %>"></script>
