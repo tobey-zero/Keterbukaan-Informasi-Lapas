@@ -65,6 +65,11 @@ function removeUploadedFile(photoPath) {
   }
 }
 
+function getAppSetting(settingKey, fallbackValue = '') {
+  const row = db.prepare('SELECT value FROM app_settings WHERE key = ?').get(settingKey);
+  return row?.value || fallbackValue;
+}
+
 // ─── Template Engine ──────────────────────────────────────────────────────────
 app.set('view engine', 'ejs');
 app.set('views', path.join(__dirname, 'views'));
@@ -110,6 +115,7 @@ function requireAccess(page) {
 // ─── Helper: baca semua data publik dari SQLite ───────────────────────────────
 function getPublicData() {
   const statistik = db.prepare('SELECT * FROM statistik WHERE id = 1').get();
+  const remisiTitle = getAppSetting('remisi_title', 'BESARAN REMISI');
 
   const besaranRemisi = db
     .prepare('SELECT jenis, nama, besaran FROM besaran_remisi ORDER BY nama COLLATE NOCASE ASC')
@@ -150,6 +156,7 @@ function getPublicData() {
     kapasitas: statistik.kapasitas,
     bebasHariIni: statistik.bebas_hari_ini,
     tanggal: new Intl.DateTimeFormat('id-ID', { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' }).format(new Date()),
+    remisiTitle,
     besaranRemisi,
     menuMakan,
     pentahapanPembinaan,
@@ -322,7 +329,26 @@ app.post('/admin/statistik/update', requireAccess('statistik'), (req, res) => {
 app.get('/admin/remisi', requireAccess('remisi'), (req, res) => {
   const list = db.prepare('SELECT * FROM besaran_remisi ORDER BY id').all();
   const edit = req.query.edit ? db.prepare('SELECT * FROM besaran_remisi WHERE id=?').get(Number(req.query.edit)) : null;
-  res.render('admin/remisi', { user: req.session.user, list, edit, active: 'remisi', success: req.query.success });
+  const remisiTitle = getAppSetting('remisi_title', 'BESARAN REMISI');
+  res.render('admin/remisi', {
+    user: req.session.user,
+    list,
+    edit,
+    remisiTitle,
+    active: 'remisi',
+    success: req.query.success,
+    titleSuccess: req.query.titleSuccess
+  });
+});
+
+app.post('/admin/remisi/title/update', requireAccess('remisi'), (req, res) => {
+  const nextTitle = (req.body.remisi_title || '').trim() || 'BESARAN REMISI';
+  db.prepare(`
+    INSERT INTO app_settings (key, value)
+    VALUES (?, ?)
+    ON CONFLICT(key) DO UPDATE SET value=excluded.value
+  `).run('remisi_title', nextTitle);
+  res.redirect('/admin/remisi?titleSuccess=1');
 });
 
 app.post('/admin/remisi/add', requireAccess('remisi'), (req, res) => {

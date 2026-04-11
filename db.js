@@ -118,6 +118,11 @@ db.exec(`
     id INTEGER PRIMARY KEY,
     video_path TEXT
   );
+
+  CREATE TABLE IF NOT EXISTS app_settings (
+    key TEXT PRIMARY KEY,
+    value TEXT NOT NULL DEFAULT ''
+  );
 `);
 
 const menuColumns = db.prepare("PRAGMA table_info('menu_makan')").all();
@@ -285,5 +290,7 @@ seedIfEmpty('clinic_statistik', () => {
 seedIfEmpty('dokumentasi_video', () => {
   db.prepare('INSERT INTO dokumentasi_video (id, video_path) VALUES (1, NULL)').run();
 });
+
+db.prepare('INSERT OR IGNORE INTO app_settings (key, value) VALUES (?, ?)').run('remisi_title', 'BESARAN REMISI');
 
 module.exports = db;

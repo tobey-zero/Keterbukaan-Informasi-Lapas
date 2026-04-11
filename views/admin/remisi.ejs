@@ -15,6 +15,20 @@
     </div>
     <div class="content-area">
       <% if (success) { %><div class="alert alert-success">✅ Data berhasil disimpan.</div><% } %>
+      <% if (titleSuccess) { %><div class="alert alert-success">✅ Judul remisi berhasil diperbarui.</div><% } %>
+
+      <div class="card">
+        <div class="card-header"><h3>📝 Judul Remisi (Publik)</h3></div>
+        <div class="card-body">
+          <form method="POST" action="/admin/remisi/title/update">
+            <div class="form-group" style="margin-bottom:12px;">
+              <label>Judul Panel Remisi</label>
+              <input type="text" name="remisi_title" value="<%= remisiTitle %>" placeholder="Contoh: BESARAN REMISI WARGA BINAAN" required>
+            </div>
+            <button type="submit" class="btn btn-primary btn-sm">💾 Simpan Judul</button>
+          </form>
+        </div>
+      </div>
 
       <!-- Form Tambah -->
       <div class="card">
