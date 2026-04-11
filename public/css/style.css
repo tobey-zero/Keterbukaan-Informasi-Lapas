@@ -445,6 +445,15 @@ body.page-klinik .clinic-summary-tile-value {
     font-weight: 800;
 }
 
+body.page-klinik table {
+    font-size: 12px;
+}
+
+body.page-klinik table th,
+body.page-klinik table td {
+    padding: 9px 10px;
+}
+
 /* Table Styles */
 table {
     width: 100%;

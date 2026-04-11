@@ -8,6 +8,15 @@ const db = require('./db');
 
 const app = express();
 const PORT = 3000;
+const DB_FILE_PATH = path.join(__dirname, 'data.db');
+
+function getPublicDataVersion() {
+  try {
+    return fs.statSync(DB_FILE_PATH).mtimeMs;
+  } catch {
+    return Date.now();
+  }
+}
 
 const MENU_UPLOAD_DIR = path.join(__dirname, 'public', 'uploads', 'menu');
 if (!fs.existsSync(MENU_UPLOAD_DIR)) {
@@ -277,6 +286,11 @@ app.get('/klinik', (req, res) => {
 
 app.get('/kalapas', (req, res) => {
   res.render('kalapas', { ...getKalapasData(), activePage: 'kalapas' });
+});
+
+app.get('/api/public-data-version', (_req, res) => {
+  res.set('Cache-Control', 'no-store, no-cache, must-revalidate, private');
+  res.json({ version: getPublicDataVersion() });
 });
 
 // ═══════════════════════════════════════════════════════════════════

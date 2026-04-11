@@ -11,6 +11,8 @@
     var scrollRunners = [];
     var resizeTimer;
     var refreshTimerId;
+    var dataVersionTimerId;
+    var latestDataVersion = null;
 
     function wrapBodyContent() {
         if (document.querySelector('.' + SHELL_CLASS)) {
@@ -177,6 +179,49 @@
         shell.style.top = top + 'px';
     }
 
+    function fetchPublicDataVersion() {
+        return fetch('/api/public-data-version?_=' + Date.now(), { cache: 'no-store' })
+            .then(function (response) {
+                if (!response.ok) return null;
+                return response.json();
+            })
+            .then(function (payload) {
+                if (!payload || typeof payload.version !== 'number') return null;
+                return payload.version;
+            })
+            .catch(function () {
+                return null;
+            });
+    }
+
+    function startDataVersionWatcher() {
+        fetchPublicDataVersion().then(function (version) {
+            if (version !== null) {
+                latestDataVersion = version;
+            }
+        });
+
+        dataVersionTimerId = setInterval(function () {
+            if (document.hidden) return;
+
+            fetchPublicDataVersion().then(function (version) {
+                if (version === null) return;
+
+                if (latestDataVersion === null) {
+                    latestDataVersion = version;
+                    return;
+                }
+
+                if (version > latestDataVersion) {
+                    window.location.reload();
+                    return;
+                }
+
+                latestDataVersion = version;
+            });
+        }, 8000);
+    }
+
     function initializeDisplayMode() {
         if (initialized) return;
         initialized = true;
@@ -185,6 +230,7 @@
         wrapBodyContent();
         prepareTables();
         fitToScreen();
+        startDataVersionWatcher();
 
         window.addEventListener('resize', function () {
             clearTimeout(resizeTimer);
