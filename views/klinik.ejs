@@ -9,7 +9,7 @@
     <title>DEMO - Tampilan Klinik</title>
     <link rel="stylesheet" href="/css/style.css?v=<%= Date.now() %>">
 </head>
-<body>
+<body class="page-klinik">
     <header class="header">
         <div class="header-content">
             <div class="logo-section">
@@ -45,7 +45,7 @@
 
     <div class="main-container">
         <div class="left-column">
-            <div class="panel">
+            <div class="panel panel-clinic-medis">
                 <div class="panel-header red">TENAGA MEDIS</div>
                 <div class="panel-content">
                     <table>
@@ -69,29 +69,29 @@
                 </div>
             </div>
 
-            <div class="panel">
+            <div class="panel panel-clinic-summary">
                 <div class="panel-header red">RINGKASAN KESEHATAN WARGA BINAAN</div>
-                <div class="panel-content">
-                    <div class="kpi-grid">
-                        <div class="kpi-item full">
-                            <div class="kpi-label">Warga Binaan Berobat</div>
-                            <div class="kpi-value"><%= clinicSummary.totalWbpBerobat %></div>
+                <div class="panel-content clinic-summary-content">
+                    <div class="clinic-summary-tiles">
+                        <div class="clinic-summary-tile clinic-summary-tile-highlight">
+                            <div class="clinic-summary-tile-title">WARGA BINAAN BEROBAT</div>
+                            <div class="clinic-summary-tile-value"><%= clinicSummary.totalWbpBerobat %></div>
                         </div>
-                        <div class="kpi-item">
-                            <div class="kpi-label">Warga Binaan Rawat Jalan</div>
-                            <div class="kpi-value"><%= clinicSummary.rawatJalan %></div>
+                        <div class="clinic-summary-tile">
+                            <div class="clinic-summary-tile-title">WARGA BINAAN RAWAT JALAN</div>
+                            <div class="clinic-summary-tile-value"><%= clinicSummary.rawatJalan %></div>
                         </div>
-                        <div class="kpi-item">
-                            <div class="kpi-label">Warga Binaan Rawat Inap Aktif</div>
-                            <div class="kpi-value"><%= clinicSummary.rawatInapAktif %></div>
+                        <div class="clinic-summary-tile">
+                            <div class="clinic-summary-tile-title">WARGA BINAAN RAWAT INAP AKTIF</div>
+                            <div class="clinic-summary-tile-value"><%= clinicSummary.rawatInapAktif %></div>
                         </div>
-                        <div class="kpi-item full">
-                            <div class="kpi-label">Warga Binaan di Blok Lansia</div>
-                            <div class="kpi-value"><%= clinicSummary.blokLansia %></div>
+                        <div class="clinic-summary-tile">
+                            <div class="clinic-summary-tile-title">WARGA BINAAN DI BLOK LANSIA</div>
+                            <div class="clinic-summary-tile-value"><%= clinicSummary.blokLansia %></div>
                         </div>
-                        <div class="kpi-item full">
-                            <div class="kpi-label">Warga Binaan Penyakit Kronis (TB, Paru, HIV, lainnya)</div>
-                            <div class="kpi-value"><%= clinicSummary.totalKronis %></div>
+                        <div class="clinic-summary-tile clinic-summary-tile-wide">
+                            <div class="clinic-summary-tile-title">WARGA BINAAN PENYAKIT KRONIS (TB, PARU, HIV, LAINNYA)</div>
+                            <div class="clinic-summary-tile-value"><%= clinicSummary.totalKronis %></div>
                         </div>
                     </div>
                 </div>
@@ -99,7 +99,7 @@
         </div>
 
         <div class="right-column">
-            <div class="panel">
+            <div class="panel panel-clinic-berobat">
                 <div class="panel-header-with-date">
                     <span class="panel-title">WARGA BINAAN BEROBAT</span>
                     <span class="panel-date">Update Harian</span>
@@ -132,7 +132,7 @@
                 </div>
             </div>
 
-            <div class="bottom-panels">
+            <div class="bottom-panels clinic-bottom-panels">
                 <div class="panel sub-panel">
                     <div class="panel-header red">JADWAL ON CALL PETUGAS</div>
                     <div class="panel-content">
@@ -189,6 +189,11 @@
     </div>
 
     <footer class="footer">
+        <div class="footer-running">
+            <div class="footer-running-track">
+                <span><%= kataBijak %></span>
+            </div>
+        </div>
         <div class="footer-bottom" style="display: flex; justify-content: space-between; align-items: center; text-align: left;">
             <p style="flex: 1; max-width: 60%;"><strong>KRISNA</strong> - Tampilan Klinik untuk keterbukaan informasi layanan kesehatan Warga Binaan.</p>
             <p style="text-align: right; flex: 1;">Keterbukaan Informasi Warga Binaan Lapas Kelas I Medan<br>

@@ -321,6 +321,130 @@ body.page-umum .bottom-panels .sub-panel {
     min-height: 0;
 }
 
+body.page-klinik {
+    min-height: 100vh;
+    display: flex;
+    flex-direction: column;
+}
+
+body.page-klinik .main-container {
+    flex: 1;
+    align-items: stretch;
+    grid-template-columns: 1fr 1.9fr;
+    height: calc(100vh - 185px);
+    min-height: 560px;
+}
+
+body.page-klinik .left-column,
+body.page-klinik .right-column {
+    height: 100%;
+}
+
+body.page-klinik .left-column .panel {
+    flex: 1 1 0;
+}
+
+body.page-klinik .panel-clinic-medis {
+    flex: 0.95 1 0;
+}
+
+body.page-klinik .panel-clinic-summary {
+    flex: 1.2 1 0;
+}
+
+body.page-klinik .right-column > .panel.panel-clinic-berobat:not(.bottom-panels) {
+    flex: 65 1 0;
+    max-height: none;
+    overflow: hidden;
+}
+
+body.page-klinik .right-column > .panel.panel-clinic-berobat:not(.bottom-panels) .panel-content {
+    overflow-y: auto;
+}
+
+body.page-klinik .right-column > .bottom-panels.clinic-bottom-panels {
+    flex: 35 1 0;
+    max-height: none;
+}
+
+body.page-klinik .right-column {
+    display: flex;
+    flex-direction: column;
+    gap: 15px;
+    min-height: 0;
+    height: 100%;
+}
+
+body.page-klinik .panel-clinic-berobat,
+body.page-klinik .clinic-bottom-panels {
+    min-height: 0;
+    max-height: none;
+}
+
+body.page-klinik .panel-clinic-berobat {
+    flex: 1 1 0;
+}
+
+body.page-klinik .clinic-bottom-panels {
+    flex: 1 1 0;
+}
+
+body.page-klinik .panel-clinic-berobat .panel-content,
+body.page-klinik .clinic-bottom-panels .panel-content {
+    overflow-y: auto;
+}
+
+body.page-klinik .clinic-bottom-panels {
+    grid-template-columns: 1fr 1fr;
+}
+
+body.page-klinik .clinic-bottom-panels .sub-panel {
+    min-height: 0;
+}
+
+body.page-klinik .panel-clinic-summary .clinic-summary-content {
+    padding: 10px;
+}
+
+body.page-klinik .clinic-summary-tiles {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 8px;
+}
+
+body.page-klinik .clinic-summary-tile {
+    background: #f8fafc;
+    border: 1px solid #dbe3ee;
+    border-radius: 8px;
+    padding: 12px;
+    min-height: 92px;
+}
+
+body.page-klinik .clinic-summary-tile-highlight {
+    background: linear-gradient(135deg, #eef4ff 0%, #e2ecff 100%);
+    border-color: #bfdbfe;
+}
+
+body.page-klinik .clinic-summary-tile-wide {
+    grid-column: 1 / -1;
+}
+
+body.page-klinik .clinic-summary-tile-title {
+    font-size: 14px;
+    line-height: 1.2;
+    color: #1a365d;
+    font-weight: 800;
+    letter-spacing: 0.2px;
+}
+
+body.page-klinik .clinic-summary-tile-value {
+    margin-top: 10px;
+    font-size: 38px;
+    line-height: 1;
+    color: #1a365d;
+    font-weight: 800;
+}
+
 /* Table Styles */
 table {
     width: 100%;

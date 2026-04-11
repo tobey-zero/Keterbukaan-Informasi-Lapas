@@ -271,7 +271,8 @@ app.get('/', (req, res) => {
 });
 
 app.get('/klinik', (req, res) => {
-  res.render('klinik', { ...getClinicData(), activePage: 'klinik' });
+  const kataBijak = getAppSetting('kata_bijak_text', 'KRISNA adalah sistem Keterbukaan Informasi Warga Binaan di Lapas Kelas I Medan.');
+  res.render('klinik', { ...getClinicData(), kataBijak, activePage: 'klinik' });
 });
 
 app.get('/kalapas', (req, res) => {
