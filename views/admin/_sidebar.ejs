@@ -1,6 +1,6 @@
 <aside class="sidebar">
   <div class="sidebar-brand">
-    <h1>🏛 LAPAS<br>NARKOTIKA</h1>
+    <h1>🏛 LAPAS KELAS 1 MEDAN</h1>
     <p>Panel Administrasi</p>
   </div>
   <div class="sidebar-user">
@@ -19,7 +19,7 @@
       <span class="icon">🌐</span><span>Lihat Publik</span>
     </a>
 
-    <% if (['statistik','remisi','kata-bijak','menu','video','pembinaan','pembinaan-detail','jadwal','razia','strapsel','tu-umum','kamar-blok','papan-isi'].some(p => allowed.includes(p))) { %>
+    <% if (['statistik','remisi','kata-bijak','menu','video','jadwal','razia','strapsel','tu-umum','kamar-blok','papan-isi'].some(p => allowed.includes(p))) { %>
     <div class="nav-label">Kelola Data</div>
     <% } %>
 
@@ -50,18 +50,6 @@
     <% if (allowed.includes('video')) { %>
     <a href="/admin/video" class="nav-item <%= typeof active !== 'undefined' && active==='video' ? 'active' : '' %>">
       <span class="icon">🎥</span><span>Video Dokumentasi</span>
-    </a>
-    <% } %>
-
-    <% if (allowed.includes('pembinaan')) { %>
-    <a href="/admin/pembinaan" class="nav-item <%= active==='pembinaan'?'active':'' %>">
-      <span class="icon">👥</span><span>Pentahapan Pembinaan</span>
-    </a>
-    <% } %>
-
-    <% if (allowed.includes('pembinaan-detail')) { %>
-    <a href="/admin/pembinaan-detail" class="nav-item <%= active==='pembinaan-detail'?'active':'' %>">
-      <span class="icon">📝</span><span>Detail Pembinaan</span>
     </a>
     <% } %>
 

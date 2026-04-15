@@ -27,16 +27,6 @@
           <div class="stat-card-value"><%= stats.menu %></div>
           <div class="stat-card-sub">item menu hari ini</div>
         </div>
-        <div class="stat-card orange">
-          <div class="stat-card-label">Pentahapan Pembinaan</div>
-          <div class="stat-card-value"><%= stats.pembinaan %></div>
-          <div class="stat-card-sub">data WBP</div>
-        </div>
-        <div class="stat-card purple">
-          <div class="stat-card-label">Detail Pembinaan</div>
-          <div class="stat-card-value"><%= stats.detail %></div>
-          <div class="stat-card-sub">entri detail</div>
-        </div>
         <div class="stat-card teal">
           <div class="stat-card-label">Jadwal Kegiatan</div>
           <div class="stat-card-value"><%= stats.jadwal %></div>
@@ -86,8 +76,6 @@
           <% if(allowed.includes('remisi'))           { %><a href="/admin/remisi"    class="btn btn-primary">📋 Besaran Remisi</a><% } %>
           <% if(allowed.includes('kata-bijak'))       { %><a href="/admin/kata-bijak" class="btn btn-primary">💬 Kata Bijak</a><% } %>
           <% if(allowed.includes('menu'))             { %><a href="/admin/menu"      class="btn btn-success">🍽 Menu Makan</a><% } %>
-          <% if(allowed.includes('pembinaan'))        { %><a href="/admin/pembinaan" class="btn btn-warning">👥 Pentahapan Pembinaan</a><% } %>
-          <% if(allowed.includes('pembinaan-detail')) { %><a href="/admin/pembinaan-detail" class="btn btn-warning">📝 Detail Pembinaan</a><% } %>
           <% if(allowed.includes('jadwal'))           { %><a href="/admin/jadwal"    class="btn btn-secondary">📅 Jadwal Kegiatan</a><% } %>
           <% if(allowed.includes('razia'))            { %><a href="/admin/razia"    class="btn btn-danger">🚨 Razia</a><% } %>
           <% if(allowed.includes('strapsel'))         { %><a href="/admin/strapsel" class="btn btn-secondary">🛡️ Strapsel</a><% } %>

@@ -21,7 +21,11 @@
         <div class="card-header"><h3><%= editBlock ? '✏️ Edit Blok' : '➕ Tambah Blok' %></h3></div>
         <div class="card-body">
           <form method="POST" action="<%= editBlock ? '/admin/kamar-blok/block/' + editBlock.id + '/update' : '/admin/kamar-blok/block/add' %>">
-            <div class="form-grid" style="grid-template-columns: 1fr auto; gap:10px; align-items:end;">
+            <div class="form-grid" style="grid-template-columns: 1fr 1fr auto; gap:10px; align-items:end;">
+              <div class="form-group">
+                <label>Gedung</label>
+                <input type="text" name="gedung" required value="<%= editBlock ? editBlock.gedung : '' %>" placeholder="Contoh: Gedung 1">
+              </div>
               <div class="form-group">
                 <label>Nama Blok</label>
                 <input type="text" name="nama_block" required value="<%= editBlock ? editBlock.nama_block : '' %>" placeholder="Contoh: Blok A">
@@ -45,7 +49,7 @@
                 <select name="block_id" required>
                   <option value="">-- Pilih Blok --</option>
                   <% blocks.forEach(block => { %>
-                    <option value="<%= block.id %>" <%= editRoom && Number(editRoom.block_id) === Number(block.id) ? 'selected' : '' %>><%= block.nama_block %></option>
+                    <option value="<%= block.id %>" <%= editRoom && Number(editRoom.block_id) === Number(block.id) ? 'selected' : '' %>><%= block.gedung %> - <%= block.nama_block %></option>
                   <% }) %>
                 </select>
               </div>
@@ -66,11 +70,12 @@
         <div class="card-body" style="padding:0;">
           <div class="table-wrap">
             <table class="admin-table">
-              <thead><tr><th>#</th><th>Nama Blok</th><th>Aksi</th></tr></thead>
+              <thead><tr><th>#</th><th>Gedung</th><th>Nama Blok</th><th>Aksi</th></tr></thead>
               <tbody>
                 <% blocks.forEach((block, i) => { %>
                 <tr>
                   <td><%= i+1 %></td>
+                  <td><%= block.gedung %></td>
                   <td><%= block.nama_block %></td>
                   <td>
                     <div class="actions">
@@ -82,7 +87,7 @@
                   </td>
                 </tr>
                 <% }) %>
-                <% if (!blocks.length) { %><tr><td colspan="3" style="text-align:center;color:#aaa;padding:20px;">Belum ada data blok</td></tr><% } %>
+                <% if (!blocks.length) { %><tr><td colspan="4" style="text-align:center;color:#aaa;padding:20px;">Belum ada data blok</td></tr><% } %>
               </tbody>
             </table>
           </div>
@@ -94,11 +99,12 @@
         <div class="card-body" style="padding:0;">
           <div class="table-wrap">
             <table class="admin-table">
-              <thead><tr><th>#</th><th>Blok</th><th>Kamar</th><th>Jumlah Penghuni</th><th>Kapasitas</th><th>Okupansi</th><th>Aksi</th></tr></thead>
+              <thead><tr><th>#</th><th>Gedung</th><th>Blok</th><th>Kamar</th><th>Jumlah Penghuni</th><th>Kapasitas</th><th>Okupansi</th><th>Aksi</th></tr></thead>
               <tbody>
                 <% rooms.forEach((room, i) => { const penghuni = Number(room.jumlah_penghuni) || 0; const kapasitas = Number(room.kapasitas) || 0; const okupansi = kapasitas > 0 ? ((penghuni / kapasitas) * 100).toFixed(1) + '%' : '-'; %>
                 <tr>
                   <td><%= i+1 %></td>
+                  <td><%= room.gedung %></td>
                   <td><%= room.nama_block %></td>
                   <td><%= room.nama_kamar %></td>
                   <td><%= penghuni %></td>
@@ -114,7 +120,7 @@
                   </td>
                 </tr>
                 <% }) %>
-                <% if (!rooms.length) { %><tr><td colspan="7" style="text-align:center;color:#aaa;padding:20px;">Belum ada data kamar</td></tr><% } %>
+                <% if (!rooms.length) { %><tr><td colspan="8" style="text-align:center;color:#aaa;padding:20px;">Belum ada data kamar</td></tr><% } %>
               </tbody>
             </table>
           </div>

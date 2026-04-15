@@ -172,6 +172,7 @@ db.exec(`
 
   CREATE TABLE IF NOT EXISTS housing_blocks (
     id INTEGER PRIMARY KEY AUTOINCREMENT,
+    gedung TEXT NOT NULL DEFAULT '',
     nama_block TEXT NOT NULL UNIQUE
   );
 
@@ -228,6 +229,15 @@ if (!strapselColumnNames.includes('dokumentasi_path')) db.exec('ALTER TABLE stra
 const housingRoomColumns = db.prepare("PRAGMA table_info('housing_rooms')").all();
 const housingRoomColumnNames = housingRoomColumns.map(col => col.name);
 if (!housingRoomColumnNames.includes('kapasitas')) db.exec('ALTER TABLE housing_rooms ADD COLUMN kapasitas INTEGER NOT NULL DEFAULT 0');
+
+const housingBlockColumns = db.prepare("PRAGMA table_info('housing_blocks')").all();
+const housingBlockColumnNames = housingBlockColumns.map(col => col.name);
+if (!housingBlockColumnNames.includes('gedung')) db.exec("ALTER TABLE housing_blocks ADD COLUMN gedung TEXT NOT NULL DEFAULT ''");
+
+db.exec(`
+  UPDATE housing_blocks
+  SET gedung = COALESCE(NULLIF(TRIM(gedung), ''), 'Gedung 1')
+`);
 
 const jadwalColumns = db.prepare("PRAGMA table_info('jadwal_kegiatan')").all();
 const jadwalColumnNames = jadwalColumns.map(col => col.name);
@@ -497,9 +507,13 @@ seedIfEmpty('tu_umum_barang', () => {
 });
 
 seedIfEmpty('housing_blocks', () => {
-  const insertBlock = db.prepare('INSERT INTO housing_blocks (nama_block) VALUES (?)');
-  const blockRows = ['Blok A', 'Blok B', 'Blok C'];
-  blockRows.forEach(name => insertBlock.run(name));
+  const insertBlock = db.prepare('INSERT INTO housing_blocks (gedung, nama_block) VALUES (?, ?)');
+  const blockRows = [
+    ['Gedung 1', 'Blok A'],
+    ['Gedung 1', 'Blok B'],
+    ['Gedung 2', 'Blok C'],
+  ];
+  blockRows.forEach(row => insertBlock.run(...row));
 
   const blocks = db.prepare('SELECT id, nama_block FROM housing_blocks').all();
   const blockMap = Object.fromEntries(blocks.map(b => [b.nama_block, b.id]));

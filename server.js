@@ -145,9 +145,9 @@ app.use(session({
 const ROLES = ['superadmin', 'registrasi', 'pembinaan', 'klinik', 'dapur', 'humas'];
 
 const roleAccess = {
-  superadmin: ['dashboard', 'statistik', 'remisi', 'kata-bijak', 'menu', 'pembinaan', 'pembinaan-detail', 'jadwal', 'razia', 'strapsel', 'tu-umum', 'kamar-blok', 'papan-isi', 'users', 'video', 'klinik-medis', 'klinik-berobat', 'klinik-oncall', 'klinik-kontrol', 'klinik-statistik'],
+  superadmin: ['dashboard', 'statistik', 'remisi', 'kata-bijak', 'menu', 'jadwal', 'razia', 'strapsel', 'tu-umum', 'kamar-blok', 'papan-isi', 'users', 'video', 'klinik-medis', 'klinik-berobat', 'klinik-oncall', 'klinik-kontrol', 'klinik-statistik'],
   registrasi: ['dashboard', 'statistik', 'remisi', 'kata-bijak'],
-  pembinaan: ['dashboard', 'pembinaan', 'pembinaan-detail', 'jadwal', 'razia', 'strapsel', 'kamar-blok', 'papan-isi'],
+  pembinaan: ['dashboard', 'jadwal', 'razia', 'strapsel', 'kamar-blok', 'papan-isi'],
   klinik: ['dashboard', 'klinik-medis', 'klinik-berobat', 'klinik-oncall', 'klinik-kontrol', 'klinik-statistik'],
   dapur: ['dashboard', 'menu'],
   humas: ['dashboard', 'video', 'kata-bijak'],
@@ -353,7 +353,7 @@ function getTuUmumData() {
 
 function getHousingData() {
   const blocks = db
-    .prepare('SELECT id, nama_block AS namaBlock FROM housing_blocks ORDER BY nama_block COLLATE NOCASE ASC')
+    .prepare('SELECT id, gedung, nama_block AS namaBlock FROM housing_blocks ORDER BY gedung COLLATE NOCASE ASC, nama_block COLLATE NOCASE ASC')
     .all();
 
   const rooms = db
@@ -363,10 +363,11 @@ function getHousingData() {
       r.nama_kamar AS namaKamar,
       r.jumlah_penghuni AS jumlahPenghuni,
       r.kapasitas,
+      b.gedung,
       b.nama_block AS namaBlock
     FROM housing_rooms r
     INNER JOIN housing_blocks b ON b.id = r.block_id
-    ORDER BY b.nama_block COLLATE NOCASE ASC, r.nama_kamar COLLATE NOCASE ASC`)
+    ORDER BY b.gedung COLLATE NOCASE ASC, b.nama_block COLLATE NOCASE ASC, r.nama_kamar COLLATE NOCASE ASC`)
     .all();
 
   const groupedBlocks = blocks.map(block => {
@@ -706,6 +707,7 @@ app.get('/kalapas/table/kamar-blok', (req, res) => {
     const kapasitas = Number(item.kapasitas) || 0;
     const okupansi = kapasitas > 0 ? `${((jumlahPenghuni / kapasitas) * 100).toFixed(1)}%` : '-';
     return [
+      item.gedung || '-',
       item.namaBlock || '-',
       item.namaKamar || '-',
       String(jumlahPenghuni),
@@ -718,7 +720,7 @@ app.get('/kalapas/table/kamar-blok', (req, res) => {
     pageTitle: 'Informasi Kamar/Blok',
     sectionTitle: 'INFORMASI KAMAR/BLOK',
     subtitle: `Total blok: ${housing.housingSummary.totalBlocks} | Total kamar: ${housing.housingSummary.totalKamar}`,
-    columns: ['BLOK', 'KAMAR', 'JUMLAH PENGHUNI', 'KAPASITAS', 'OKUPANSI'],
+    columns: ['GEDUNG', 'BLOK', 'KAMAR', 'JUMLAH PENGHUNI', 'KAPASITAS', 'OKUPANSI'],
     rows,
     backUrl: '/kalapas'
   });
@@ -1260,12 +1262,12 @@ app.post('/admin/tu-umum/:id/delete', requireAccess('tu-umum'), (req, res) => {
 
 // ── Kamar/Blok ──────────────────────────────────────────────────
 app.get('/admin/kamar-blok', requireAccess('kamar-blok'), (req, res) => {
-  const blocks = db.prepare('SELECT * FROM housing_blocks ORDER BY nama_block COLLATE NOCASE ASC').all();
+  const blocks = db.prepare('SELECT * FROM housing_blocks ORDER BY gedung COLLATE NOCASE ASC, nama_block COLLATE NOCASE ASC').all();
   const rooms = db.prepare(`
-    SELECT r.*, b.nama_block
+    SELECT r.*, b.gedung, b.nama_block
     FROM housing_rooms r
     INNER JOIN housing_blocks b ON b.id = r.block_id
-    ORDER BY b.nama_block COLLATE NOCASE ASC, r.nama_kamar COLLATE NOCASE ASC
+    ORDER BY b.gedung COLLATE NOCASE ASC, b.nama_block COLLATE NOCASE ASC, r.nama_kamar COLLATE NOCASE ASC
   `).all();
   const editBlock = req.query.editBlock ? db.prepare('SELECT * FROM housing_blocks WHERE id=?').get(Number(req.query.editBlock)) : null;
   const editRoom = req.query.editRoom ? db.prepare('SELECT * FROM housing_rooms WHERE id=?').get(Number(req.query.editRoom)) : null;
@@ -1273,10 +1275,11 @@ app.get('/admin/kamar-blok', requireAccess('kamar-blok'), (req, res) => {
 });
 
 app.post('/admin/kamar-blok/block/add', requireAccess('kamar-blok'), (req, res) => {
+  const gedung = (req.body.gedung || '').trim();
   const namaBlock = (req.body.nama_block || '').trim();
-  if (!namaBlock) return res.redirect('/admin/kamar-blok?error=Nama+blok+wajib+diisi');
+  if (!gedung || !namaBlock) return res.redirect('/admin/kamar-blok?error=Gedung+dan+nama+blok+wajib+diisi');
   try {
-    db.prepare('INSERT INTO housing_blocks (nama_block) VALUES (?)').run(namaBlock);
+    db.prepare('INSERT INTO housing_blocks (gedung, nama_block) VALUES (?, ?)').run(gedung, namaBlock);
     res.redirect('/admin/kamar-blok?success=1');
   } catch {
     res.redirect('/admin/kamar-blok?error=Nama+blok+sudah+ada');
@@ -1284,10 +1287,11 @@ app.post('/admin/kamar-blok/block/add', requireAccess('kamar-blok'), (req, res) 
 });
 
 app.post('/admin/kamar-blok/block/:id/update', requireAccess('kamar-blok'), (req, res) => {
+  const gedung = (req.body.gedung || '').trim();
   const namaBlock = (req.body.nama_block || '').trim();
-  if (!namaBlock) return res.redirect('/admin/kamar-blok?error=Nama+blok+wajib+diisi');
+  if (!gedung || !namaBlock) return res.redirect('/admin/kamar-blok?error=Gedung+dan+nama+blok+wajib+diisi');
   try {
-    db.prepare('UPDATE housing_blocks SET nama_block=? WHERE id=?').run(namaBlock, Number(req.params.id));
+    db.prepare('UPDATE housing_blocks SET gedung=?, nama_block=? WHERE id=?').run(gedung, namaBlock, Number(req.params.id));
     res.redirect('/admin/kamar-blok?success=1');
   } catch {
     res.redirect('/admin/kamar-blok?error=Nama+blok+sudah+ada');
