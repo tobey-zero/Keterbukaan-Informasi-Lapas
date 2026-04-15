@@ -18,6 +18,46 @@
       <% if (success) { %><div class="alert alert-success">✅ Data berhasil disimpan.</div><% } %>
 
       <div class="card">
+        <div class="card-header"><h3><%= editRegistrasi ? '✏️ Edit Registrasi Hunian' : '➕ Tambah Registrasi Hunian' %></h3></div>
+        <div class="card-body">
+          <form method="POST" action="<%= editRegistrasi ? '/admin/papan-isi/registrasi/' + editRegistrasi.id + '/update' : '/admin/papan-isi/registrasi/add' %>">
+            <div class="form-grid col-4" style="margin-bottom:12px;">
+              <div class="form-group"><label>No</label><input type="number" min="1" name="no_urut" required value="<%= editRegistrasi ? editRegistrasi.no_urut : '' %>" placeholder="1 / 2"></div>
+              <div class="form-group"><label>Blok</label><input type="text" name="blok" required value="<%= editRegistrasi ? editRegistrasi.blok : '' %>" placeholder="A / B"></div>
+              <div class="form-group"><label>Registrasi</label><input type="text" name="registrasi" required value="<%= editRegistrasi ? editRegistrasi.registrasi : '' %>" placeholder="A.I / B.I"></div>
+              <div class="form-group"><label>WNI Isi</label><input type="number" min="0" name="wni_isi" required value="<%= editRegistrasi ? editRegistrasi.wni_isi : 0 %>"></div>
+              <div class="form-group"><label>WNI Tambah</label><input type="number" min="0" name="wni_tambah" required value="<%= editRegistrasi ? editRegistrasi.wni_tambah : 0 %>"></div>
+              <div class="form-group"><label>WNI Kurang</label><input type="number" min="0" name="wni_kurang" required value="<%= editRegistrasi ? editRegistrasi.wni_kurang : 0 %>"></div>
+              <div class="form-group"><label>WNA Isi</label><input type="number" min="0" name="wna_isi" required value="<%= editRegistrasi ? editRegistrasi.wna_isi : 0 %>"></div>
+              <div class="form-group"><label>WNA Tambah</label><input type="number" min="0" name="wna_tambah" required value="<%= editRegistrasi ? editRegistrasi.wna_tambah : 0 %>"></div>
+              <div class="form-group"><label>WNA Kurang</label><input type="number" min="0" name="wna_kurang" required value="<%= editRegistrasi ? editRegistrasi.wna_kurang : 0 %>"></div>
+            </div>
+            <div style="display:flex;gap:8px;">
+              <button type="submit" class="btn <%= editRegistrasi ? 'btn-success' : 'btn-primary' %> btn-sm"><%= editRegistrasi ? '💾 Simpan' : '➕ Tambah' %></button>
+              <% if (editRegistrasi) { %><a href="/admin/papan-isi" class="btn btn-secondary btn-sm">✕ Batal</a><% } %>
+            </div>
+          </form>
+        </div>
+      </div>
+
+      <div class="card">
+        <div class="card-header"><h3><%= editWnaNegara ? '✏️ Edit WNA per Negara' : '➕ Tambah WNA per Negara' %></h3></div>
+        <div class="card-body">
+          <form method="POST" action="<%= editWnaNegara ? '/admin/papan-isi/wna-negara/' + editWnaNegara.id + '/update' : '/admin/papan-isi/wna-negara/add' %>">
+            <div class="form-grid col-3" style="margin-bottom:12px;">
+              <div class="form-group"><label>Nama Negara</label><input type="text" name="nama_negara" required value="<%= editWnaNegara ? editWnaNegara.nama_negara : '' %>" placeholder="Contoh: MALAYSIA"></div>
+              <div class="form-group"><label>Jumlah</label><input type="number" min="0" name="jumlah" required value="<%= editWnaNegara ? editWnaNegara.jumlah : 0 %>"></div>
+              <div class="form-group"><label>Keterangan</label><input type="text" name="keterangan" value="<%= editWnaNegara ? (editWnaNegara.keterangan || '') : '' %>" placeholder="Opsional"></div>
+            </div>
+            <div style="display:flex;gap:8px;">
+              <button type="submit" class="btn <%= editWnaNegara ? 'btn-success' : 'btn-primary' %> btn-sm"><%= editWnaNegara ? '💾 Simpan' : '➕ Tambah' %></button>
+              <% if (editWnaNegara) { %><a href="/admin/papan-isi" class="btn btn-secondary btn-sm">✕ Batal</a><% } %>
+            </div>
+          </form>
+        </div>
+      </div>
+
+      <div class="card">
         <div class="card-header"><h3><%= editPidana ? '✏️ Edit Data Jenis Tindak Pidana' : '➕ Tambah Jenis Tindak Pidana' %></h3></div>
         <div class="card-body">
           <form method="POST" action="<%= editPidana ? '/admin/papan-isi/pidana/' + editPidana.id + '/update' : '/admin/papan-isi/pidana/add' %>">
@@ -74,6 +114,80 @@
               <% if (editAgama) { %><a href="/admin/papan-isi" class="btn btn-secondary btn-sm">✕ Batal</a><% } %>
             </div>
           </form>
+        </div>
+      </div>
+
+      <div class="card">
+        <div class="card-header"><h3>Registrasi Hunian (Format Papan Fisik)</h3></div>
+        <div class="card-body" style="padding:0;">
+          <div class="table-wrap">
+            <table class="admin-table">
+              <thead>
+                <tr>
+                  <th>#</th><th>No</th><th>Blok</th><th>Registrasi</th>
+                  <th>WNI Isi</th><th>WNI Tambah</th><th>WNI Kurang</th>
+                  <th>WNA Isi</th><th>WNA Tambah</th><th>WNA Kurang</th>
+                  <th>Jumlah</th><th>Aksi</th>
+                </tr>
+              </thead>
+              <tbody>
+                <% registrasiHunian.forEach((item, i) => { const jumlah = (Number(item.wniIsi)||0) + (Number(item.wniTambah)||0) + (Number(item.wnaIsi)||0) + (Number(item.wnaTambah)||0); %>
+                <tr>
+                  <td><%= i + 1 %></td>
+                  <td><%= item.noUrut %></td>
+                  <td><%= item.blok %></td>
+                  <td><%= item.registrasi %></td>
+                  <td><%= item.wniIsi %></td>
+                  <td><%= item.wniTambah %></td>
+                  <td><%= item.wniKurang %></td>
+                  <td><%= item.wnaIsi %></td>
+                  <td><%= item.wnaTambah %></td>
+                  <td><%= item.wnaKurang %></td>
+                  <td><%= jumlah %></td>
+                  <td>
+                    <div class="actions">
+                      <a href="/admin/papan-isi?editRegistrasi=<%= item.id %>" class="btn btn-warning btn-xs">✏️ Edit</a>
+                      <form method="POST" action="/admin/papan-isi/registrasi/<%= item.id %>/delete" style="display:inline" onsubmit="return confirm('Hapus data ini?')">
+                        <button class="btn btn-danger btn-xs">🗑 Hapus</button>
+                      </form>
+                    </div>
+                  </td>
+                </tr>
+                <% }) %>
+                <% if (!registrasiHunian.length) { %><tr><td colspan="12" style="text-align:center;color:#aaa;padding:20px;">Belum ada data</td></tr><% } %>
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+
+      <div class="card">
+        <div class="card-header"><h3>WNA per Negara</h3></div>
+        <div class="card-body" style="padding:0;">
+          <div class="table-wrap">
+            <table class="admin-table">
+              <thead><tr><th>#</th><th>Nama Negara</th><th>Jumlah</th><th>Keterangan</th><th>Aksi</th></tr></thead>
+              <tbody>
+                <% wnaNegara.forEach((item, i) => { %>
+                <tr>
+                  <td><%= i+1 %></td>
+                  <td><%= item.namaNegara %></td>
+                  <td><%= item.jumlah %></td>
+                  <td><%= item.keterangan || '-' %></td>
+                  <td>
+                    <div class="actions">
+                      <a href="/admin/papan-isi?editWnaNegara=<%= item.id %>" class="btn btn-warning btn-xs">✏️ Edit</a>
+                      <form method="POST" action="/admin/papan-isi/wna-negara/<%= item.id %>/delete" style="display:inline" onsubmit="return confirm('Hapus data ini?')">
+                        <button class="btn btn-danger btn-xs">🗑 Hapus</button>
+                      </form>
+                    </div>
+                  </td>
+                </tr>
+                <% }) %>
+                <% if (!wnaNegara.length) { %><tr><td colspan="5" style="text-align:center;color:#aaa;padding:20px;">Belum ada data</td></tr><% } %>
+              </tbody>
+            </table>
+          </div>
         </div>
       </div>
 

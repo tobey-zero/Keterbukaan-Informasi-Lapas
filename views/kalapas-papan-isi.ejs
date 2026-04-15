@@ -49,6 +49,7 @@
       border-radius:8px;
       overflow:hidden;
     }
+    .board-panel.full-span { grid-column: 1 / -1; }
 
     .board-panel h4 {
       margin:0;
@@ -60,6 +61,57 @@
       font-weight:800;
       text-transform:uppercase;
       border-bottom:1px solid #bfdbfe;
+    }
+
+    .wna-pie-wrap {
+      display: grid;
+      grid-template-columns: 170px 1fr;
+      gap: 14px;
+      align-items: center;
+      padding: 12px;
+    }
+    .wna-pie-chart {
+      width: 160px;
+      height: 160px;
+      border-radius: 50%;
+      border: 1px solid #cbd5e1;
+      margin: 0 auto;
+    }
+    .wna-pie-legend {
+      list-style: none;
+      margin: 0;
+      padding: 0;
+      display: grid;
+      gap: 6px;
+      font-size: 12px;
+      color: #0f172a;
+    }
+    .wna-pie-legend li {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 10px;
+      border-bottom: 1px dashed #dbeafe;
+      padding-bottom: 4px;
+    }
+    .wna-dot {
+      width: 10px;
+      height: 10px;
+      border-radius: 50%;
+      display: inline-block;
+      margin-right: 6px;
+    }
+    .wna-label {
+      display: inline-flex;
+      align-items: center;
+      min-width: 0;
+    }
+    .wna-empty {
+      padding: 12px;
+      font-size: 12px;
+      color: #64748b;
+      font-weight: 700;
+      text-align: center;
     }
 
     .board-table { width:100%; border-collapse:collapse; }
@@ -97,6 +149,7 @@
     @media (max-width: 1100px) {
       .board-grid { grid-template-columns: 1fr; }
       .split-grid { grid-template-columns: 1fr; }
+      .wna-pie-wrap { grid-template-columns: 1fr; }
     }
   </style>
 </head>
@@ -126,6 +179,84 @@
     </div>
 
     <div class="board-grid">
+      <div class="board-panel">
+        <h4>Registrasi Warga Binaan (Format Papan Fisik)</h4>
+        <table class="board-table">
+          <thead>
+            <tr>
+              <th rowspan="2">NO</th>
+              <th rowspan="2">BLOK</th>
+              <th rowspan="2">REGISTRASI</th>
+              <th colspan="3">WARGA NEGARA INDONESIA</th>
+              <th colspan="3">WARGA NEGARA ASING</th>
+              <th rowspan="2">JUMLAH</th>
+            </tr>
+            <tr>
+              <th>ISI</th><th>TAMBAH</th><th>KURANG</th>
+              <th>ISI</th><th>TAMBAH</th><th>KURANG</th>
+            </tr>
+          </thead>
+          <tbody>
+            <% for (const item of registrasiHunian) { %>
+            <% const jumlah = (Number(item.wniIsi) || 0) + (Number(item.wniTambah) || 0) + (Number(item.wnaIsi) || 0) + (Number(item.wnaTambah) || 0); %>
+            <tr>
+              <td><%= item.noUrut %></td>
+              <td><strong><%= item.blok %></strong></td>
+              <td class="left"><%= item.registrasi %></td>
+              <td><%= item.wniIsi || '-' %></td>
+              <td><%= item.wniTambah || '-' %></td>
+              <td><%= item.wniKurang || '-' %></td>
+              <td><%= item.wnaIsi || '-' %></td>
+              <td><%= item.wnaTambah || '-' %></td>
+              <td><%= item.wnaKurang || '-' %></td>
+              <td><%= jumlah || '-' %></td>
+            </tr>
+            <% } %>
+            <% if (!registrasiHunian.length) { %>
+            <tr><td colspan="10">Belum ada data registrasi hunian</td></tr>
+            <% } %>
+            <% if (registrasiHunian.length) { %>
+            <tr class="total-row">
+              <td colspan="3" class="left">JUMLAH</td>
+              <td><%= boardSummary.totalRegistrasiWniIsi %></td>
+              <td><%= boardSummary.totalRegistrasiWniTambah %></td>
+              <td><%= boardSummary.totalRegistrasiWniKurang %></td>
+              <td><%= boardSummary.totalRegistrasiWnaIsi %></td>
+              <td><%= boardSummary.totalRegistrasiWnaTambah %></td>
+              <td><%= boardSummary.totalRegistrasiWnaKurang %></td>
+              <td><%= boardSummary.totalRegistrasiJumlah %></td>
+            </tr>
+            <% } %>
+          </tbody>
+        </table>
+      </div>
+
+      <div class="board-panel">
+        <h4>Warga Negara Asing</h4>
+        <table class="board-table">
+          <thead><tr><th>Nama Negara</th><th>Jumlah</th><th>Keterangan</th></tr></thead>
+          <tbody>
+            <% for (const item of wnaNegara) { %>
+            <tr>
+              <td class="left"><%= item.namaNegara %></td>
+              <td><%= item.jumlah %></td>
+              <td class="left"><%= item.keterangan || '-' %></td>
+            </tr>
+            <% } %>
+            <% if (!wnaNegara.length) { %>
+            <tr><td colspan="3">Belum ada data WNA per negara</td></tr>
+            <% } %>
+            <% if (wnaNegara.length) { %>
+            <tr class="total-row">
+              <td class="left">Jumlah</td>
+              <td><%= boardSummary.totalWnaNegara %></td>
+              <td>-</td>
+            </tr>
+            <% } %>
+          </tbody>
+        </table>
+      </div>
+
       <div class="board-panel">
         <h4>Jenis Tindak Pidana</h4>
         <div class="split-grid">
@@ -191,14 +322,16 @@
             </tr>
           </thead>
           <tbody>
-            <% let totalWniKeluar = 0, totalWniMasuk = 0, totalWnaKeluar = 0, totalWnaMasuk = 0;
-              luarTembok.forEach(item => {
-                const rowTotal = (Number(item.wniKeluar)||0) + (Number(item.wniMasuk)||0) + (Number(item.wnaKeluar)||0) + (Number(item.wnaMasuk)||0);
-                totalWniKeluar += Number(item.wniKeluar)||0;
-                totalWniMasuk += Number(item.wniMasuk)||0;
-                totalWnaKeluar += Number(item.wnaKeluar)||0;
-                totalWnaMasuk += Number(item.wnaMasuk)||0;
-            %>
+            <% let totalWniKeluar = 0; %>
+            <% let totalWniMasuk = 0; %>
+            <% let totalWnaKeluar = 0; %>
+            <% let totalWnaMasuk = 0; %>
+            <% for (const item of luarTembok) { %>
+            <% const rowTotal = (Number(item.wniKeluar) || 0) + (Number(item.wniMasuk) || 0) + (Number(item.wnaKeluar) || 0) + (Number(item.wnaMasuk) || 0); %>
+            <% totalWniKeluar += Number(item.wniKeluar) || 0; %>
+            <% totalWniMasuk += Number(item.wniMasuk) || 0; %>
+            <% totalWnaKeluar += Number(item.wnaKeluar) || 0; %>
+            <% totalWnaMasuk += Number(item.wnaMasuk) || 0; %>
             <tr>
               <td class="left"><%= item.status %></td>
               <td><%= item.wniKeluar %></td>
@@ -208,7 +341,7 @@
               <td><%= rowTotal %></td>
               <td class="left"><%= item.keterangan || '-' %></td>
             </tr>
-            <% }) %>
+            <% } %>
             <tr class="total-row">
               <td class="left">Jumlah</td>
               <td><%= totalWniKeluar %></td>
@@ -227,21 +360,79 @@
         <table class="board-table">
           <thead><tr><th>Agama</th><th>WNI</th><th>WNA</th><th>Jumlah</th></tr></thead>
           <tbody>
-            <% let totalAgamaWni = 0, totalAgamaWna = 0; agama.forEach(item => { const rowTotal = (Number(item.wni)||0) + (Number(item.wna)||0); totalAgamaWni += Number(item.wni)||0; totalAgamaWna += Number(item.wna)||0; %>
+            <% let totalAgamaWni = 0; %>
+            <% let totalAgamaWna = 0; %>
+            <% for (const item of agama) { %>
+            <% const rowTotal = (Number(item.wni) || 0) + (Number(item.wna) || 0); %>
+            <% totalAgamaWni += Number(item.wni) || 0; %>
+            <% totalAgamaWna += Number(item.wna) || 0; %>
             <tr>
               <td class="left"><%= item.agama %></td>
               <td><%= item.wni %></td>
               <td><%= item.wna %></td>
               <td><%= rowTotal %></td>
             </tr>
-            <% }) %>
+            <% } %>
             <tr class="total-row"><td class="left">Jumlah</td><td><%= totalAgamaWni %></td><td><%= totalAgamaWna %></td><td><%= boardSummary.totalAgama %></td></tr>
           </tbody>
         </table>
+      </div>
+
+      <div class="board-panel full-span">
+        <h4>Pie Chart Warga Negara Asing</h4>
+        <% const chartColors = ['#1d4ed8', '#0ea5e9', '#0f766e', '#f59e0b', '#ef4444', '#7c3aed', '#14b8a6', '#f97316', '#ec4899', '#334155']; %>
+        <% const pieRows = []; %>
+        <% let totalPie = 0; %>
+        <% for (const row of wnaNegara) { %>
+        <% const jumlahNum = Number(row.jumlah) || 0; %>
+        <% if (jumlahNum > 0) { pieRows.push({ namaNegara: row.namaNegara, jumlah: jumlahNum, color: chartColors[pieRows.length % chartColors.length] }); totalPie += jumlahNum; } %>
+        <% } %>
+        <% const gradientParts = []; %>
+        <% let acc = 0; %>
+        <% for (const row of pieRows) { %>
+        <% const startDeg = totalPie > 0 ? (acc / totalPie) * 360 : 0; %>
+        <% acc += row.jumlah; %>
+        <% const endDeg = totalPie > 0 ? (acc / totalPie) * 360 : 0; %>
+        <% gradientParts.push(row.color + ' ' + startDeg + 'deg ' + endDeg + 'deg'); %>
+        <% } %>
+        <% const pieBackground = gradientParts.length ? ('conic-gradient(' + gradientParts.join(', ') + ')') : '#e2e8f0'; %>
+
+        <% if (pieRows.length) { %>
+        <div class="wna-pie-wrap">
+          <div class="wna-pie-chart" data-bg="<%= pieBackground %>"></div>
+          <ul class="wna-pie-legend">
+            <% for (const row of pieRows) { %>
+            <li>
+              <span class="wna-label"><span class="wna-dot" data-color="<%= row.color %>"></span><%= row.namaNegara %></span>
+              <strong><%= row.jumlah %></strong>
+            </li>
+            <% } %>
+            <li>
+              <span class="wna-label"><strong>Jumlah</strong></span>
+              <strong><%= totalPie %></strong>
+            </li>
+          </ul>
+        </div>
+        <% } else { %>
+        <div class="wna-empty">Belum ada data WNA untuk dibuat pie chart.</div>
+        <% } %>
       </div>
     </div>
 
     <div class="mini-note">Data pada halaman ini bersifat fleksibel dan dapat disesuaikan lagi agar semakin mirip papan manual.</div>
   </div>
+  <script>
+    (function () {
+      const pieChart = document.querySelector('.wna-pie-chart[data-bg]');
+      if (pieChart) {
+        const bg = pieChart.getAttribute('data-bg') || '';
+        pieChart.style.background = bg;
+      }
+      const dots = document.querySelectorAll('.wna-dot[data-color]');
+      dots.forEach(dot => {
+        dot.style.background = dot.getAttribute('data-color') || '#94a3b8';
+      });
+    })();
+  </script>
 </body>
 </html>

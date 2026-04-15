@@ -14,6 +14,8 @@
       <div class="topbar-actions"><a href="/" target="_blank" class="btn-public">🌐 Lihat Publik</a></div>
     </div>
     <div class="content-area">
+      <% const hariOptions = ['Senin','Selasa','Rabu','Kamis','Jumat','Sabtu','Minggu']; %>
+      <% const editIsCustomHari = !!(edit && edit.hari && !hariOptions.includes(edit.hari)); %>
       <% if (success) { %><div class="alert alert-success">✅ Data berhasil disimpan.</div><% } %>
 
       <div class="card">
@@ -23,7 +25,7 @@
             <div class="form-grid col-4" style="margin-bottom:12px;">
               <div class="form-group">
                 <label>Hari</label>
-                <select name="hari" required>
+                <select id="hari-select-add" name="hari" required>
                   <option value="">-- Pilih Hari --</option>
                   <option value="Senin">Senin</option>
                   <option value="Selasa">Selasa</option>
@@ -32,7 +34,12 @@
                   <option value="Jumat">Jumat</option>
                   <option value="Sabtu">Sabtu</option>
                   <option value="Minggu">Minggu</option>
+                  <option value="CUSTOM">Custom (Ketik Manual)</option>
                 </select>
+              </div>
+              <div class="form-group" id="hari-custom-wrap-add" style="display:none;">
+                <label>Hari Manual</label>
+                <input id="hari-custom-add" type="text" name="hari_custom" placeholder="Contoh: Hari Libur Nasional">
               </div>
               <div class="form-group">
                 <label>Waktu</label>
@@ -63,11 +70,16 @@
           <div class="form-grid col-4" style="margin-bottom:12px;">
             <div class="form-group">
               <label>Hari</label>
-              <select name="hari" required>
-                <% ['Senin','Selasa','Rabu','Kamis','Jumat','Sabtu','Minggu'].forEach(h => { %>
+              <select id="hari-select-edit" name="hari" required>
+                <% hariOptions.forEach(h => { %>
                 <option value="<%= h %>" <%= edit.hari===h?'selected':'' %>><%= h %></option>
                 <% }) %>
+                <option value="CUSTOM" <%= editIsCustomHari ? 'selected' : '' %>>Custom (Ketik Manual)</option>
               </select>
+            </div>
+            <div class="form-group" id="hari-custom-wrap-edit" style="display:<%= editIsCustomHari ? 'block' : 'none' %>;">
+              <label>Hari Manual</label>
+              <input id="hari-custom-edit" type="text" name="hari_custom" value="<%= editIsCustomHari ? edit.hari : '' %>" placeholder="Contoh: Hari Libur Nasional">
             </div>
             <div class="form-group">
               <label>Waktu</label>
@@ -128,5 +140,28 @@
     </div>
   </div>
 </div>
+<script>
+  (function () {
+    function bindCustomHari(selectId, wrapId, inputId) {
+      var selectEl = document.getElementById(selectId);
+      var wrapEl = document.getElementById(wrapId);
+      var inputEl = document.getElementById(inputId);
+      if (!selectEl || !wrapEl || !inputEl) return;
+
+      function sync() {
+        var isCustom = selectEl.value === 'CUSTOM';
+        wrapEl.style.display = isCustom ? 'block' : 'none';
+        inputEl.required = isCustom;
+        if (!isCustom) inputEl.value = '';
+      }
+
+      selectEl.addEventListener('change', sync);
+      sync();
+    }
+
+    bindCustomHari('hari-select-add', 'hari-custom-wrap-add', 'hari-custom-add');
+    bindCustomHari('hari-select-edit', 'hari-custom-wrap-edit', 'hari-custom-edit');
+  })();
+</script>
 </body>
 </html>

@@ -40,6 +40,9 @@
                   <option value="klinik">Klinik – Dashboard</option>
                   <option value="dapur">Dapur – Menu Makan</option>
                   <option value="humas">Humas – Remisi</option>
+                  <option value="kamtib">Kamtib – Razia & Strapsel</option>
+                  <option value="tata_usaha">Tata Usaha – TU Bagian Umum</option>
+                  <option value="pengamanan">Pengamanan – Kamar/Blok & Papan Isi</option>
                 </select>
               </div>
             </div>
@@ -65,7 +68,7 @@
             <div class="form-group">
               <label>Role</label>
               <select name="role">
-                <% [['superadmin','SuperAdmin – Akses Penuh'],['registrasi','Registrasi'],['pembinaan','Pembinaan'],['klinik','Klinik'],['dapur','Dapur'],['humas','Humas']].forEach(([v,l]) => { %>
+                <% [['superadmin','SuperAdmin – Akses Penuh'],['registrasi','Registrasi'],['pembinaan','Pembinaan'],['klinik','Klinik'],['dapur','Dapur'],['humas','Humas'],['kamtib','Kamtib'],['tata_usaha','Tata Usaha'],['pengamanan','Pengamanan']].forEach(([v,l]) => { %>
                 <option value="<%= v %>" <%= edit.role===v?'selected':'' %>><%= l %></option>
                 <% }) %>
               </select>

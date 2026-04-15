@@ -153,15 +153,18 @@ app.use(session({
 }));
 
 // ─── Role Access Map ─────────────────────────────────────────────────────────
-const ROLES = ['superadmin', 'registrasi', 'pembinaan', 'klinik', 'dapur', 'humas'];
+const ROLES = ['superadmin', 'registrasi', 'pembinaan', 'klinik', 'dapur', 'humas', 'kamtib', 'tata_usaha', 'pengamanan'];
 
 const roleAccess = {
-  superadmin: ['dashboard', 'statistik', 'remisi', 'kata-bijak', 'menu', 'jadwal', 'razia', 'strapsel', 'tu-umum', 'kamar-blok', 'papan-isi', 'users', 'video', 'klinik-medis', 'klinik-berobat', 'klinik-oncall', 'klinik-kontrol', 'klinik-statistik'],
-  registrasi: ['dashboard', 'statistik', 'remisi', 'kata-bijak'],
-  pembinaan: ['dashboard', 'jadwal', 'razia', 'strapsel', 'kamar-blok', 'papan-isi'],
+  superadmin: ['dashboard', 'statistik', 'remisi', 'kata-bijak', 'menu', 'jadwal', 'pembinaan-detail', 'razia', 'strapsel', 'tu-umum', 'kamar-blok', 'papan-isi', 'users', 'video', 'klinik-medis', 'klinik-berobat', 'klinik-oncall', 'klinik-kontrol', 'klinik-statistik'],
+  registrasi: ['dashboard', 'statistik', 'remisi'],
+  pembinaan: ['dashboard', 'jadwal', 'pembinaan-detail'],
   klinik: ['dashboard', 'klinik-medis', 'klinik-berobat', 'klinik-oncall', 'klinik-kontrol', 'klinik-statistik'],
   dapur: ['dashboard', 'menu'],
   humas: ['dashboard', 'video', 'kata-bijak'],
+  kamtib: ['dashboard',  'razia', 'strapsel', 'kamar-blok', 'papan-isi'],
+  tata_usaha: ['dashboard', 'tu-umum'],
+  pengamanan: ['dashboard', 'kamar-blok', 'papan-isi'],
 };
 
 // ─── Auth Middleware ──────────────────────────────────────────────────────────
@@ -445,23 +448,63 @@ function getBoardData() {
     .prepare('SELECT id, agama, wni, wna FROM board_agama ORDER BY id')
     .all();
 
+  const registrasiHunian = db
+    .prepare(`SELECT
+      id,
+      no_urut AS noUrut,
+      blok,
+      registrasi,
+      wni_isi AS wniIsi,
+      wni_tambah AS wniTambah,
+      wni_kurang AS wniKurang,
+      wna_isi AS wnaIsi,
+      wna_tambah AS wnaTambah,
+      wna_kurang AS wnaKurang
+    FROM board_registrasi_hunian
+    ORDER BY no_urut ASC, id ASC`)
+    .all();
+
+  const wnaNegara = db
+    .prepare('SELECT id, nama_negara AS namaNegara, jumlah, keterangan FROM board_wna_negara ORDER BY nama_negara COLLATE NOCASE ASC')
+    .all();
+
   const totalPidanaKhusus = pidanaKhusus.reduce((sum, row) => sum + (Number(row.jumlah) || 0), 0);
   const totalPidanaUmum = pidanaUmum.reduce((sum, row) => sum + (Number(row.jumlah) || 0), 0);
   const totalLuarTembok = luarTembok.reduce((sum, row) => {
     return sum + (Number(row.wniKeluar) || 0) + (Number(row.wniMasuk) || 0) + (Number(row.wnaKeluar) || 0) + (Number(row.wnaMasuk) || 0);
   }, 0);
   const totalAgama = agama.reduce((sum, row) => sum + (Number(row.wni) || 0) + (Number(row.wna) || 0), 0);
+  const totalRegistrasiWniIsi = registrasiHunian.reduce((sum, row) => sum + (Number(row.wniIsi) || 0), 0);
+  const totalRegistrasiWniTambah = registrasiHunian.reduce((sum, row) => sum + (Number(row.wniTambah) || 0), 0);
+  const totalRegistrasiWniKurang = registrasiHunian.reduce((sum, row) => sum + (Number(row.wniKurang) || 0), 0);
+  const totalRegistrasiWnaIsi = registrasiHunian.reduce((sum, row) => sum + (Number(row.wnaIsi) || 0), 0);
+  const totalRegistrasiWnaTambah = registrasiHunian.reduce((sum, row) => sum + (Number(row.wnaTambah) || 0), 0);
+  const totalRegistrasiWnaKurang = registrasiHunian.reduce((sum, row) => sum + (Number(row.wnaKurang) || 0), 0);
+  const totalRegistrasiJumlah = registrasiHunian.reduce((sum, row) => {
+    return sum + (Number(row.wniIsi) || 0) + (Number(row.wniTambah) || 0) + (Number(row.wnaIsi) || 0) + (Number(row.wnaTambah) || 0);
+  }, 0);
+  const totalWnaNegara = wnaNegara.reduce((sum, row) => sum + (Number(row.jumlah) || 0), 0);
 
   return {
     pidanaKhusus,
     pidanaUmum,
     luarTembok,
     agama,
+    registrasiHunian,
+    wnaNegara,
     boardSummary: {
       totalPidanaKhusus,
       totalPidanaUmum,
       totalLuarTembok,
       totalAgama,
+      totalRegistrasiWniIsi,
+      totalRegistrasiWniTambah,
+      totalRegistrasiWniKurang,
+      totalRegistrasiWnaIsi,
+      totalRegistrasiWnaTambah,
+      totalRegistrasiWnaKurang,
+      totalRegistrasiJumlah,
+      totalWnaNegara,
     }
   };
 }
@@ -501,6 +544,7 @@ function getKalapasData() {
     pidanaUmum: board.pidanaUmum,
     luarTembok: board.luarTembok,
     agama: board.agama,
+    wnaNegara: board.wnaNegara,
     boardSummary: board.boardSummary,
     okupansi,
   };
@@ -1089,22 +1133,28 @@ app.get('/admin/jadwal', requireAccess('jadwal'), (req, res) => {
 });
 
 app.post('/admin/jadwal/add', requireAccess('jadwal'), (req, res) => {
-  const hari = (req.body.hari || '').trim();
+  const hariInput = (req.body.hari || '').trim();
+  const hariCustom = (req.body.hari_custom || '').trim();
+  const hari = hariInput === 'CUSTOM' ? hariCustom : hariInput;
   const waktu = (req.body.waktu || '').trim();
   const kegiatan = (req.body.kegiatan || '').trim();
   const lokasi = (req.body.lokasi || '').trim();
   const penanggungJawab = (req.body.penanggung_jawab || '').trim();
+  if (!hari) return res.redirect('/admin/jadwal');
   db.prepare('INSERT INTO jadwal_kegiatan (hari, waktu, kegiatan, lokasi, penanggung_jawab) VALUES (?, ?, ?, ?, ?)')
     .run(hari, waktu, kegiatan, lokasi, penanggungJawab);
   res.redirect('/admin/jadwal?success=1');
 });
 
 app.post('/admin/jadwal/:id/update', requireAccess('jadwal'), (req, res) => {
-  const hari = (req.body.hari || '').trim();
+  const hariInput = (req.body.hari || '').trim();
+  const hariCustom = (req.body.hari_custom || '').trim();
+  const hari = hariInput === 'CUSTOM' ? hariCustom : hariInput;
   const waktu = (req.body.waktu || '').trim();
   const kegiatan = (req.body.kegiatan || '').trim();
   const lokasi = (req.body.lokasi || '').trim();
   const penanggungJawab = (req.body.penanggung_jawab || '').trim();
+  if (!hari) return res.redirect('/admin/jadwal');
   db.prepare('UPDATE jadwal_kegiatan SET hari=?, waktu=?, kegiatan=?, lokasi=?, penanggung_jawab=? WHERE id=?')
     .run(hari, waktu, kegiatan, lokasi, penanggungJawab, Number(req.params.id));
   res.redirect('/admin/jadwal?success=1');
@@ -1376,6 +1426,8 @@ app.get('/admin/papan-isi', requireAccess('papan-isi'), (req, res) => {
   const editPidana = req.query.editPidana ? db.prepare('SELECT * FROM board_pidana WHERE id=?').get(Number(req.query.editPidana)) : null;
   const editLuar = req.query.editLuar ? db.prepare('SELECT * FROM board_luar_tembok WHERE id=?').get(Number(req.query.editLuar)) : null;
   const editAgama = req.query.editAgama ? db.prepare('SELECT * FROM board_agama WHERE id=?').get(Number(req.query.editAgama)) : null;
+  const editRegistrasi = req.query.editRegistrasi ? db.prepare('SELECT * FROM board_registrasi_hunian WHERE id=?').get(Number(req.query.editRegistrasi)) : null;
+  const editWnaNegara = req.query.editWnaNegara ? db.prepare('SELECT * FROM board_wna_negara WHERE id=?').get(Number(req.query.editWnaNegara)) : null;
   res.render('admin/papan-isi', {
     user: req.session.user,
     active: 'papan-isi',
@@ -1384,6 +1436,8 @@ app.get('/admin/papan-isi', requireAccess('papan-isi'), (req, res) => {
     editPidana,
     editLuar,
     editAgama,
+    editRegistrasi,
+    editWnaNegara,
   });
 });
 
@@ -1467,6 +1521,81 @@ app.post('/admin/papan-isi/agama/:id/update', requireAccess('papan-isi'), (req, 
 
 app.post('/admin/papan-isi/agama/:id/delete', requireAccess('papan-isi'), (req, res) => {
   db.prepare('DELETE FROM board_agama WHERE id=?').run(Number(req.params.id));
+  res.redirect('/admin/papan-isi?success=1');
+});
+
+app.post('/admin/papan-isi/registrasi/add', requireAccess('papan-isi'), (req, res) => {
+  const noUrut = Number(req.body.no_urut || 0);
+  const blok = (req.body.blok || '').trim().toUpperCase();
+  const registrasi = (req.body.registrasi || '').trim().toUpperCase();
+  if (!noUrut || !blok || !registrasi) return res.redirect('/admin/papan-isi');
+
+  db.prepare(`
+    INSERT INTO board_registrasi_hunian
+      (no_urut, blok, registrasi, wni_isi, wni_tambah, wni_kurang, wna_isi, wna_tambah, wna_kurang)
+    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
+  `).run(
+    noUrut,
+    blok,
+    registrasi,
+    Number(req.body.wni_isi || 0),
+    Number(req.body.wni_tambah || 0),
+    Number(req.body.wni_kurang || 0),
+    Number(req.body.wna_isi || 0),
+    Number(req.body.wna_tambah || 0),
+    Number(req.body.wna_kurang || 0)
+  );
+  res.redirect('/admin/papan-isi?success=1');
+});
+
+app.post('/admin/papan-isi/registrasi/:id/update', requireAccess('papan-isi'), (req, res) => {
+  const noUrut = Number(req.body.no_urut || 0);
+  const blok = (req.body.blok || '').trim().toUpperCase();
+  const registrasi = (req.body.registrasi || '').trim().toUpperCase();
+  if (!noUrut || !blok || !registrasi) return res.redirect('/admin/papan-isi');
+
+  db.prepare(`
+    UPDATE board_registrasi_hunian
+    SET no_urut=?, blok=?, registrasi=?, wni_isi=?, wni_tambah=?, wni_kurang=?, wna_isi=?, wna_tambah=?, wna_kurang=?
+    WHERE id=?
+  `).run(
+    noUrut,
+    blok,
+    registrasi,
+    Number(req.body.wni_isi || 0),
+    Number(req.body.wni_tambah || 0),
+    Number(req.body.wni_kurang || 0),
+    Number(req.body.wna_isi || 0),
+    Number(req.body.wna_tambah || 0),
+    Number(req.body.wna_kurang || 0),
+    Number(req.params.id)
+  );
+  res.redirect('/admin/papan-isi?success=1');
+});
+
+app.post('/admin/papan-isi/registrasi/:id/delete', requireAccess('papan-isi'), (req, res) => {
+  db.prepare('DELETE FROM board_registrasi_hunian WHERE id=?').run(Number(req.params.id));
+  res.redirect('/admin/papan-isi?success=1');
+});
+
+app.post('/admin/papan-isi/wna-negara/add', requireAccess('papan-isi'), (req, res) => {
+  const namaNegara = (req.body.nama_negara || '').trim().toUpperCase();
+  if (!namaNegara) return res.redirect('/admin/papan-isi');
+  db.prepare('INSERT INTO board_wna_negara (nama_negara, jumlah, keterangan) VALUES (?, ?, ?)')
+    .run(namaNegara, Number(req.body.jumlah || 0), (req.body.keterangan || '').trim());
+  res.redirect('/admin/papan-isi?success=1');
+});
+
+app.post('/admin/papan-isi/wna-negara/:id/update', requireAccess('papan-isi'), (req, res) => {
+  const namaNegara = (req.body.nama_negara || '').trim().toUpperCase();
+  if (!namaNegara) return res.redirect('/admin/papan-isi');
+  db.prepare('UPDATE board_wna_negara SET nama_negara=?, jumlah=?, keterangan=? WHERE id=?')
+    .run(namaNegara, Number(req.body.jumlah || 0), (req.body.keterangan || '').trim(), Number(req.params.id));
+  res.redirect('/admin/papan-isi?success=1');
+});
+
+app.post('/admin/papan-isi/wna-negara/:id/delete', requireAccess('papan-isi'), (req, res) => {
+  db.prepare('DELETE FROM board_wna_negara WHERE id=?').run(Number(req.params.id));
   res.redirect('/admin/papan-isi?success=1');
 });
 

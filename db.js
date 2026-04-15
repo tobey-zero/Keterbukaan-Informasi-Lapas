@@ -209,6 +209,26 @@ db.exec(`
     wni INTEGER NOT NULL DEFAULT 0,
     wna INTEGER NOT NULL DEFAULT 0
   );
+
+  CREATE TABLE IF NOT EXISTS board_registrasi_hunian (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    no_urut INTEGER NOT NULL DEFAULT 0,
+    blok TEXT NOT NULL,
+    registrasi TEXT NOT NULL,
+    wni_isi INTEGER NOT NULL DEFAULT 0,
+    wni_tambah INTEGER NOT NULL DEFAULT 0,
+    wni_kurang INTEGER NOT NULL DEFAULT 0,
+    wna_isi INTEGER NOT NULL DEFAULT 0,
+    wna_tambah INTEGER NOT NULL DEFAULT 0,
+    wna_kurang INTEGER NOT NULL DEFAULT 0
+  );
+
+  CREATE TABLE IF NOT EXISTS board_wna_negara (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    nama_negara TEXT NOT NULL,
+    jumlah INTEGER NOT NULL DEFAULT 0,
+    keterangan TEXT DEFAULT ''
+  );
 `);
 
 const menuColumns = db.prepare("PRAGMA table_info('menu_makan')").all();
@@ -577,6 +597,38 @@ seedIfEmpty('board_agama', () => {
     ['HINDU', 8, 0],
     ['BUDHA', 47, 0],
     ['KONG HU CU', 1, 0],
+  ];
+  rows.forEach(r => insert.run(...r));
+});
+
+seedIfEmpty('board_registrasi_hunian', () => {
+  const insert = db.prepare(`
+    INSERT INTO board_registrasi_hunian
+      (no_urut, blok, registrasi, wni_isi, wni_tambah, wni_kurang, wna_isi, wna_tambah, wna_kurang)
+    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
+  `);
+  const rows = [
+    [1, 'A', 'A.I', 0, 0, 0, 0, 0, 0],
+    [1, 'A', 'A.II', 0, 0, 0, 0, 0, 0],
+    [1, 'A', 'A.III', 39, 0, 0, 0, 0, 0],
+    [1, 'A', 'A.IV', 86, 0, 0, 0, 0, 0],
+    [1, 'A', 'A.V', 44, 0, 0, 0, 0, 0],
+    [2, 'B', 'MATI', 67, 0, 0, 0, 0, 0],
+    [2, 'B', 'S H', 294, 0, 0, 2, 0, 0],
+    [2, 'B', 'B.I', 2304, 0, 0, 5, 0, 0],
+    [2, 'B', 'B.IIA', 0, 0, 0, 0, 0, 0],
+    [2, 'B', 'B.IIB', 0, 0, 0, 0, 0, 0],
+    [2, 'B', 'B.III', 27, 0, 0, 0, 0, 0],
+    [2, 'B', 'B.IIIS', 2, 0, 0, 0, 0, 0],
+  ];
+  rows.forEach(r => insert.run(...r));
+});
+
+seedIfEmpty('board_wna_negara', () => {
+  const insert = db.prepare('INSERT INTO board_wna_negara (nama_negara, jumlah, keterangan) VALUES (?, ?, ?)');
+  const rows = [
+    ['MYANMAR', 2, '-'],
+    ['MALAYSIA', 5, '-'],
   ];
   rows.forEach(r => insert.run(...r));
 });

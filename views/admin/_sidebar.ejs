@@ -19,7 +19,7 @@
       <span class="icon">🌐</span><span>Lihat Publik</span>
     </a>
 
-    <% if (['statistik','remisi','kata-bijak','menu','video','jadwal','razia','strapsel','tu-umum','kamar-blok','papan-isi'].some(p => allowed.includes(p))) { %>
+    <% if (['statistik','remisi','kata-bijak','menu','video','jadwal','pembinaan-detail','razia','strapsel','tu-umum','kamar-blok','papan-isi'].some(p => allowed.includes(p))) { %>
     <div class="nav-label">Kelola Data</div>
     <% } %>
 
@@ -56,6 +56,12 @@
     <% if (allowed.includes('jadwal')) { %>
     <a href="/admin/jadwal" class="nav-item <%= active==='jadwal'?'active':'' %>">
       <span class="icon">📅</span><span>Jadwal Kegiatan</span>
+    </a>
+    <% } %>
+
+    <% if (allowed.includes('pembinaan-detail')) { %>
+    <a href="/admin/pembinaan-detail" class="nav-item <%= active==='pembinaan-detail'?'active':'' %>">
+      <span class="icon">🧭</span><span>Detail Pembinaan</span>
     </a>
     <% } %>
 
