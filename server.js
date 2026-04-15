@@ -222,6 +222,7 @@ function getPublicData() {
   const pentahapanPembinaanDetail = db
       .prepare(`SELECT d.no_reg AS noReg,
         d.nama_wbp AS namaWbp,
+        d.tanggal3,
         d.tanggal1,
         d.tanggal2,
         d.tanggal4,
