@@ -20,18 +20,35 @@
         <div class="card-header"><h3>➕ Tambah Jadwal</h3></div>
         <div class="card-body">
           <form method="POST" action="/admin/jadwal/add">
-            <div class="form-grid col-3" style="margin-bottom:12px;">
+            <div class="form-grid col-4" style="margin-bottom:12px;">
+              <div class="form-group">
+                <label>Hari</label>
+                <select name="hari" required>
+                  <option value="">-- Pilih Hari --</option>
+                  <option value="Senin">Senin</option>
+                  <option value="Selasa">Selasa</option>
+                  <option value="Rabu">Rabu</option>
+                  <option value="Kamis">Kamis</option>
+                  <option value="Jumat">Jumat</option>
+                  <option value="Sabtu">Sabtu</option>
+                  <option value="Minggu">Minggu</option>
+                </select>
+              </div>
+              <div class="form-group">
+                <label>Waktu</label>
+                <input type="text" name="waktu" placeholder="cth: 08.00 - 09.30" required>
+              </div>
               <div class="form-group">
                 <label>Kegiatan</label>
                 <input type="text" name="kegiatan" placeholder="Nama kegiatan" required>
               </div>
               <div class="form-group">
-                <label>Hari / Lokasi (Kolom Selasa)</label>
-                <input type="text" name="selasa" placeholder="cth: Relaksai Jiwa">
+                <label>Lokasi</label>
+                <input type="text" name="lokasi" placeholder="cth: Lapangan Lapas" required>
               </div>
               <div class="form-group">
-                <label>Waktu / Tempat (Kolom Rabu)</label>
-                <input type="text" name="rabu" placeholder="cth: Lapangan Lapas">
+                <label>Penanggung Jawab</label>
+                <input type="text" name="penanggung_jawab" placeholder="cth: Petugas Bimbingan" required>
               </div>
             </div>
             <button type="submit" class="btn btn-primary btn-sm">➕ Tambah</button>
@@ -43,18 +60,30 @@
       <div class="edit-panel">
         <h4>✏️ Edit Jadwal (ID: <%= edit.id %>)</h4>
         <form method="POST" action="/admin/jadwal/<%= edit.id %>/update">
-          <div class="form-grid col-3" style="margin-bottom:12px;">
+          <div class="form-grid col-4" style="margin-bottom:12px;">
+            <div class="form-group">
+              <label>Hari</label>
+              <select name="hari" required>
+                <% ['Senin','Selasa','Rabu','Kamis','Jumat','Sabtu','Minggu'].forEach(h => { %>
+                <option value="<%= h %>" <%= edit.hari===h?'selected':'' %>><%= h %></option>
+                <% }) %>
+              </select>
+            </div>
+            <div class="form-group">
+              <label>Waktu</label>
+              <input type="text" name="waktu" value="<%= edit.waktu || '' %>" required>
+            </div>
             <div class="form-group">
               <label>Kegiatan</label>
               <input type="text" name="kegiatan" value="<%= edit.kegiatan %>" required>
             </div>
             <div class="form-group">
-              <label>Kolom Selasa</label>
-              <input type="text" name="selasa" value="<%= edit.selasa || '' %>">
+              <label>Lokasi</label>
+              <input type="text" name="lokasi" value="<%= edit.lokasi || '' %>" required>
             </div>
             <div class="form-group">
-              <label>Kolom Rabu</label>
-              <input type="text" name="rabu" value="<%= edit.rabu || '' %>">
+              <label>Penanggung Jawab</label>
+              <input type="text" name="penanggung_jawab" value="<%= edit.penanggung_jawab || '' %>" required>
             </div>
           </div>
           <div style="display:flex;gap:8px;">
@@ -70,14 +99,16 @@
         <div class="card-body" style="padding:0;">
           <div class="table-wrap">
             <table class="admin-table">
-              <thead><tr><th>#</th><th>Kegiatan</th><th>Kolom Selasa</th><th>Kolom Rabu</th><th>Aksi</th></tr></thead>
+              <thead><tr><th>#</th><th>Hari</th><th>Waktu</th><th>Kegiatan</th><th>Lokasi</th><th>Penanggung Jawab</th><th>Aksi</th></tr></thead>
               <tbody>
                 <% list.forEach((item, i) => { %>
                 <tr>
                   <td><%= i+1 %></td>
+                  <td><%= item.hari||'-' %></td>
+                  <td><%= item.waktu||'-' %></td>
                   <td><%= item.kegiatan %></td>
-                  <td><%= item.selasa||'-' %></td>
-                  <td><%= item.rabu||'-' %></td>
+                  <td><%= item.lokasi||'-' %></td>
+                  <td><%= item.penanggung_jawab||'-' %></td>
                   <td>
                     <div class="actions">
                       <a href="/admin/jadwal?edit=<%= item.id %>" class="btn btn-warning btn-xs">✏️ Edit</a>
@@ -88,7 +119,7 @@
                   </td>
                 </tr>
                 <% }) %>
-                <% if (!list.length) { %><tr><td colspan="5" style="text-align:center;color:#aaa;padding:20px;">Belum ada data</td></tr><% } %>
+                <% if (!list.length) { %><tr><td colspan="7" style="text-align:center;color:#aaa;padding:20px;">Belum ada data</td></tr><% } %>
               </tbody>
             </table>
           </div>

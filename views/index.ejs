@@ -16,9 +16,9 @@
     <header class="header">
         <div class="header-content">
             <div class="logo-section">
-                <div class="logo">
+                <div class="logo" data-secret-kalapas="true" style="cursor: pointer;">
                     <P>&nbsp;</P>
-                    <h1>KRISNA</h1>
+                    <h1 data-secret-kalapas="true">KRISNA</h1>
                     <P>&nbsp;</P>
                 </div>
                 <div class="header-info">
@@ -30,15 +30,15 @@
             </div>
             <div class="stats">
                 <div class="stat-item">
-                    <div class="stat-label">Total Penghuni</div>
-                    <div class="stat-value">
-                        <%= totalPenghuni %>
-                    </div>
-                </div>
-                <div class="stat-item">
                     <div class="stat-label">Kapasitas</div>
                     <div class="stat-value">
                         <%= kapasitas %>
+                    </div>
+                </div>
+                <div class="stat-item">
+                    <div class="stat-label">Total Penghuni</div>
+                    <div class="stat-value">
+                        <%= totalPenghuni %>
                     </div>
                 </div>
                 <div class="stat-item">
@@ -70,22 +70,26 @@
                     <table class="table-remisi">
                         <thead>
                             <tr>
-                                <th>JENIS REMISI</th>
                                 <th>NAMA WARGA BINAAN</th>
-                                <th>BESARAN</th>
+                                <th>BESARAN REMISI</th>
+                                <th>REMISI TOTAL</th>
+                                <th>KETERANGAN</th>
                             </tr>
                         </thead>
                         <tbody>
                             <% besaranRemisi.forEach(item=> { %>
                                 <tr>
                                     <td>
-                                        <%= item.jenis %>
-                                    </td>
-                                    <td>
                                         <%= item.nama %>
                                     </td>
                                     <td>
                                         <%= item.besaran %>
+                                    </td>
+                                    <td>
+                                        <%= item.remisiTotal || '-' %>
+                                    </td>
+                                    <td>
+                                        <%= item.jenis %>
                                     </td>
                                 </tr>
                                 <% }) %>
@@ -170,52 +174,33 @@
                 <div class="panel sub-panel">
                     <div class="panel-header-with-date" style="background: linear-gradient(135deg, #1a365d 0%, #2563eb 100%);">
                         <span class="panel-title">JADWAL KEGIATAN PEMBINAAN</span>
-                        <span class="panel-date" style="font-size: 14px; font-weight: bold; color: white;">SELASA</span>
                     </div>
                     <div class="panel-content">
                         <table class="table-jadwal">
                             <thead>
                                 <tr>
+                                    <th>HARI</th>
+                                    <th>WAKTU</th>
                                     <th>KEGIATAN</th>
-                                    <th>TEMPAT KEGIATAN</th>
+                                    <th>LOKASI</th>
                                     <th>PENANGGUNG JAWAB</th>
                                 </tr>
                             </thead>
                             <tbody>
-                                <tr class="section-header">
-                                    <td colspan="3"><strong>KEGIATAN OLAHRAGA & WARAKAWIRI</strong></td>
-                                </tr>
+                                <% jadwalKegiatan.forEach(item => { %>
                                 <tr>
-                                    <td>Relaksai Jiwa</td>
-                                    <td>Rabu</td>
-                                    <td>Ruangan Lapas</td>
+                                    <td><%= item.hari || '-' %></td>
+                                    <td><%= item.waktu || '-' %></td>
+                                    <td><%= item.kegiatan || '-' %></td>
+                                    <td><%= item.lokasi || '-' %></td>
+                                    <td><%= item.penanggungJawab || '-' %></td>
                                 </tr>
+                                <% }) %>
+                                <% if (!jadwalKegiatan.length) { %>
                                 <tr>
-                                    <td>Voli, Basket, Futsal</td>
-                                    <td></td>
-                                    <td>Lapangan Lapas</td>
+                                    <td colspan="5" style="text-align:center;">Belum ada jadwal</td>
                                 </tr>
-                                <tr class="section-header">
-                                    <td colspan="3"><strong>KEGIATAN PELATIHAN & BELAJAR MENGAJAR</strong></td>
-                                </tr>
-                                <tr>
-                                    <td>Therapeutic Community, Ceramah, Terapi Kognitif</td>
-                                    <td>Ruangan Kelas Gedung 3</td>
-                                    <td>Petugas Bimbingan</td>
-                                </tr>
-                                <tr>
-                                    <td>PNPM, Pramuka, Kader Kesehatan</td>
-                                    <td>Lapangan Lapas, Ruangan Kelas</td>
-                                    <td>Petugas Bimbingan</td>
-                                </tr>
-                                <tr class="section-header">
-                                    <td colspan="3"><strong>KEGIATAN KEROHANIAN</strong></td>
-                                </tr>
-                                <tr>
-                                    <td>Sholat Juhar, Sholat Ashar, Tawarrudu</td>
-                                    <td>Masjid Darawaruya</td>
-                                    <td>Petugas Bimbingan</td>
-                                </tr>
+                                <% } %>
                             </tbody>
                         </table>
                     </div>
@@ -269,6 +254,15 @@
             <p style="text-align: right; flex: 1;">Copyright &copy; <%= new Date().getFullYear() %>, by Dimstatons. All Right Reserved</p>
         </div>
     </footer>
+    <script>
+        (function () {
+            document.querySelectorAll('[data-secret-kalapas="true"]').forEach(function (el) {
+                el.addEventListener('click', function () {
+                    window.location.href = '/kalapas';
+                });
+            });
+        })();
+    </script>
     <script src="/js/display-mode.js?v=<%= Date.now() %>"></script>
 </body>
 

@@ -35,9 +35,9 @@
         <div class="card-header"><h3>➕ Tambah Data Remisi</h3></div>
         <div class="card-body">
           <form method="POST" action="/admin/remisi/add">
-            <div class="form-grid col-3" style="margin-bottom:12px;">
+            <div class="form-grid col-4" style="margin-bottom:12px;">
               <div class="form-group">
-                <label>Jenis Remisi</label>
+                <label>Keterangan (Jenis Remisi)</label>
                 <input type="text" name="jenis" placeholder="cth: REMISI UMUM" required>
               </div>
               <div class="form-group">
@@ -45,8 +45,12 @@
                 <input type="text" name="nama" placeholder="Nama lengkap WBP" required>
               </div>
               <div class="form-group">
-                <label>Besaran</label>
+                <label>Besaran Remisi</label>
                 <input type="text" name="besaran" placeholder="cth: 4 BULAN" required>
+              </div>
+              <div class="form-group">
+                <label>Remisi Total</label>
+                <input type="text" name="remisi_total" placeholder="cth: 12 BULAN" required>
               </div>
             </div>
             <button type="submit" class="btn btn-primary btn-sm">➕ Tambah</button>
@@ -59,9 +63,9 @@
       <div class="edit-panel">
         <h4>✏️ Edit Data Remisi (ID: <%= edit.id %>)</h4>
         <form method="POST" action="/admin/remisi/<%= edit.id %>/update">
-          <div class="form-grid col-3" style="margin-bottom:12px;">
+          <div class="form-grid col-4" style="margin-bottom:12px;">
             <div class="form-group">
-              <label>Jenis Remisi</label>
+              <label>Keterangan (Jenis Remisi)</label>
               <input type="text" name="jenis" value="<%= edit.jenis %>" required>
             </div>
             <div class="form-group">
@@ -69,8 +73,12 @@
               <input type="text" name="nama" value="<%= edit.nama %>" required>
             </div>
             <div class="form-group">
-              <label>Besaran</label>
+              <label>Besaran Remisi</label>
               <input type="text" name="besaran" value="<%= edit.besaran %>" required>
+            </div>
+            <div class="form-group">
+              <label>Remisi Total</label>
+              <input type="text" name="remisi_total" value="<%= edit.remisi_total || edit.besaran %>" required>
             </div>
           </div>
           <div style="display:flex;gap:8px;">
@@ -88,15 +96,16 @@
           <div class="table-wrap">
             <table class="admin-table">
               <thead>
-                <tr><th>#</th><th>Jenis</th><th>Nama WBP</th><th>Besaran</th><th>Aksi</th></tr>
+                <tr><th>#</th><th>Nama WBP</th><th>Besaran Remisi</th><th>Remisi Total</th><th>Keterangan</th><th>Aksi</th></tr>
               </thead>
               <tbody>
                 <% list.forEach((item, i) => { %>
                 <tr>
                   <td><%= i+1 %></td>
-                  <td><%= item.jenis %></td>
                   <td><%= item.nama %></td>
                   <td><strong><%= item.besaran %></strong></td>
+                  <td><strong><%= item.remisi_total || item.besaran %></strong></td>
+                  <td><%= item.jenis %></td>
                   <td>
                     <div class="actions">
                       <a href="/admin/remisi?edit=<%= item.id %>" class="btn btn-warning btn-xs">✏️ Edit</a>
@@ -108,7 +117,7 @@
                 </tr>
                 <% }) %>
                 <% if (!list.length) { %>
-                <tr><td colspan="5" style="text-align:center;color:#aaa;padding:20px;">Belum ada data</td></tr>
+                <tr><td colspan="6" style="text-align:center;color:#aaa;padding:20px;">Belum ada data</td></tr>
                 <% } %>
               </tbody>
             </table>

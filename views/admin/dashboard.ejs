@@ -42,6 +42,36 @@
           <div class="stat-card-value"><%= stats.jadwal %></div>
           <div class="stat-card-sub">item kegiatan</div>
         </div>
+        <div class="stat-card orange">
+          <div class="stat-card-label">Jadwal Razia</div>
+          <div class="stat-card-value"><%= stats.raziaJadwal %></div>
+          <div class="stat-card-sub">agenda razia</div>
+        </div>
+        <div class="stat-card red">
+          <div class="stat-card-label">Barang Bukti Razia</div>
+          <div class="stat-card-value"><%= stats.raziaBarangBukti %></div>
+          <div class="stat-card-sub">entri barang bukti</div>
+        </div>
+        <div class="stat-card teal">
+          <div class="stat-card-label">Strapsel</div>
+          <div class="stat-card-value"><%= stats.strapsel %></div>
+          <div class="stat-card-sub">entri data strapsel</div>
+        </div>
+        <div class="stat-card purple">
+          <div class="stat-card-label">TU Bagian Umum</div>
+          <div class="stat-card-value"><%= stats.tuUmum %></div>
+          <div class="stat-card-sub">laporan barang pengguna</div>
+        </div>
+        <div class="stat-card green">
+          <div class="stat-card-label">Kamar/Blok</div>
+          <div class="stat-card-value"><%= stats.kamarBlok %></div>
+          <div class="stat-card-sub">data blok hunian</div>
+        </div>
+        <div class="stat-card teal">
+          <div class="stat-card-label">Papan Keadaan Isi</div>
+          <div class="stat-card-value"><%= stats.papanIsi %></div>
+          <div class="stat-card-sub">baris data papan</div>
+        </div>
         <div class="stat-card red">
           <div class="stat-card-label">User Admin</div>
           <div class="stat-card-value"><%= stats.users %></div>
@@ -59,6 +89,11 @@
           <% if(allowed.includes('pembinaan'))        { %><a href="/admin/pembinaan" class="btn btn-warning">👥 Pentahapan Pembinaan</a><% } %>
           <% if(allowed.includes('pembinaan-detail')) { %><a href="/admin/pembinaan-detail" class="btn btn-warning">📝 Detail Pembinaan</a><% } %>
           <% if(allowed.includes('jadwal'))           { %><a href="/admin/jadwal"    class="btn btn-secondary">📅 Jadwal Kegiatan</a><% } %>
+          <% if(allowed.includes('razia'))            { %><a href="/admin/razia"    class="btn btn-danger">🚨 Razia</a><% } %>
+          <% if(allowed.includes('strapsel'))         { %><a href="/admin/strapsel" class="btn btn-secondary">🛡️ Strapsel</a><% } %>
+          <% if(allowed.includes('tu-umum'))          { %><a href="/admin/tu-umum" class="btn btn-primary">📑 TU Bagian Umum</a><% } %>
+          <% if(allowed.includes('kamar-blok'))       { %><a href="/admin/kamar-blok" class="btn btn-success">🛏️ Kamar/Blok</a><% } %>
+          <% if(allowed.includes('papan-isi'))        { %><a href="/admin/papan-isi" class="btn btn-warning">📌 Papan Keadaan Isi</a><% } %>
           <% if(allowed.includes('users'))            { %><a href="/admin/users"     class="btn btn-danger">👤 Kelola User</a><% } %>
         </div>
       </div>

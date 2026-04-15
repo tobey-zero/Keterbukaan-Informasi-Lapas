@@ -1,0 +1,206 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+  <meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Razia – Admin Lapas</title>
+  <link rel="stylesheet" href="/css/admin.css">
+</head>
+<body>
+<div class="admin-wrapper">
+  <%- include('_sidebar') %>
+  <div class="main-content">
+    <div class="topbar">
+      <div class="topbar-title"><h2>🚨 Razia</h2><p>Kelola jadwal razia dan barang bukti razia (khusus Kalapas)</p></div>
+      <div class="topbar-actions"><a href="/kalapas" target="_blank" class="btn-public">🧭 Lihat Kalapas</a></div>
+    </div>
+    <div class="content-area">
+      <% if (success) { %><div class="alert alert-success">✅ Data razia berhasil disimpan.</div><% } %>
+      <% if (error) { %><div class="alert alert-danger">❌ <%= error %></div><% } %>
+
+      <div class="card">
+        <div class="card-header"><h3>📅 Jadwal Razia</h3></div>
+        <div class="card-body">
+          <form method="POST" action="/admin/razia/jadwal/add" enctype="multipart/form-data">
+            <div class="form-grid col-3" style="margin-bottom:12px;">
+              <div class="form-group">
+                <label>Tanggal</label>
+                <input type="text" name="tanggal" placeholder="Contoh: 13 April 2026" required>
+              </div>
+              <div class="form-group">
+                <label>Petugas</label>
+                <input type="text" name="petugas" placeholder="Nama petugas/tim" required>
+              </div>
+              <div class="form-group">
+                <label>Dokumentasi Razia (opsional)</label>
+                <input type="file" name="dokumentasi" accept="image/*">
+              </div>
+            </div>
+            <button type="submit" class="btn btn-primary btn-sm">➕ Tambah Jadwal</button>
+          </form>
+        </div>
+      </div>
+
+      <% if (editJadwal) { %>
+      <div class="edit-panel">
+        <h4>✏️ Edit Jadwal Razia (ID: <%= editJadwal.id %>)</h4>
+        <form method="POST" action="/admin/razia/jadwal/<%= editJadwal.id %>/update" enctype="multipart/form-data">
+          <div class="form-grid col-3" style="margin-bottom:12px;">
+            <div class="form-group">
+              <label>Tanggal</label>
+              <input type="text" name="tanggal" value="<%= editJadwal.tanggal %>" required>
+            </div>
+            <div class="form-group">
+              <label>Petugas</label>
+              <input type="text" name="petugas" value="<%= editJadwal.petugas %>" required>
+            </div>
+            <div class="form-group">
+              <label>Dokumentasi Razia (opsional, upload untuk mengganti)</label>
+              <input type="file" name="dokumentasi" accept="image/*">
+            </div>
+            <% if (editJadwal.dokumentasi_path) { %>
+            <div class="form-group full">
+              <label>Dokumentasi Saat Ini</label>
+              <img src="<%= editJadwal.dokumentasi_path %>" alt="Dokumentasi razia" class="admin-menu-photo-preview">
+            </div>
+            <% } %>
+          </div>
+          <div style="display:flex;gap:8px;">
+            <button type="submit" class="btn btn-success btn-sm">💾 Simpan</button>
+            <a href="/admin/razia" class="btn btn-secondary btn-sm">✕ Batal</a>
+          </div>
+        </form>
+      </div>
+      <% } %>
+
+      <div class="card">
+        <div class="card-header"><h3>Daftar Jadwal Razia (<%= jadwalList.length %> data)</h3></div>
+        <div class="card-body" style="padding:0;">
+          <div class="table-wrap">
+            <table class="admin-table">
+              <thead><tr><th>#</th><th>Tanggal</th><th>Petugas</th><th>Dokumentasi</th><th>Aksi</th></tr></thead>
+              <tbody>
+                <% jadwalList.forEach((item, i) => { %>
+                <tr>
+                  <td><%= i+1 %></td>
+                  <td><%= item.tanggal %></td>
+                  <td><%= item.petugas %></td>
+                  <td>
+                    <% if (item.dokumentasi_path) { %>
+                      <a href="<%= item.dokumentasi_path %>" target="_blank" rel="noopener noreferrer" class="btn btn-secondary btn-xs">🔍 Preview</a>
+                    <% } else { %>
+                      <span style="color:#aaa;">-</span>
+                    <% } %>
+                  </td>
+                  <td>
+                    <div class="actions">
+                      <a href="/admin/razia?editJadwal=<%= item.id %>" class="btn btn-warning btn-xs">✏️ Edit</a>
+                      <form method="POST" action="/admin/razia/jadwal/<%= item.id %>/delete" style="display:inline" onsubmit="return confirm('Hapus jadwal razia ini?')">
+                        <button class="btn btn-danger btn-xs">🗑 Hapus</button>
+                      </form>
+                    </div>
+                  </td>
+                </tr>
+                <% }) %>
+                <% if (!jadwalList.length) { %><tr><td colspan="5" style="text-align:center;color:#aaa;padding:20px;">Belum ada data</td></tr><% } %>
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+
+      <div class="card">
+        <div class="card-header"><h3>📦 Barang Bukti Razia</h3></div>
+        <div class="card-body">
+          <form method="POST" action="/admin/razia/bukti/add" enctype="multipart/form-data">
+            <div class="form-grid col-3" style="margin-bottom:12px;">
+              <div class="form-group">
+                <label>Pemilik</label>
+                <input type="text" name="pemilik" placeholder="Nama pemilik barang" required>
+              </div>
+              <div class="form-group">
+                <label>Kamar/Blok</label>
+                <input type="text" name="kamar_blok" placeholder="Contoh: Blok A-03" required>
+              </div>
+              <div class="form-group">
+                <label>Foto Barang Bukti (opsional)</label>
+                <input type="file" name="foto" accept="image/*">
+              </div>
+            </div>
+            <button type="submit" class="btn btn-primary btn-sm">➕ Tambah Barang Bukti</button>
+          </form>
+        </div>
+      </div>
+
+      <% if (editBukti) { %>
+      <div class="edit-panel">
+        <h4>✏️ Edit Barang Bukti Razia (ID: <%= editBukti.id %>)</h4>
+        <form method="POST" action="/admin/razia/bukti/<%= editBukti.id %>/update" enctype="multipart/form-data">
+          <div class="form-grid col-3" style="margin-bottom:12px;">
+            <div class="form-group">
+              <label>Pemilik</label>
+              <input type="text" name="pemilik" value="<%= editBukti.pemilik %>" required>
+            </div>
+            <div class="form-group">
+              <label>Kamar/Blok</label>
+              <input type="text" name="kamar_blok" value="<%= editBukti.kamar_blok %>" required>
+            </div>
+            <div class="form-group">
+              <label>Foto Barang Bukti (opsional, upload untuk mengganti)</label>
+              <input type="file" name="foto" accept="image/*">
+            </div>
+            <% if (editBukti.foto_path) { %>
+            <div class="form-group full">
+              <label>Foto Saat Ini</label>
+              <img src="<%= editBukti.foto_path %>" alt="Foto barang bukti" class="admin-menu-photo-preview">
+            </div>
+            <% } %>
+          </div>
+          <div style="display:flex;gap:8px;">
+            <button type="submit" class="btn btn-success btn-sm">💾 Simpan</button>
+            <a href="/admin/razia" class="btn btn-secondary btn-sm">✕ Batal</a>
+          </div>
+        </form>
+      </div>
+      <% } %>
+
+      <div class="card">
+        <div class="card-header"><h3>Daftar Barang Bukti Razia (<%= buktiList.length %> data)</h3></div>
+        <div class="card-body" style="padding:0;">
+          <div class="table-wrap">
+            <table class="admin-table">
+              <thead><tr><th>#</th><th>Pemilik</th><th>Kamar/Blok</th><th>Foto</th><th>Aksi</th></tr></thead>
+              <tbody>
+                <% buktiList.forEach((item, i) => { %>
+                <tr>
+                  <td><%= i+1 %></td>
+                  <td><%= item.pemilik %></td>
+                  <td><%= item.kamar_blok %></td>
+                  <td>
+                    <% if (item.foto_path) { %>
+                      <a href="<%= item.foto_path %>" target="_blank" rel="noopener noreferrer" class="btn btn-secondary btn-xs">🔍 Preview</a>
+                    <% } else { %>
+                      <span style="color:#aaa;">-</span>
+                    <% } %>
+                  </td>
+                  <td>
+                    <div class="actions">
+                      <a href="/admin/razia?editBukti=<%= item.id %>" class="btn btn-warning btn-xs">✏️ Edit</a>
+                      <form method="POST" action="/admin/razia/bukti/<%= item.id %>/delete" style="display:inline" onsubmit="return confirm('Hapus barang bukti ini?')">
+                        <button class="btn btn-danger btn-xs">🗑 Hapus</button>
+                      </form>
+                    </div>
+                  </td>
+                </tr>
+                <% }) %>
+                <% if (!buktiList.length) { %><tr><td colspan="5" style="text-align:center;color:#aaa;padding:20px;">Belum ada data</td></tr><% } %>
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+
+    </div>
+  </div>
+</div>
+</body>
+</html>

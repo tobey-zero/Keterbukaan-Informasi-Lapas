@@ -1,0 +1,244 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Papan Keadaan Isi Lapas</title>
+  <link rel="stylesheet" href="/css/style.css?v=<%= Date.now() %>">
+  <style>
+    .board-wrap { padding: 12px 15px 16px; }
+    .board-title {
+      text-align: center;
+      margin: 0 0 10px;
+      font-size: 24px;
+      letter-spacing: 1.2px;
+      color: #0f172a;
+      font-weight: 900;
+    }
+    .board-subtitle {
+      text-align: center;
+      margin: 0 0 14px;
+      font-size: 13px;
+      color: #475569;
+      font-weight: 700;
+    }
+    .board-toolbar { display:flex; gap:8px; flex-wrap:wrap; margin-bottom:12px; }
+    .board-toolbar a {
+      text-decoration:none;
+      color:#fff;
+      background:#1a4bb8;
+      border:1px solid rgba(255,255,255,.35);
+      border-radius:6px;
+      padding:7px 11px;
+      font-size:12px;
+      font-weight:bold;
+    }
+
+    .board-grid {
+      display:grid;
+      grid-template-columns: 2fr 1fr;
+      gap:12px;
+    }
+
+    .board-panel {
+      background:#fff;
+      border:1px solid #cbd5e1;
+      border-radius:8px;
+      overflow:hidden;
+    }
+
+    .board-panel h4 {
+      margin:0;
+      padding:8px 10px;
+      background:#dbeafe;
+      color:#1e3a8a;
+      font-size:12px;
+      letter-spacing:.4px;
+      font-weight:800;
+      text-transform:uppercase;
+      border-bottom:1px solid #bfdbfe;
+    }
+
+    .board-table { width:100%; border-collapse:collapse; }
+    .board-table th, .board-table td {
+      border:1px solid #cbd5e1;
+      padding:6px 7px;
+      font-size:11px;
+      color:#0f172a;
+      text-align:center;
+      white-space:nowrap;
+    }
+    .board-table th { background:#eff6ff; font-weight:800; }
+    .left { text-align:left !important; }
+    .total-row td { font-weight:800; background:#f1f5f9; }
+
+    .split-grid {
+      display:grid;
+      grid-template-columns: 1fr 1fr;
+      gap:10px;
+      padding:10px;
+    }
+
+    .mini-note {
+      margin: 10px;
+      padding: 8px;
+      border:1px dashed #bfdbfe;
+      border-radius:7px;
+      color:#334155;
+      font-size:11px;
+      background:#f8fafc;
+      text-align:center;
+      font-weight:700;
+    }
+
+    @media (max-width: 1100px) {
+      .board-grid { grid-template-columns: 1fr; }
+      .split-grid { grid-template-columns: 1fr; }
+    }
+  </style>
+</head>
+<body class="page-umum">
+  <header class="header">
+    <div class="header-content">
+      <div class="logo-section">
+        <div class="logo kalapas-logo">
+          <img src="/images/Logo.png" alt="Logo SIMWASPIM" class="kalapas-logo-img">
+        </div>
+        <div class="header-info">
+          <h2>SIMWASPIM – KETERBUKAAN INFORMASI LAPAS</h2>
+          <h3>PAPAN KEADAAN ISI LAPAS</h3>
+          <p class="address"><%= tanggal %></p>
+        </div>
+      </div>
+    </div>
+  </header>
+
+  <div class="board-wrap">
+    <h1 class="board-title">KEADAAN ISI LEMBAGA PEMASYARAKATAN KELAS I MEDAN</h1>
+    <p class="board-subtitle">Format awal mengikuti papan fisik (dapat disempurnakan sesuai kebutuhan berikutnya)</p>
+
+    <div class="board-toolbar">
+      <a href="/kalapas">⬅ Kembali Dashboard Kalapas</a>
+      <a href="/admin/papan-isi" target="_blank">⚙️ Kelola Data Papan</a>
+    </div>
+
+    <div class="board-grid">
+      <div class="board-panel">
+        <h4>Jenis Tindak Pidana</h4>
+        <div class="split-grid">
+          <div>
+            <table class="board-table">
+              <thead><tr><th colspan="2">Pidana Khusus</th></tr></thead>
+              <tbody>
+                <% pidanaKhusus.forEach(item => { %>
+                <tr><td class="left"><%= item.jenis %></td><td><%= item.jumlah %></td></tr>
+                <% }) %>
+                <tr class="total-row"><td class="left">Jumlah</td><td><%= boardSummary.totalPidanaKhusus %></td></tr>
+              </tbody>
+            </table>
+          </div>
+          <div>
+            <table class="board-table">
+              <thead><tr><th colspan="2">Pidana Umum</th></tr></thead>
+              <tbody>
+                <% pidanaUmum.forEach(item => { %>
+                <tr><td class="left"><%= item.jenis %></td><td><%= item.jumlah %></td></tr>
+                <% }) %>
+                <tr class="total-row"><td class="left">Jumlah</td><td><%= boardSummary.totalPidanaUmum %></td></tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+
+      <div class="board-panel">
+        <h4>Jumlah WBP Berdasarkan Blok Hunian</h4>
+        <table class="board-table">
+          <thead><tr><th>Blok</th><th>Kapasitas</th><th>Isi</th></tr></thead>
+          <tbody>
+            <% housingBlocks.forEach(block => { %>
+            <tr>
+              <td class="left"><%= block.namaBlock %></td>
+              <td><%= block.totalKapasitas %></td>
+              <td><%= block.totalPenghuni %></td>
+            </tr>
+            <% }) %>
+            <tr class="total-row">
+              <td class="left">Jumlah</td>
+              <td><%= kapasitas %></td>
+              <td><%= totalPenghuni %></td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+
+      <div class="board-panel">
+        <h4>WBP di Luar Tembok</h4>
+        <table class="board-table">
+          <thead>
+            <tr>
+              <th rowspan="2">Status</th>
+              <th colspan="2">WNI</th>
+              <th colspan="2">WNA</th>
+              <th rowspan="2">Jumlah</th>
+              <th rowspan="2">Keterangan</th>
+            </tr>
+            <tr>
+              <th>Keluar</th><th>Masuk</th><th>Keluar</th><th>Masuk</th>
+            </tr>
+          </thead>
+          <tbody>
+            <% let totalWniKeluar = 0, totalWniMasuk = 0, totalWnaKeluar = 0, totalWnaMasuk = 0;
+              luarTembok.forEach(item => {
+                const rowTotal = (Number(item.wniKeluar)||0) + (Number(item.wniMasuk)||0) + (Number(item.wnaKeluar)||0) + (Number(item.wnaMasuk)||0);
+                totalWniKeluar += Number(item.wniKeluar)||0;
+                totalWniMasuk += Number(item.wniMasuk)||0;
+                totalWnaKeluar += Number(item.wnaKeluar)||0;
+                totalWnaMasuk += Number(item.wnaMasuk)||0;
+            %>
+            <tr>
+              <td class="left"><%= item.status %></td>
+              <td><%= item.wniKeluar %></td>
+              <td><%= item.wniMasuk %></td>
+              <td><%= item.wnaKeluar %></td>
+              <td><%= item.wnaMasuk %></td>
+              <td><%= rowTotal %></td>
+              <td class="left"><%= item.keterangan || '-' %></td>
+            </tr>
+            <% }) %>
+            <tr class="total-row">
+              <td class="left">Jumlah</td>
+              <td><%= totalWniKeluar %></td>
+              <td><%= totalWniMasuk %></td>
+              <td><%= totalWnaKeluar %></td>
+              <td><%= totalWnaMasuk %></td>
+              <td><%= boardSummary.totalLuarTembok %></td>
+              <td>-</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+
+      <div class="board-panel">
+        <h4>Jumlah WBP Berdasarkan Agama</h4>
+        <table class="board-table">
+          <thead><tr><th>Agama</th><th>WNI</th><th>WNA</th><th>Jumlah</th></tr></thead>
+          <tbody>
+            <% let totalAgamaWni = 0, totalAgamaWna = 0; agama.forEach(item => { const rowTotal = (Number(item.wni)||0) + (Number(item.wna)||0); totalAgamaWni += Number(item.wni)||0; totalAgamaWna += Number(item.wna)||0; %>
+            <tr>
+              <td class="left"><%= item.agama %></td>
+              <td><%= item.wni %></td>
+              <td><%= item.wna %></td>
+              <td><%= rowTotal %></td>
+            </tr>
+            <% }) %>
+            <tr class="total-row"><td class="left">Jumlah</td><td><%= totalAgamaWni %></td><td><%= totalAgamaWna %></td><td><%= boardSummary.totalAgama %></td></tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+
+    <div class="mini-note">Data pada halaman ini bersifat fleksibel dan dapat disesuaikan lagi agar semakin mirip papan manual.</div>
+  </div>
+</body>
+</html>

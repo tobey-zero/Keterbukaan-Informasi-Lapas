@@ -531,18 +531,24 @@ table tbody tr:hover {
 
 /* Table Remisi */
 .table-remisi th:nth-child(1) {
-    width: 25%;
+    width: 40%;
 }
 
 .table-remisi th:nth-child(2) {
-    width: 55%;
-}
-
-.table-remisi th:nth-child(3) {
-    width: 20%;
+    width: 18%;
     text-align: center;
 }
 
+.table-remisi th:nth-child(3) {
+    width: 18%;
+    text-align: center;
+}
+
+.table-remisi th:nth-child(4) {
+    width: 24%;
+}
+
+.table-remisi td:nth-child(2),
 .table-remisi td:nth-child(3) {
     text-align: center;
     font-weight: bold;

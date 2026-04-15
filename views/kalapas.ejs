@@ -1,476 +1,585 @@
 <!DOCTYPE html>
 <html lang="id">
-
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
     <meta http-equiv="Pragma" content="no-cache">
     <meta http-equiv="Expires" content="0">
-    <title>DEMO - Dashboard Kalapas</title>
+    <title>SIMWASPIM</title>
     <link rel="stylesheet" href="/css/style.css?v=<%= Date.now() %>">
     <style>
-        /* ── Kalapas-specific layout ── */
-        .kalapas-grid {
+        html { scroll-behavior: smooth; }
+
+        .dashboard-main {
             display: grid;
-            grid-template-columns: 1fr 1.6fr 1.4fr;
+            grid-template-columns: 2fr 1fr 1fr 1fr;
+            grid-template-areas:
+                'summary bar kapasitas sebaran';
             gap: 12px;
             width: 100%;
-            margin: 12px auto;
+            margin: 8px auto;
             padding: 0 15px;
-            flex: 1;
-            min-height: 0;
             align-items: stretch;
         }
 
-        .kalapas-col {
+        .dashboard-main .panel-content { padding: 9px; }
+        .panel-summary { grid-area: summary; }
+        .panel-barutama { grid-area: bar; }
+        .panel-kapasitas { grid-area: kapasitas; }
+        .panel-sebaran { grid-area: sebaran; }
+
+        .logo.kalapas-logo { background-color: transparent; padding: 0; }
+        .kalapas-logo-img { width: 86px; height: 86px; object-fit: contain; display: block; }
+
+        .quick-nav {
             display: flex;
-            flex-direction: column;
-            gap: 12px;
-            min-height: 0;
+            flex-wrap: wrap;
+            gap: 8px;
+            padding: 10px 15px 12px;
         }
 
-        .kalapas-col>.panel {
-            flex: 1;
-            min-height: 0;
-        }
-
-        /* KPI strip under header */
-        .kpi-strip {
-            display: grid;
-            grid-template-columns: repeat(4, 1fr);
-            gap: 10px;
-            padding: 8px 15px;
-        }
-
-        .kpi-card {
-            background: rgba(255, 255, 255, 0.12);
+        .quick-nav a {
+            text-decoration: none;
+            color: #fff;
+            background: rgba(255, 255, 255, 0.14);
             border: 1px solid rgba(255, 255, 255, 0.25);
-            border-radius: 6px;
-            padding: 6px 10px;
-            text-align: center;
-            color: white;
-        }
-
-        .kpi-card .kpi-card-label {
-            font-size: 9px;
-            opacity: 0.85;
-            font-weight: bold;
-            letter-spacing: 0.5px;
-        }
-
-        .kpi-card .kpi-card-value {
-            font-size: 20px;
-            font-weight: bold;
-            line-height: 1.2;
-            margin-top: 2px;
-        }
-
-        .kpi-card .kpi-card-sub {
-            font-size: 8px;
-            opacity: 0.7;
-            margin-top: 1px;
-        }
-
-        .kpi-card.danger {
-            background: rgba(220, 38, 38, 0.4);
-            border-color: rgba(248, 113, 113, 0.4);
-        }
-
-        .kpi-card.warn {
-            background: rgba(217, 119, 6, 0.4);
-            border-color: rgba(251, 191, 36, 0.4);
-        }
-
-        .kpi-card.ok {
-            background: rgba(5, 150, 105, 0.4);
-            border-color: rgba(52, 211, 153, 0.4);
-        }
-
-        .kpi-card.info {
-            background: rgba(37, 99, 235, 0.4);
-            border-color: rgba(96, 165, 250, 0.4);
-        }
-
-        /* Compact table sizing for kalapas */
-        .kalapas-grid .panel-header,
-        .kalapas-grid .panel-header.red {
-            padding: 6px 12px;
+            border-radius: 7px;
+            padding: 7px 11px;
             font-size: 11px;
+            font-weight: bold;
+            letter-spacing: .2px;
         }
 
-        .kalapas-grid .panel-header-with-date {
-            padding: 6px 12px;
-        }
+        .summary-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 8px; }
+        .summary-card { border-radius: 8px; padding: 8px; background: #f8fafc; border: 1px solid #dbeafe; }
+        .summary-label { font-size: 10px; color: #334155; font-weight: bold; margin-bottom: 4px; }
+        .summary-value { font-size: 24px; color: #1e3a8a; font-weight: bold; line-height: 1; }
+        .summary-link { display: inline-block; margin-top: 5px; font-size: 10px; font-weight: bold; color: #1d4ed8; text-decoration: none; }
 
-        .kalapas-grid .panel-title {
+        .bar-chart { display: flex; flex-direction: column; gap: 6px; }
+        .bar-row {
+            display: grid;
+            grid-template-columns: 1.3fr 3fr auto;
+            align-items: center;
+            gap: 6px;
             font-size: 11px;
+            color: #1e293b;
+        }
+        .bar-track { width: 100%; height: 9px; border-radius: 99px; background: #e2e8f0; overflow: hidden; }
+        .bar-fill { height: 100%; border-radius: 99px; background: linear-gradient(90deg, #1d4ed8 0%, #60a5fa 100%); }
+
+        .donut-layout {
+            display: grid;
+            grid-template-columns: 96px 1fr;
+            gap: 10px;
+            align-items: center;
         }
 
-        .kalapas-grid .panel-date {
+        .donut-chart {
+            width: 96px;
+            height: 96px;
+            border-radius: 50%;
+            position: relative;
+        }
+
+        .donut-chart::after {
+            content: '';
+            position: absolute;
+            inset: 15px;
+            border-radius: 50%;
+            background: #fff;
+            box-shadow: inset 0 0 0 1px #dbeafe;
+        }
+
+        .donut-center {
+            position: absolute;
+            inset: 0;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 13px;
+            font-weight: bold;
+            color: #1e3a8a;
+            z-index: 1;
+        }
+
+        .donut-legend { display: flex; flex-direction: column; gap: 6px; font-size: 11px; color: #1e293b; }
+        .legend-item { display: flex; align-items: center; justify-content: space-between; gap: 10px; }
+        .legend-dot { width: 10px; height: 10px; border-radius: 50%; margin-right: 6px; display: inline-block; }
+        .legend-label { display: inline-flex; align-items: center; }
+
+        .block-list {
+            display: grid;
+            grid-template-columns: 1fr;
+            gap: 8px;
+            max-height: 220px;
+            overflow: auto;
+            padding-right: 2px;
+        }
+
+        .block-card { border: 1px solid #dbeafe; border-radius: 8px; background: #fff; padding: 9px; }
+        .block-head { display: flex; align-items: center; justify-content: space-between; margin-bottom: 7px; gap: 8px; }
+        .block-name { font-size: 12px; font-weight: bold; color: #1e3a8a; }
+        .block-meta { font-size: 10px; color: #475569; }
+        .room-row {
+            display: grid;
+            grid-template-columns: 1.2fr 2fr auto;
+            gap: 6px;
+            align-items: center;
             font-size: 10px;
+            color: #1e293b;
+            margin-bottom: 5px;
+        }
+        .room-track { width: 100%; height: 7px; border-radius: 99px; background: #e2e8f0; overflow: hidden; }
+        .room-fill { height: 100%; border-radius: 99px; background: linear-gradient(90deg, #0ea5e9 0%, #2563eb 100%); }
+
+        .board-section { width: 100%; padding: 0 15px 10px; }
+        .board-panel {
+            border: 1px solid #d6deea;
+            border-radius: 8px;
+            background: #f8fafc;
+            overflow: hidden;
         }
 
-        .kalapas-grid table th {
+        .board-panel-header {
+            margin: 0;
+            padding: 10px 12px;
+            border-bottom: 1px solid #214a9d;
+            background: #2f5fc7;
+            color: #fff;
+            font-size: 13px;
+            font-weight: bold;
+            letter-spacing: .4px;
+        }
+
+        .board-table-wrap { padding: 10px; }
+        .board-three-col {
+            display: grid;
+            grid-template-columns: 1fr 1fr 1fr;
+            gap: 12px;
+        }
+        .board-col { min-width: 0; display: grid; gap: 10px; align-content: start; }
+
+        .clickable-chart {
+            cursor: pointer;
+            transition: transform .12s ease, box-shadow .12s ease;
+        }
+
+        .clickable-chart:hover,
+        .clickable-chart:focus-visible {
+            transform: translateY(-1px);
+            box-shadow: 0 2px 10px rgba(37, 99, 235, .18);
+            outline: none;
+        }
+
+        .pie-card {
+            border: 1px solid #cbd5e1;
+            border-radius: 8px;
+            background: #fff;
+            padding: 8px;
+            min-height: 112px;
+        }
+
+        .pie-title {
+            margin: 0 0 8px;
+            font-size: 11px;
+            font-weight: bold;
+            color: #0f2e78;
+            letter-spacing: .2px;
+            text-transform: uppercase;
+        }
+
+        .pie-layout {
+            display: grid;
+            grid-template-columns: 96px 1fr;
+            align-items: start;
+            gap: 8px;
+        }
+
+        .pie-chart {
+            width: 96px;
+            height: 96px;
+            border-radius: 50%;
+            position: relative;
+            background: #dbeafe;
+        }
+
+        .pie-chart::after {
+            content: '';
+            position: absolute;
+            inset: 15px;
+            border-radius: 50%;
+            background: #fff;
+            box-shadow: inset 0 0 0 1px #dbeafe;
+        }
+
+        .pie-center {
+            position: absolute;
+            inset: 0;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 13px;
+            font-weight: bold;
+            color: #1e3a8a;
+            z-index: 1;
+        }
+
+        .pie-legend {
+            list-style: none;
+            margin: 0;
+            padding: 0;
+            display: grid;
+            gap: 4px;
+            font-size: 10px;
+            color: #0f172a;
+        }
+
+        .pie-legend li {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 8px;
+        }
+
+        .pie-label {
+            display: inline-flex;
+            align-items: center;
+            gap: 5px;
+            min-width: 0;
+        }
+
+        .pie-dot {
+            width: 8px;
+            height: 8px;
+            border-radius: 50%;
+            flex: 0 0 auto;
+        }
+
+        .pie-label span:last-child {
+            max-width: 160px;
+            overflow-wrap: anywhere;
+            line-height: 1.2;
+        }
+
+        .board-table { width: 100%; border-collapse: collapse; }
+        .board-table th,
+        .board-table td {
+            border: 1px solid #cbd5e1;
             padding: 5px 6px;
-            font-size: 9px;
+            font-size: 11px;
+            color: #0f172a;
+            text-align: center;
+            white-space: nowrap;
         }
 
-        .kalapas-grid table td {
-            padding: 4px 6px;
-            font-size: 9px;
+        .board-table th { background: #1e3a8a; color: #fff; font-weight: bold; }
+        .board-table td.left,
+        .board-table th.left { text-align: left; }
+        .board-total td { font-weight: bold; background: #f8fafc; }
+
+        @media (max-width: 1100px) {
+            .dashboard-main {
+                grid-template-columns: 1fr;
+                grid-template-areas:
+                    'summary'
+                    'bar'
+                    'kapasitas'
+                    'sebaran';
+            }
+            .summary-grid { grid-template-columns: repeat(2, 1fr); }
+            .board-three-col { grid-template-columns: 1fr; }
+            .donut-layout { grid-template-columns: 88px 1fr; }
+            .donut-chart { width: 88px; height: 88px; }
+            .donut-chart::after { inset: 13px; }
+            .donut-center { font-size: 12px; }
+            .pie-layout { grid-template-columns: 88px 1fr; }
+            .pie-chart { width: 88px; height: 88px; }
+            .pie-label span:last-child { max-width: 190px; }
         }
     </style>
 </head>
 
 <body class="page-umum">
-    <!-- Header -->
     <header class="header">
         <div class="header-content">
             <div class="logo-section">
-                <div class="logo">
-                    <P>&nbsp;</P>
-                    <h1>KRISNA</h1>
-                    <P>&nbsp;</P>
+                <div class="logo kalapas-logo">
+                    <img src="/images/Logo.png" alt="Logo SIMWASPIM" class="kalapas-logo-img">
                 </div>
                 <div class="header-info">
-                    <h2>DASHBOARD PIMPINAN – KETERBUKAAN INFORMASI LAPAS</h2>
-                    <h3>RINGKASAN OPERASIONAL & KESEHATAN WARGA BINAAN</h3>
-                    <p class="address">Lapas Rutan | Informasi Strategis untuk Kepala Lapas</p>
-                    <p class="contact">
-                        <%= tanggal %>
-                    </p>
+                    <h1>SIMWASPIM – SISTEM PENGAWASAN PIMPINAN</h1>
+                    <h3>LAPAS KELAS 1 MEDAN</h3>
                 </div>
             </div>
             <div class="stats">
                 <div class="stat-item">
-                    <div class="stat-label">Total Penghuni</div>
-                    <div class="stat-value">
-                        <%= totalPenghuni %>
-                    </div>
+                    <div class="stat-label">Kapasitas</div>
+                    <div class="stat-value"><%= kapasitas %></div>
                 </div>
                 <div class="stat-item">
-                    <div class="stat-label">Kapasitas</div>
-                    <div class="stat-value">
-                        <%= kapasitas %>
-                    </div>
+                    <div class="stat-label">Total Penghuni</div>
+                    <div class="stat-value"><%= totalPenghuni %></div>
+                </div>
+                <div class="stat-item">
+                    <div class="stat-label">Bebas Hari Ini</div>
+                    <div class="stat-value"><%= bebasHariIni %> Orang</div>
                 </div>
                 <div class="stat-item bebas">
-                    <div class="stat-label">Bebas Hari Ini</div>
-                    <div class="stat-value">
-                        <%= bebasHariIni %> Orang
-                    </div>
+                    <div class="stat-label">Tanggal</div>
+                    <div class="stat-value"><%= tanggal %></div>
                 </div>
             </div>
         </div>
-        <!-- KPI Strip -->
-        <div class="kpi-strip">
-            <div class="kpi-card info">
-                <div class="kpi-card-label">OKUPANSI HUNIAN</div>
-                <div class="kpi-card-value">
-                    <%= okupansi %>%
-                </div>
-                <div class="kpi-card-sub">dari kapasitas <%= kapasitas %>
-                </div>
-            </div>
-            <div class="kpi-card warn">
-                <div class="kpi-card-label">WARGA BINAAN BEROBAT</div>
-                <div class="kpi-card-value">
-                    <%= clinicSummary.totalWbpBerobat %>
-                </div>
-                <div class="kpi-card-sub">R. Jalan: <%= clinicSummary.rawatJalan %> | R. Inap: <%=
-                            clinicSummary.rawatInapAktif %>
-                </div>
-            </div>
-            <div class="kpi-card danger">
-                <div class="kpi-card-label">PENYAKIT KRONIS</div>
-                <div class="kpi-card-value">
-                    <%= clinicSummary.totalKronis %>
-                </div>
-                <div class="kpi-card-sub">TB: <%= clinicSummary.tb %> | Paru: <%= clinicSummary.paru %> | HIV: <%=
-                                clinicSummary.hiv %>
-                </div>
-            </div>
-            <div class="kpi-card ok">
-                <div class="kpi-card-label">TENAGA MEDIS</div>
-                <div class="kpi-card-value">
-                    <%= clinicSummary.totalTenagaMedis %>
-                </div>
-                <div class="kpi-card-sub">Blok Lansia: <%= clinicSummary.blokLansia %> WARGA BINAAN</div>
-            </div>
+
+        <div class="quick-nav">
+            <a href="/kalapas">📊 Dashboard Kalapas</a>
+            <a href="/">🏢 Krisna</a>
+            <a href="/klinik">🏥 Klinik</a>
+            <a href="/kalapas/table/pengamanan">🔒 Pengamanan</a>
+            <a href="/kalapas/table/kamtib">🛡️ Kamtib</a>
+            <a href="/kalapas/table/tu-umum">📑 TU Bagian Umum</a>
+            <a href="/kalapas/table/kamar-blok">🛏️ Informasi Kamar/Blok</a>
         </div>
     </header>
 
-    <!-- 3-column main grid -->
-    <div class="kalapas-grid">
+    <%
+        const summaryRows = [
+            { label: remisiTitle, value: besaranRemisi.length, link: '/kalapas/table/remisi' },
+            { label: 'Pentahapan Pembinaan', value: pentahapanPembinaanDetail.length, link: '/kalapas/table/pembinaan' },
+            { label: 'Warga Binaan Berobat', value: wbpBerobat.length, link: '/kalapas/table/berobat' },
+            { label: 'Tenaga Medis', value: tenagaMedis.length, link: '/kalapas/table/berobat' },
+            { label: 'Jadwal Razia', value: raziaSummary.totalJadwalRazia, link: '/kalapas/table/razia-jadwal' },
+            { label: 'Barang Bukti Razia', value: raziaSummary.totalBarangBukti, link: '/kalapas/table/razia-barang-bukti' },
+            { label: 'Data Strapsel', value: securitySummary.totalStrapsel, link: '/kalapas/table/strapsel' },
+            { label: 'TU Bagian Umum', value: tuUmumSummary.totalTuUmum, link: '/kalapas/table/tu-umum' }
+        ];
+        const maxSummary = Math.max(...summaryRows.map(item => Number(item.value) || 0), 1);
+        const occupied = Number(totalPenghuni) || 0;
+        const capacityNum = Number(kapasitas) || 0;
+        const available = Math.max(capacityNum - occupied, 0);
+        const occupancyRate = capacityNum > 0 ? ((occupied / capacityNum) * 100) : 0;
+        const overCapacity = Math.max(occupied - capacityNum, 0);
+    %>
 
-        <!-- Kolom 1: Remisi + Jadwal Kegiatan -->
-        <div class="kalapas-col">
-            <div class="panel">
-                <div class="panel-header red"><%= remisiTitle %></div>
-                <div class="panel-content">
-                    <table>
-                        <thead>
-                            <tr>
-                                <th>JENIS</th>
-                                <th>NAMA WARGA BINAAN</th>
-                                <th>BESARAN</th>
-                            </tr>
-                        </thead>
-                        <tbody>
-                            <% topRemisi.forEach(item=> { %>
-                                <tr>
-                                    <td>
-                                        <%= item.jenis %>
-                                    </td>
-                                    <td>
-                                        <%= item.nama %>
-                                    </td>
-                                    <td style="text-align:center;font-weight:bold;">
-                                        <%= item.besaran %>
-                                    </td>
-                                </tr>
-                                <% }) %>
-                        </tbody>
-                    </table>
-                </div>
-            </div>
-            <div class="panel">
-                <div class="panel-header-with-date" style="background: linear-gradient(135deg, #1a365d 0%, #2563eb 100%);">
-                    <span class="panel-title">JADWAL KEGIATAN PEMBINAAN</span>
-                    <span class="panel-date" style="font-size: 14px; font-weight: bold; color: white;">SELASA</span>
-                </div>
-                <div class="panel-content">
-                    <table class="table-jadwal">
-                        <thead>
-                            <tr>
-                                <th>KEGIATAN</th>
-                                <th>HARI</th>
-                                <th>WAKTU</th>
-                            </tr>
-                        </thead>
-                        <tbody>
-                            <% jadwalKegiatan.forEach(item=> { %>
-                                <tr>
-                                    <td>
-                                        <%= item.kegiatan %>
-                                    </td>
-                                    <td>
-                                        <%= item.selasa %>
-                                    </td>
-                                    <td>
-                                        <%= item.rabu %>
-                                    </td>
-                                </tr>
-                                <% }) %>
-                        </tbody>
-                    </table>
+    <div class="dashboard-main">
+        <div class="panel panel-summary">
+            <div class="panel-header">RINGKASAN DATA JUMLAH</div>
+            <div class="panel-content">
+                <div class="summary-grid">
+                    <% summaryRows.forEach(item => { %>
+                        <div class="summary-card">
+                            <div class="summary-label"><%= item.label %></div>
+                            <div class="summary-value"><%= item.value %></div>
+                            <a href="<%= item.link %>" class="summary-link">Lihat detail</a>
+                        </div>
+                    <% }) %>
                 </div>
             </div>
         </div>
 
-        <!-- Kolom 2: WBP Berobat + Pentahapan Pembinaan -->
-        <div class="kalapas-col">
-            <div class="panel">
-                <div class="panel-header-with-date">
-                    <span class="panel-title">WARGA BINAAN BEROBAT (TERKINI)</span>
-                    <span class="panel-date">
-                        <%= tanggal %>
-                    </span>
-                </div>
-                <div class="panel-content">
-                    <table>
-                        <thead>
-                            <tr>
-                                <th>NO REG</th>
-                                <th>NAMA WARGA BINAAN</th>
-                                <th>DIAGNOSA</th>
-                                <th>BLOK</th>
-                                <th>STATUS</th>
-                            </tr>
-                        </thead>
-                        <tbody>
-                            <% wbpBerobat.slice(0, 8).forEach(item=> { %>
-                                <tr>
-                                    <td>
-                                        <%= item.noReg %>
-                                    </td>
-                                    <td>
-                                        <%= item.namaWbp %>
-                                    </td>
-                                    <td>
-                                        <%= item.diagnosa %>
-                                    </td>
-                                    <td>
-                                        <%= item.blok %>
-                                    </td>
-                                    <td><strong>
-                                            <%= item.statusPerawatan %>
-                                        </strong></td>
-                                </tr>
-                                <% }) %>
-                                    <% if (!wbpBerobat.length) { %>
-                                        <tr>
-                                            <td colspan="5" style="text-align:center;color:#aaa;padding:10px;">Tidak ada
-                                                data</td>
-                                        </tr>
-                                        <% } %>
-                        </tbody>
-                    </table>
-                </div>
-            </div>
-            <div class="panel">
-                <div class="panel-header-with-date">
-                    <span class="panel-title">DAFTAR PENTAHAPAN PEMBINAAN</span>
-                    <span class="panel-date">
-                        <%= tanggal %>
-                    </span>
-                </div>
-                <div class="panel-content">
-                    <table class="table-pembinaan">
-                        <thead>
-                            <tr>
-                                <th>NAMA WARGA BINAAN</th>
-                                <th>STATUS INTEGRASI</th>
-                                <th>NAMA WARGA BINAAN</th>
-                                <th>STATUS INTEGRASI</th>
-                            </tr>
-                        </thead>
-                        <tbody>
-                            <% pentahapanPembinaan.slice(0, 5).forEach(item=> { %>
-                                <tr>
-                                    <td><strong>
-                                            <%= item.namaWbp %>
-                                        </strong>
-                                    </td>
-                                    <td>
-                                        <%= item.statusIntegrasi %>
-                                    </td>
-                                    <td>
-                                        <%= item.namaWbp2 %>
-                                    </td>
-                                    <td>
-                                        <%= item.statusIntegrasi2 %>
-                                    </td>
-                                </tr>
-                                <% }) %>
-                        </tbody>
-                    </table>
+        <div class="panel panel-barutama">
+            <div class="panel-header">GRAFIK BATANG DATA UTAMA</div>
+            <div class="panel-content">
+                <div class="bar-chart">
+                    <% summaryRows.slice(0, 4).forEach(item => { %>
+                        <div class="bar-row">
+                            <strong><%= item.label %></strong>
+                            <div class="bar-track"><div class="bar-fill" data-percent="<%= Math.round((item.value / maxSummary) * 100) %>"></div></div>
+                            <strong><%= item.value %></strong>
+                        </div>
+                    <% }) %>
                 </div>
             </div>
         </div>
 
-        <!-- Kolom 3: On Call + Kontrol + Tenaga Medis -->
-        <div class="kalapas-col">
-            <div class="panel">
-                <div class="panel-header red">ON CALL PETUGAS MEDIS</div>
-                <div class="panel-content">
-                    <table>
-                        <thead>
-                            <tr>
-                                <th>HARI</th>
-                                <th>SHIFT</th>
-                                <th>PETUGAS</th>
-                                <th>PROFESI</th>
-                            </tr>
-                        </thead>
-                        <tbody>
-                            <% topOnCall.forEach(item=> { %>
-                                <tr>
-                                    <td>
-                                        <%= item.hari %>
-                                    </td>
-                                    <td>
-                                        <%= item.shift %>
-                                    </td>
-                                    <td>
-                                        <%= item.petugas %>
-                                    </td>
-                                    <td>
-                                        <%= item.profesi %>
-                                    </td>
-                                </tr>
-                                <% }) %>
-                        </tbody>
-                    </table>
+        <div class="panel panel-kapasitas">
+            <div class="panel-header">GRAFIK KAPASITAS HUNIAN</div>
+            <div class="panel-content">
+                <div class="donut-layout">
+                    <div class="donut-chart" data-occupancy="<%= occupancyRate.toFixed(1) %>">
+                        <div class="donut-center"><%= occupancyRate.toFixed(1) %>%</div>
+                    </div>
+                    <div class="donut-legend">
+                        <div class="legend-item"><span class="legend-label"><span class="legend-dot" style="background:#005F73;"></span>Terisi</span><strong><%= occupied %></strong></div>
+                        <div class="legend-item"><span class="legend-label"><span class="legend-dot" style="background:#94D2BD;"></span>Sisa Kapasitas</span><strong><%= available %></strong></div>
+                        <div class="legend-item"><span class="legend-label"><span class="legend-dot" style="background:#EE9B00;"></span>Over Capacity</span><strong><%= overCapacity %></strong></div>
+                        <div class="legend-item"><span class="legend-label"><span class="legend-dot" style="background:#CA6702;"></span>Kapasitas Total</span><strong><%= capacityNum %></strong></div>
+                    </div>
                 </div>
             </div>
-            <div class="panel">
-                <div class="panel-header red">JADWAL KONTROL KESEHATAN BLOK</div>
-                <div class="panel-content">
-                    <table>
-                        <thead>
-                            <tr>
-                                <th>HARI</th>
-                                <th>WAKTU</th>
-                                <th>LOKASI</th>
-                                <th>PETUGAS</th>
-                            </tr>
-                        </thead>
-                        <tbody>
-                            <% topKontrol.forEach(item=> { %>
-                                <tr>
-                                    <td>
-                                        <%= item.hari %>
-                                    </td>
-                                    <td>
-                                        <%= item.waktu %>
-                                    </td>
-                                    <td>
-                                        <%= item.lokasiBlok %>
-                                    </td>
-                                    <td>
-                                        <%= item.petugas %>
-                                    </td>
-                                </tr>
-                                <% }) %>
-                        </tbody>
-                    </table>
-                </div>
-            </div>
-            <div class="panel">
-                <div class="panel-header red">TENAGA MEDIS KLINIK</div>
-                <div class="panel-content">
-                    <table>
-                        <thead>
-                            <tr>
-                                <th>NAMA</th>
-                                <th>PROFESI</th>
-                                <th>STATUS</th>
-                            </tr>
-                        </thead>
-                        <tbody>
-                            <% tenagaMedis.forEach(item=> { %>
-                                <tr>
-                                    <td>
-                                        <%= item.nama %>
-                                    </td>
-                                    <td>
-                                        <%= item.profesi %>
-                                    </td>
-                                    <td><span
-                                            style="color:<%= item.statusTugas==='On Duty'?'#059669':'#6b7280' %>;font-weight:bold;">
-                                            <%= item.statusTugas %>
-                                        </span></td>
-                                </tr>
-                                <% }) %>
-                        </tbody>
-                    </table>
+        </div>
+
+        <div class="panel panel-sebaran">
+            <div class="panel-header">SEBARAN PENGHUNI PER BLOK</div>
+            <div class="panel-content">
+                <div class="pie-card clickable-chart" tabindex="0" role="link" data-link="/kalapas/table/kamar-blok" data-values="<%= (housingBlocks || []).map(item => Number(item.totalPenghuni) || 0).join(',') %>" data-labels="<%= (housingBlocks || []).map(item => item.namaBlock).join('|') %>">
+                    <h4 class="pie-title">Sebaran Penghuni per Blok</h4>
+                    <div class="pie-layout">
+                        <div class="pie-chart"><div class="pie-center">0</div></div>
+                        <ul class="pie-legend"></ul>
+                    </div>
                 </div>
             </div>
         </div>
     </div>
 
-    <!-- Footer -->
+    <section class="board-section">
+        <div class="board-panel">
+            <h3 class="board-panel-header">PAPAN KEADAAN ISI LEMBAGA PEMASYARAKATAN</h3>
+            <%
+                const regLabels = (housingBlocks || []).map(item => item.namaBlock);
+                const regValues = (housingBlocks || []).map(item => Number(item.totalPenghuni) || 0);
+
+                const khususLabels = (pidanaKhusus || []).map(item => item.jenis);
+                const khususValues = (pidanaKhusus || []).map(item => Number(item.jumlah) || 0);
+
+                const umumLabels = (pidanaUmum || []).map(item => item.jenis);
+                const umumValues = (pidanaUmum || []).map(item => Number(item.jumlah) || 0);
+
+                const luarLabels = (luarTembok || []).map(item => item.status);
+                const luarValues = (luarTembok || []).map(item => (Number(item.wniKeluar)||0) + (Number(item.wniMasuk)||0) + (Number(item.wnaKeluar)||0) + (Number(item.wnaMasuk)||0));
+
+                const agamaLabels = (agama || []).map(item => item.agama);
+                const agamaValues = (agama || []).map(item => (Number(item.wni)||0) + (Number(item.wna)||0));
+            %>
+            <div class="board-table-wrap board-three-col">
+
+                <div class="board-col">
+                    <div class="pie-card clickable-chart" tabindex="0" role="link" data-link="/kalapas/table/pidana-khusus" data-values="<%= khususValues.join(',') %>" data-labels="<%= khususLabels.join('|') %>">
+                        <h4 class="pie-title">Pidana Khusus</h4>
+                        <div class="pie-layout">
+                            <div class="pie-chart"><div class="pie-center">0</div></div>
+                            <ul class="pie-legend"></ul>
+                        </div>
+                    </div>
+                </div>
+                <div class="board-col">
+                    <div class="pie-card clickable-chart" tabindex="0" role="link" data-link="/kalapas/table/pidana-umum" data-values="<%= umumValues.join(',') %>" data-labels="<%= umumLabels.join('|') %>">
+                        <h4 class="pie-title">Pidana Umum</h4>
+                        <div class="pie-layout">
+                            <div class="pie-chart"><div class="pie-center">0</div></div>
+                            <ul class="pie-legend"></ul>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="board-col">
+                    <div class="pie-card clickable-chart" tabindex="0" role="link" data-link="/kalapas/table/luar-tembok" data-values="<%= luarValues.join(',') %>" data-labels="<%= luarLabels.join('|') %>">
+                        <h4 class="pie-title">WBP di Luar Tembok</h4>
+                        <div class="pie-layout">
+                            <div class="pie-chart"><div class="pie-center">0</div></div>
+                            <ul class="pie-legend"></ul>
+                        </div>
+                    </div>
+
+                    <div class="pie-card clickable-chart" tabindex="0" role="link" data-link="/kalapas/table/agama" data-values="<%= agamaValues.join(',') %>" data-labels="<%= agamaLabels.join('|') %>">
+                        <h4 class="pie-title">Jumlah Berdasarkan Agama</h4>
+                        <div class="pie-layout">
+                            <div class="pie-chart"><div class="pie-center">0</div></div>
+                            <ul class="pie-legend"></ul>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
     <footer class="footer">
-        <div class="footer-bottom" style="display: flex; justify-content: space-between; align-items: center;">
-            <p style="flex:1; max-width:60%;"><strong>DEMO</strong> - Dashboard Pimpinan berisi indikator strategis
-                operasional dan kesehatan WBP.</p>
-            <p style="text-align:right; flex:1;">Dashboard Pimpinan Lapas Rutan<br>
+        <div class="footer-bottom" style="display:flex;justify-content:space-between;align-items:center;">
+            <p style="text-align:left;flex:1;max-width:60%;"><strong>SIMWASPIM</strong> - Sistem Pengawasan Pimpinan</p>
+            <p style="text-align:right;flex:1;">Dashboard Pimpinan Lapas Rutan<br>
                 Copyright &copy; <%= new Date().getFullYear() %>, by Dimstatons. All Right Reserved</p>
         </div>
     </footer>
+
+    <script>
+        (function () {
+            var colorPalette = [
+                '#005F73', '#0A9396', '#94D2BD', '#E9D8A6', '#EE9B00',
+                '#CA6702', '#BB3E03', '#AE2012', '#9B2226', '#3A86FF',
+                '#8338EC', '#FF006E', '#FB5607', '#FFBE0B', '#2A9D8F',
+                '#264653', '#8ECAE6', '#219EBC', '#6A4C93', '#F15BB5'
+            ];
+
+            document.querySelectorAll('.bar-fill[data-percent]').forEach(function (el) {
+                var value = Number(el.getAttribute('data-percent')) || 0;
+                el.style.width = Math.max(0, Math.min(100, value)) + '%';
+            });
+
+            document.querySelectorAll('.room-fill[data-room-percent]').forEach(function (el) {
+                var value = Number(el.getAttribute('data-room-percent')) || 0;
+                el.style.width = Math.max(0, Math.min(100, value)) + '%';
+            });
+
+            var donut = document.querySelector('.donut-chart[data-occupancy]');
+            if (donut) {
+                var occ = Number(donut.getAttribute('data-occupancy')) || 0;
+                var safeOcc = Math.max(0, Math.min(100, occ));
+                var donutPrimary = colorPalette[0];
+                var donutSecondary = colorPalette[2];
+                donut.style.background = 'conic-gradient(' + donutPrimary + ' 0% ' + safeOcc + '%, ' + donutSecondary + ' ' + safeOcc + '% 100%)';
+            }
+
+            document.querySelectorAll('.pie-card[data-values]').forEach(function (card) {
+                var rawValues = (card.getAttribute('data-values') || '').split(',').map(function (v) { return Number(v) || 0; });
+                var rawLabels = (card.getAttribute('data-labels') || '').split('|');
+                var pairs = [];
+
+                for (var i = 0; i < rawValues.length; i++) {
+                    if (rawValues[i] > 0) {
+                        pairs.push({ label: rawLabels[i] || ('Data ' + (i + 1)), value: rawValues[i] });
+                    }
+                }
+
+                var total = pairs.reduce(function (sum, item) { return sum + item.value; }, 0);
+                var chartEl = card.querySelector('.pie-chart');
+                var centerEl = card.querySelector('.pie-center');
+                var legendEl = card.querySelector('.pie-legend');
+
+                if (!chartEl || !centerEl || !legendEl) return;
+
+                centerEl.textContent = total;
+                legendEl.innerHTML = '';
+
+                if (!pairs.length || total <= 0) {
+                    chartEl.style.background = '#dbeafe';
+                    legendEl.innerHTML = '<li><span class="pie-label"><span class="pie-dot" style="background:' + colorPalette[1] + ';"></span><span>Belum ada data</span></span><strong>0</strong></li>';
+                    return;
+                }
+
+                var current = 0;
+                var segments = [];
+
+                pairs.forEach(function (item, index) {
+                    var percent = (item.value / total) * 100;
+                    var next = current + percent;
+                    var color = colorPalette[index % colorPalette.length];
+                    segments.push(color + ' ' + current.toFixed(2) + '% ' + next.toFixed(2) + '%');
+                    current = next;
+
+                    var li = document.createElement('li');
+                    li.innerHTML = '<span class="pie-label"><span class="pie-dot" style="background:' + color + ';"></span><span>' + item.label + '</span></span><strong>' + item.value + '</strong>';
+                    legendEl.appendChild(li);
+                });
+
+                chartEl.style.background = 'conic-gradient(' + segments.join(',') + ')';
+            });
+
+            document.querySelectorAll('.clickable-chart[data-link]').forEach(function (el) {
+                var url = el.getAttribute('data-link');
+                if (!url) return;
+                el.addEventListener('click', function () { window.location.href = url; });
+                el.addEventListener('keydown', function (evt) {
+                    if (evt.key === 'Enter' || evt.key === ' ') {
+                        evt.preventDefault();
+                        window.location.href = url;
+                    }
+                });
+            });
+        })();
+    </script>
     <script src="/js/display-mode.js?v=<%= Date.now() %>"></script>
 </body>
-
 </html>

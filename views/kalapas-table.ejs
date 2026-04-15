@@ -1,0 +1,155 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title><%= pageTitle %> - Kalapas</title>
+  <link rel="stylesheet" href="/css/style.css?v=<%= Date.now() %>">
+  <style>
+    .kalapas-table-wrap { padding: 14px 15px; }
+    .kalapas-table-toolbar {
+      display: flex;
+      gap: 8px;
+      flex-wrap: wrap;
+      align-items: center;
+      margin-bottom: 10px;
+    }
+    .kalapas-table-toolbar a {
+      text-decoration: none;
+      color: #fff;
+      background: #1a4bb8;
+      border: 1px solid rgba(255,255,255,.3);
+      border-radius: 6px;
+      padding: 7px 11px;
+      font-size: 12px;
+      font-weight: bold;
+    }
+    .kalapas-search {
+      min-width: 280px;
+      max-width: 420px;
+      width: 100%;
+      padding: 9px 11px;
+      border: 1px solid #cbd5e1;
+      border-radius: 6px;
+      font-size: 13px;
+      font-weight: bold;
+    }
+    .kalapas-table-panel .panel-header {
+      display: flex;
+      justify-content: space-between;
+      gap: 8px;
+      align-items: center;
+    }
+    .kalapas-table-panel table th, .kalapas-table-panel table td {
+      font-size: 12px;
+      padding: 8px 9px;
+    }
+    .kalapas-empty {
+      text-align: center;
+      color: #64748b;
+      padding: 14px;
+      font-weight: bold;
+    }
+    .kalapas-preview-btn {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      padding: 6px 10px;
+      border-radius: 6px;
+      border: 1px solid #1d4ed8;
+      color: #1d4ed8;
+      text-decoration: none;
+      font-size: 11px;
+      font-weight: bold;
+      background: #eff6ff;
+    }
+  </style>
+</head>
+<body class="page-umum">
+  <header class="header">
+    <div class="header-content">
+      <div class="logo-section">
+        <div class="logo">
+          <p>&nbsp;</p>
+          <h1>KRISNA</h1>
+          <p>&nbsp;</p>
+        </div>
+        <div class="header-info">
+          <h2><%= sectionTitle %></h2>
+          <h3>Tampilan Tabel + Pencarian</h3>
+          <p class="address"><%= subtitle %></p>
+        </div>
+      </div>
+    </div>
+  </header>
+
+  <div class="kalapas-table-wrap">
+    <div class="kalapas-table-toolbar">
+      <a href="<%= backUrl %>">⬅ Kembali ke Kalapas</a>
+      <input id="tableSearch" class="kalapas-search" type="text" placeholder="Cari data (nama, no reg, diagnosa, dll)...">
+    </div>
+
+    <div class="panel kalapas-table-panel">
+      <div class="panel-header red">
+        <span><%= sectionTitle %></span>
+        <span id="rowCount"><%= rows.length %> data</span>
+      </div>
+      <div class="panel-content" style="padding:0;">
+        <div class="table-wrap">
+          <table class="admin-table" id="dataTable">
+            <thead>
+              <tr>
+                <% columns.forEach(col => { %><th><%= col %></th><% }) %>
+              </tr>
+            </thead>
+            <tbody>
+              <% rows.forEach(row => { %>
+                <tr>
+                  <% row.forEach(cell => { %>
+                    <td>
+                      <% if (typeof cell === 'string' && cell.startsWith('/uploads/') && /\.(png|jpg|jpeg|webp|gif)$/i.test(cell)) { %>
+                        <a href="<%= cell %>" target="_blank" rel="noopener noreferrer" class="kalapas-preview-btn">🔍 Preview</a>
+                      <% } else { %>
+                        <%= cell %>
+                      <% } %>
+                    </td>
+                  <% }) %>
+                </tr>
+              <% }) %>
+              <% if (!rows.length) { %>
+                <tr><td colspan="<%= columns.length %>" class="kalapas-empty">Belum ada data</td></tr>
+              <% } %>
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    (function () {
+      const searchInput = document.getElementById('tableSearch');
+      const table = document.getElementById('dataTable');
+      const bodyRows = Array.from(table.querySelectorAll('tbody tr'));
+      const rowCount = document.getElementById('rowCount');
+
+      function applyFilter() {
+        const keyword = (searchInput.value || '').toLowerCase().trim();
+        let visible = 0;
+
+        bodyRows.forEach((row) => {
+          const text = row.textContent.toLowerCase();
+          const match = !keyword || text.includes(keyword);
+          row.style.display = match ? '' : 'none';
+          if (match) visible += 1;
+        });
+
+        rowCount.textContent = visible + ' data';
+      }
+
+      searchInput.addEventListener('input', applyFilter);
+      applyFilter();
+    })();
+  </script>
+</body>
+</html>

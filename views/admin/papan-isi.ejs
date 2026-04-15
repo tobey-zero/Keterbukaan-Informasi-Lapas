@@ -1,0 +1,178 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+  <meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Papan Keadaan Isi – Admin Lapas</title>
+  <link rel="stylesheet" href="/css/admin.css">
+</head>
+<body>
+<div class="admin-wrapper">
+  <%- include('_sidebar') %>
+  <div class="main-content">
+    <div class="topbar">
+      <div class="topbar-title"><h2>📌 Papan Keadaan Isi Lapas</h2><p>Kelola data papan harian sesuai format lapangan</p></div>
+      <div class="topbar-actions"><a href="/kalapas/papan-isi" target="_blank" class="btn-public">🧭 Lihat Papan Kalapas</a></div>
+    </div>
+
+    <div class="content-area">
+      <% if (success) { %><div class="alert alert-success">✅ Data berhasil disimpan.</div><% } %>
+
+      <div class="card">
+        <div class="card-header"><h3><%= editPidana ? '✏️ Edit Data Jenis Tindak Pidana' : '➕ Tambah Jenis Tindak Pidana' %></h3></div>
+        <div class="card-body">
+          <form method="POST" action="<%= editPidana ? '/admin/papan-isi/pidana/' + editPidana.id + '/update' : '/admin/papan-isi/pidana/add' %>">
+            <div class="form-grid col-3" style="margin-bottom:12px;">
+              <div class="form-group">
+                <label>Kategori</label>
+                <select name="kategori" required>
+                  <option value="khusus" <%= editPidana && editPidana.kategori === 'khusus' ? 'selected' : '' %>>Pidana Khusus</option>
+                  <option value="umum" <%= editPidana && editPidana.kategori === 'umum' ? 'selected' : '' %>>Pidana Umum</option>
+                </select>
+              </div>
+              <div class="form-group"><label>Jenis</label><input type="text" name="jenis" required value="<%= editPidana ? editPidana.jenis : '' %>"></div>
+              <div class="form-group"><label>Jumlah</label><input type="number" min="0" name="jumlah" required value="<%= editPidana ? editPidana.jumlah : 0 %>"></div>
+            </div>
+            <div style="display:flex;gap:8px;">
+              <button type="submit" class="btn <%= editPidana ? 'btn-success' : 'btn-primary' %> btn-sm"><%= editPidana ? '💾 Simpan' : '➕ Tambah' %></button>
+              <% if (editPidana) { %><a href="/admin/papan-isi" class="btn btn-secondary btn-sm">✕ Batal</a><% } %>
+            </div>
+          </form>
+        </div>
+      </div>
+
+      <div class="card">
+        <div class="card-header"><h3><%= editLuar ? '✏️ Edit WBP di Luar Tembok' : '➕ Tambah WBP di Luar Tembok' %></h3></div>
+        <div class="card-body">
+          <form method="POST" action="<%= editLuar ? '/admin/papan-isi/luar/' + editLuar.id + '/update' : '/admin/papan-isi/luar/add' %>">
+            <div class="form-grid col-4" style="margin-bottom:12px;">
+              <div class="form-group"><label>Status</label><input type="text" name="status" required value="<%= editLuar ? editLuar.status : '' %>"></div>
+              <div class="form-group"><label>WNI Keluar</label><input type="number" min="0" name="wni_keluar" required value="<%= editLuar ? editLuar.wni_keluar : 0 %>"></div>
+              <div class="form-group"><label>WNI Masuk</label><input type="number" min="0" name="wni_masuk" required value="<%= editLuar ? editLuar.wni_masuk : 0 %>"></div>
+              <div class="form-group"><label>WNA Keluar</label><input type="number" min="0" name="wna_keluar" required value="<%= editLuar ? editLuar.wna_keluar : 0 %>"></div>
+              <div class="form-group"><label>WNA Masuk</label><input type="number" min="0" name="wna_masuk" required value="<%= editLuar ? editLuar.wna_masuk : 0 %>"></div>
+              <div class="form-group" style="grid-column: span 3;"><label>Keterangan</label><input type="text" name="keterangan" value="<%= editLuar ? (editLuar.keterangan || '') : '' %>"></div>
+            </div>
+            <div style="display:flex;gap:8px;">
+              <button type="submit" class="btn <%= editLuar ? 'btn-success' : 'btn-primary' %> btn-sm"><%= editLuar ? '💾 Simpan' : '➕ Tambah' %></button>
+              <% if (editLuar) { %><a href="/admin/papan-isi" class="btn btn-secondary btn-sm">✕ Batal</a><% } %>
+            </div>
+          </form>
+        </div>
+      </div>
+
+      <div class="card">
+        <div class="card-header"><h3><%= editAgama ? '✏️ Edit Data Agama' : '➕ Tambah Data Agama' %></h3></div>
+        <div class="card-body">
+          <form method="POST" action="<%= editAgama ? '/admin/papan-isi/agama/' + editAgama.id + '/update' : '/admin/papan-isi/agama/add' %>">
+            <div class="form-grid col-3" style="margin-bottom:12px;">
+              <div class="form-group"><label>Agama</label><input type="text" name="agama" required value="<%= editAgama ? editAgama.agama : '' %>"></div>
+              <div class="form-group"><label>WNI</label><input type="number" min="0" name="wni" required value="<%= editAgama ? editAgama.wni : 0 %>"></div>
+              <div class="form-group"><label>WNA</label><input type="number" min="0" name="wna" required value="<%= editAgama ? editAgama.wna : 0 %>"></div>
+            </div>
+            <div style="display:flex;gap:8px;">
+              <button type="submit" class="btn <%= editAgama ? 'btn-success' : 'btn-primary' %> btn-sm"><%= editAgama ? '💾 Simpan' : '➕ Tambah' %></button>
+              <% if (editAgama) { %><a href="/admin/papan-isi" class="btn btn-secondary btn-sm">✕ Batal</a><% } %>
+            </div>
+          </form>
+        </div>
+      </div>
+
+      <div class="card">
+        <div class="card-header"><h3>Jenis Tindak Pidana</h3></div>
+        <div class="card-body" style="padding:0;">
+          <div class="table-wrap">
+            <table class="admin-table">
+              <thead><tr><th>#</th><th>Kategori</th><th>Jenis</th><th>Jumlah</th><th>Aksi</th></tr></thead>
+              <tbody>
+                <% [...pidanaKhusus, ...pidanaUmum].forEach((item, i) => { %>
+                <tr>
+                  <td><%= i+1 %></td>
+                  <td><%= item.kategori === 'khusus' ? 'Pidana Khusus' : 'Pidana Umum' %></td>
+                  <td><%= item.jenis %></td>
+                  <td><%= item.jumlah %></td>
+                  <td>
+                    <div class="actions">
+                      <a href="/admin/papan-isi?editPidana=<%= item.id %>" class="btn btn-warning btn-xs">✏️ Edit</a>
+                      <form method="POST" action="/admin/papan-isi/pidana/<%= item.id %>/delete" style="display:inline" onsubmit="return confirm('Hapus data ini?')">
+                        <button class="btn btn-danger btn-xs">🗑 Hapus</button>
+                      </form>
+                    </div>
+                  </td>
+                </tr>
+                <% }) %>
+                <% if (![...pidanaKhusus, ...pidanaUmum].length) { %><tr><td colspan="5" style="text-align:center;color:#aaa;padding:20px;">Belum ada data</td></tr><% } %>
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+
+      <div class="card">
+        <div class="card-header"><h3>WBP di Luar Tembok</h3></div>
+        <div class="card-body" style="padding:0;">
+          <div class="table-wrap">
+            <table class="admin-table">
+              <thead><tr><th>#</th><th>Status</th><th>WNI Keluar</th><th>WNI Masuk</th><th>WNA Keluar</th><th>WNA Masuk</th><th>Keterangan</th><th>Aksi</th></tr></thead>
+              <tbody>
+                <% luarTembok.forEach((item, i) => { %>
+                <tr>
+                  <td><%= i+1 %></td>
+                  <td><%= item.status %></td>
+                  <td><%= item.wniKeluar %></td>
+                  <td><%= item.wniMasuk %></td>
+                  <td><%= item.wnaKeluar %></td>
+                  <td><%= item.wnaMasuk %></td>
+                  <td><%= item.keterangan || '-' %></td>
+                  <td>
+                    <div class="actions">
+                      <a href="/admin/papan-isi?editLuar=<%= item.id %>" class="btn btn-warning btn-xs">✏️ Edit</a>
+                      <form method="POST" action="/admin/papan-isi/luar/<%= item.id %>/delete" style="display:inline" onsubmit="return confirm('Hapus data ini?')">
+                        <button class="btn btn-danger btn-xs">🗑 Hapus</button>
+                      </form>
+                    </div>
+                  </td>
+                </tr>
+                <% }) %>
+                <% if (!luarTembok.length) { %><tr><td colspan="8" style="text-align:center;color:#aaa;padding:20px;">Belum ada data</td></tr><% } %>
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+
+      <div class="card">
+        <div class="card-header"><h3>Jumlah WBP Berdasarkan Agama</h3></div>
+        <div class="card-body" style="padding:0;">
+          <div class="table-wrap">
+            <table class="admin-table">
+              <thead><tr><th>#</th><th>Agama</th><th>WNI</th><th>WNA</th><th>Jumlah</th><th>Aksi</th></tr></thead>
+              <tbody>
+                <% agama.forEach((item, i) => { const jumlah = (Number(item.wni) || 0) + (Number(item.wna) || 0); %>
+                <tr>
+                  <td><%= i+1 %></td>
+                  <td><%= item.agama %></td>
+                  <td><%= item.wni %></td>
+                  <td><%= item.wna %></td>
+                  <td><%= jumlah %></td>
+                  <td>
+                    <div class="actions">
+                      <a href="/admin/papan-isi?editAgama=<%= item.id %>" class="btn btn-warning btn-xs">✏️ Edit</a>
+                      <form method="POST" action="/admin/papan-isi/agama/<%= item.id %>/delete" style="display:inline" onsubmit="return confirm('Hapus data ini?')">
+                        <button class="btn btn-danger btn-xs">🗑 Hapus</button>
+                      </form>
+                    </div>
+                  </td>
+                </tr>
+                <% }) %>
+                <% if (!agama.length) { %><tr><td colspan="6" style="text-align:center;color:#aaa;padding:20px;">Belum ada data</td></tr><% } %>
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+
+    </div>
+  </div>
+</div>
+</body>
+</html>

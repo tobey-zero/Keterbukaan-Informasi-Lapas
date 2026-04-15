@@ -1,0 +1,128 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+  <meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Kamar/Blok – Admin Lapas</title>
+  <link rel="stylesheet" href="/css/admin.css">
+</head>
+<body>
+<div class="admin-wrapper">
+  <%- include('_sidebar') %>
+  <div class="main-content">
+    <div class="topbar">
+      <div class="topbar-title"><h2>🛏️ Kamar/Blok Hunian</h2><p>Kelola blok, kamar, kapasitas, dan jumlah penghuni</p></div>
+      <div class="topbar-actions"><a href="/kalapas/table/kamar-blok" target="_blank" class="btn-public">🧭 Lihat Tabel Kalapas</a></div>
+    </div>
+    <div class="content-area">
+      <% if (success) { %><div class="alert alert-success">✅ Data berhasil disimpan.</div><% } %>
+      <% if (error) { %><div class="alert alert-danger">⚠️ <%= error %></div><% } %>
+
+      <div class="card">
+        <div class="card-header"><h3><%= editBlock ? '✏️ Edit Blok' : '➕ Tambah Blok' %></h3></div>
+        <div class="card-body">
+          <form method="POST" action="<%= editBlock ? '/admin/kamar-blok/block/' + editBlock.id + '/update' : '/admin/kamar-blok/block/add' %>">
+            <div class="form-grid" style="grid-template-columns: 1fr auto; gap:10px; align-items:end;">
+              <div class="form-group">
+                <label>Nama Blok</label>
+                <input type="text" name="nama_block" required value="<%= editBlock ? editBlock.nama_block : '' %>" placeholder="Contoh: Blok A">
+              </div>
+              <div style="display:flex;gap:8px;">
+                <button type="submit" class="btn <%= editBlock ? 'btn-success' : 'btn-primary' %> btn-sm"><%= editBlock ? '💾 Simpan' : '➕ Tambah' %></button>
+                <% if (editBlock) { %><a href="/admin/kamar-blok" class="btn btn-secondary btn-sm">✕ Batal</a><% } %>
+              </div>
+            </div>
+          </form>
+        </div>
+      </div>
+
+      <div class="card">
+        <div class="card-header"><h3><%= editRoom ? '✏️ Edit Kamar' : '➕ Tambah Kamar' %></h3></div>
+        <div class="card-body">
+          <form method="POST" action="<%= editRoom ? '/admin/kamar-blok/room/' + editRoom.id + '/update' : '/admin/kamar-blok/room/add' %>">
+            <div class="form-grid col-4" style="margin-bottom:12px;">
+              <div class="form-group">
+                <label>Blok</label>
+                <select name="block_id" required>
+                  <option value="">-- Pilih Blok --</option>
+                  <% blocks.forEach(block => { %>
+                    <option value="<%= block.id %>" <%= editRoom && Number(editRoom.block_id) === Number(block.id) ? 'selected' : '' %>><%= block.nama_block %></option>
+                  <% }) %>
+                </select>
+              </div>
+              <div class="form-group"><label>Nama Kamar</label><input type="text" name="nama_kamar" required value="<%= editRoom ? editRoom.nama_kamar : '' %>" placeholder="Contoh: A-01"></div>
+              <div class="form-group"><label>Jumlah Penghuni</label><input type="number" min="0" name="jumlah_penghuni" required value="<%= editRoom ? editRoom.jumlah_penghuni : 0 %>"></div>
+              <div class="form-group"><label>Kapasitas</label><input type="number" min="0" name="kapasitas" required value="<%= editRoom ? editRoom.kapasitas : 0 %>"></div>
+            </div>
+            <div style="display:flex;gap:8px;">
+              <button type="submit" class="btn <%= editRoom ? 'btn-success' : 'btn-primary' %> btn-sm"><%= editRoom ? '💾 Simpan' : '➕ Tambah' %></button>
+              <% if (editRoom) { %><a href="/admin/kamar-blok" class="btn btn-secondary btn-sm">✕ Batal</a><% } %>
+            </div>
+          </form>
+        </div>
+      </div>
+
+      <div class="card">
+        <div class="card-header"><h3>Daftar Blok (<%= blocks.length %>)</h3></div>
+        <div class="card-body" style="padding:0;">
+          <div class="table-wrap">
+            <table class="admin-table">
+              <thead><tr><th>#</th><th>Nama Blok</th><th>Aksi</th></tr></thead>
+              <tbody>
+                <% blocks.forEach((block, i) => { %>
+                <tr>
+                  <td><%= i+1 %></td>
+                  <td><%= block.nama_block %></td>
+                  <td>
+                    <div class="actions">
+                      <a href="/admin/kamar-blok?editBlock=<%= block.id %>" class="btn btn-warning btn-xs">✏️ Edit</a>
+                      <form method="POST" action="/admin/kamar-blok/block/<%= block.id %>/delete" style="display:inline" onsubmit="return confirm('Hapus blok ini beserta seluruh kamar di dalamnya?')">
+                        <button class="btn btn-danger btn-xs">🗑 Hapus</button>
+                      </form>
+                    </div>
+                  </td>
+                </tr>
+                <% }) %>
+                <% if (!blocks.length) { %><tr><td colspan="3" style="text-align:center;color:#aaa;padding:20px;">Belum ada data blok</td></tr><% } %>
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+
+      <div class="card">
+        <div class="card-header"><h3>Daftar Kamar (<%= rooms.length %>)</h3></div>
+        <div class="card-body" style="padding:0;">
+          <div class="table-wrap">
+            <table class="admin-table">
+              <thead><tr><th>#</th><th>Blok</th><th>Kamar</th><th>Jumlah Penghuni</th><th>Kapasitas</th><th>Okupansi</th><th>Aksi</th></tr></thead>
+              <tbody>
+                <% rooms.forEach((room, i) => { const penghuni = Number(room.jumlah_penghuni) || 0; const kapasitas = Number(room.kapasitas) || 0; const okupansi = kapasitas > 0 ? ((penghuni / kapasitas) * 100).toFixed(1) + '%' : '-'; %>
+                <tr>
+                  <td><%= i+1 %></td>
+                  <td><%= room.nama_block %></td>
+                  <td><%= room.nama_kamar %></td>
+                  <td><%= penghuni %></td>
+                  <td><%= kapasitas %></td>
+                  <td><%= okupansi %></td>
+                  <td>
+                    <div class="actions">
+                      <a href="/admin/kamar-blok?editRoom=<%= room.id %>" class="btn btn-warning btn-xs">✏️ Edit</a>
+                      <form method="POST" action="/admin/kamar-blok/room/<%= room.id %>/delete" style="display:inline" onsubmit="return confirm('Hapus data kamar ini?')">
+                        <button class="btn btn-danger btn-xs">🗑 Hapus</button>
+                      </form>
+                    </div>
+                  </td>
+                </tr>
+                <% }) %>
+                <% if (!rooms.length) { %><tr><td colspan="7" style="text-align:center;color:#aaa;padding:20px;">Belum ada data kamar</td></tr><% } %>
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+
+    </div>
+  </div>
+</div>
+</body>
+</html>

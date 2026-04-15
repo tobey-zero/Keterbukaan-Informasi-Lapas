@@ -1,0 +1,150 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+  <meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Strapsel – Admin Lapas</title>
+  <link rel="stylesheet" href="/css/admin.css">
+</head>
+<body>
+<div class="admin-wrapper">
+  <%- include('_sidebar') %>
+  <div class="main-content">
+    <div class="topbar">
+      <div class="topbar-title"><h2>🛡️ Strapsel</h2><p>Kelola data strapsel untuk dashboard Kalapas</p></div>
+      <div class="topbar-actions"><a href="/kalapas" target="_blank" class="btn-public">🧭 Lihat Kalapas</a></div>
+    </div>
+    <div class="content-area">
+      <% if (success) { %><div class="alert alert-success">✅ Data berhasil disimpan.</div><% } %>
+      <% if (error) { %><div class="alert alert-danger">❌ <%= error %></div><% } %>
+
+      <div class="card">
+        <div class="card-header"><h3>➕ Tambah Data Strapsel</h3></div>
+        <div class="card-body">
+          <form method="POST" action="/admin/strapsel/add" enctype="multipart/form-data">
+            <div class="form-grid col-3" style="margin-bottom:12px;">
+              <div class="form-group">
+                <label>Nama WBP</label>
+                <input type="text" name="nama_wbp" placeholder="Nama WBP" required>
+              </div>
+              <div class="form-group">
+                <label>Blok Hunian</label>
+                <input type="text" name="blok_hunian" placeholder="Contoh: Blok B-02" required>
+              </div>
+              <div class="form-group">
+                <label>Tanggal Masuk Strapsel</label>
+                <input type="text" name="tanggal_masuk_strapsel" placeholder="Contoh: 14 April 2026" required>
+              </div>
+              <div class="form-group">
+                <label>Ekspirasi</label>
+                <input type="text" name="ekspirasi" placeholder="Contoh: 14 Mei 2026">
+              </div>
+              <div class="form-group">
+                <label>Permasalahan</label>
+                <input type="text" name="permasalahan" placeholder="Permasalahan strapsel">
+              </div>
+              <div class="form-group">
+                <label>Barang Bukti</label>
+                <input type="text" name="barang_bukti" placeholder="Contoh: Handphone">
+              </div>
+              <div class="form-group full">
+                <label>Dokumentasi Foto (opsional)</label>
+                <input type="file" name="dokumentasi" accept="image/*">
+              </div>
+            </div>
+            <button type="submit" class="btn btn-primary btn-sm">➕ Tambah</button>
+          </form>
+        </div>
+      </div>
+
+      <% if (edit) { %>
+      <div class="edit-panel">
+        <h4>✏️ Edit Data Strapsel (ID: <%= edit.id %>)</h4>
+        <form method="POST" action="/admin/strapsel/<%= edit.id %>/update" enctype="multipart/form-data">
+          <div class="form-grid col-3" style="margin-bottom:12px;">
+            <div class="form-group">
+              <label>Nama WBP</label>
+              <input type="text" name="nama_wbp" value="<%= edit.nama_wbp %>" required>
+            </div>
+            <div class="form-group">
+              <label>Blok Hunian</label>
+              <input type="text" name="blok_hunian" value="<%= edit.blok_hunian %>" required>
+            </div>
+            <div class="form-group">
+              <label>Tanggal Masuk Strapsel</label>
+              <input type="text" name="tanggal_masuk_strapsel" value="<%= edit.tanggal_masuk_strapsel %>" required>
+            </div>
+            <div class="form-group">
+              <label>Ekspirasi</label>
+              <input type="text" name="ekspirasi" value="<%= edit.ekspirasi || '' %>">
+            </div>
+            <div class="form-group">
+              <label>Permasalahan</label>
+              <input type="text" name="permasalahan" value="<%= edit.permasalahan || '' %>">
+            </div>
+            <div class="form-group">
+              <label>Barang Bukti</label>
+              <input type="text" name="barang_bukti" value="<%= edit.barang_bukti || '' %>">
+            </div>
+            <div class="form-group full">
+              <label>Dokumentasi Foto (opsional, upload untuk mengganti)</label>
+              <input type="file" name="dokumentasi" accept="image/*">
+            </div>
+            <% if (edit.dokumentasi_path) { %>
+            <div class="form-group full">
+              <label>Dokumentasi Saat Ini</label>
+              <a href="<%= edit.dokumentasi_path %>" target="_blank" rel="noopener noreferrer" class="btn btn-secondary btn-sm">🔍 Preview Dokumentasi</a>
+            </div>
+            <% } %>
+          </div>
+          <div style="display:flex;gap:8px;">
+            <button type="submit" class="btn btn-success btn-sm">💾 Simpan</button>
+            <a href="/admin/strapsel" class="btn btn-secondary btn-sm">✕ Batal</a>
+          </div>
+        </form>
+      </div>
+      <% } %>
+
+      <div class="card">
+        <div class="card-header"><h3>Daftar Strapsel (<%= list.length %> data)</h3></div>
+        <div class="card-body" style="padding:0;">
+          <div class="table-wrap">
+            <table class="admin-table">
+              <thead><tr><th>#</th><th>Nama WBP</th><th>Blok Hunian</th><th>Tanggal Masuk</th><th>Ekspirasi</th><th>Permasalahan</th><th>Barang Bukti</th><th>Dokumentasi</th><th>Aksi</th></tr></thead>
+              <tbody>
+                <% list.forEach((item, i) => { %>
+                <tr>
+                  <td><%= i+1 %></td>
+                  <td><%= item.nama_wbp %></td>
+                  <td><%= item.blok_hunian %></td>
+                  <td><%= item.tanggal_masuk_strapsel %></td>
+                  <td><%= item.ekspirasi || '-' %></td>
+                  <td><%= item.permasalahan || '-' %></td>
+                  <td><%= item.barang_bukti || '-' %></td>
+                  <td>
+                    <% if (item.dokumentasi_path) { %>
+                      <a href="<%= item.dokumentasi_path %>" target="_blank" rel="noopener noreferrer" class="btn btn-secondary btn-xs">🔍 Preview</a>
+                    <% } else { %>
+                      <span style="color:#aaa;">-</span>
+                    <% } %>
+                  </td>
+                  <td>
+                    <div class="actions">
+                      <a href="/admin/strapsel?edit=<%= item.id %>" class="btn btn-warning btn-xs">✏️ Edit</a>
+                      <form method="POST" action="/admin/strapsel/<%= item.id %>/delete" style="display:inline" onsubmit="return confirm('Hapus data ini?')">
+                        <button class="btn btn-danger btn-xs">🗑 Hapus</button>
+                      </form>
+                    </div>
+                  </td>
+                </tr>
+                <% }) %>
+                <% if (!list.length) { %><tr><td colspan="9" style="text-align:center;color:#aaa;padding:20px;">Belum ada data</td></tr><% } %>
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+</body>
+</html>

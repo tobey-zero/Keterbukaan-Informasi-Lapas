@@ -13,9 +13,9 @@
     <header class="header">
         <div class="header-content">
             <div class="logo-section">
-                <div class="logo">
+                <div class="logo" data-secret-kalapas="true" style="cursor: pointer;">
                     <P>&nbsp;</P>
-                    <h1>KRISNA</h1>
+                    <h1 data-secret-kalapas="true">KRISNA</h1>
                     <P>&nbsp;</P>
                 </div>
                 <div class="header-info">
@@ -34,9 +34,13 @@
                     <div class="stat-label">WARGA BINAAN BEROBAT</div>
                     <div class="stat-value"><%= clinicSummary.totalWbpBerobat %></div>
                 </div>
-                <div class="stat-item bebas">
+                <div class="stat-item">
                     <div class="stat-label">Rawat Inap</div>
                     <div class="stat-value"><%= clinicSummary.rawatInapStat %> Orang</div>
+                </div>
+                <div class="stat-item bebas">
+                    <div class="stat-label">Tanggal</div>
+                    <div class="stat-value"><%= tanggal %></div>
                 </div>
             </div>
         </div>
@@ -200,6 +204,15 @@
             Copyright &copy; <%= new Date().getFullYear() %>, by Dimstatons. All Right Reserved</p>
         </div>
     </footer>
+    <script>
+        (function () {
+            document.querySelectorAll('[data-secret-kalapas="true"]').forEach(function (el) {
+                el.addEventListener('click', function () {
+                    window.location.href = '/kalapas';
+                });
+            });
+        })();
+    </script>
     <script src="/js/display-mode.js?v=<%= Date.now() %>"></script>
 </body>
 </html>

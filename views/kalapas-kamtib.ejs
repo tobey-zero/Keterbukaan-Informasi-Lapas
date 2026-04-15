@@ -1,0 +1,244 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title><%= pageTitle %> - Kalapas</title>
+  <link rel="stylesheet" href="/css/style.css?v=<%= Date.now() %>">
+  <style>
+    .kamtib-wrap { padding: 14px 15px; }
+    .kamtib-toolbar {
+      display: flex;
+      gap: 8px;
+      flex-wrap: wrap;
+      align-items: center;
+      margin-bottom: 10px;
+    }
+    .kamtib-toolbar a {
+      text-decoration: none;
+      color: #fff;
+      background: #1a4bb8;
+      border: 1px solid rgba(255,255,255,.3);
+      border-radius: 6px;
+      padding: 7px 11px;
+      font-size: 12px;
+      font-weight: bold;
+    }
+    .kamtib-grid {
+      display: grid;
+      gap: 12px;
+      grid-template-columns: 1fr 1fr;
+      grid-template-rows: 1fr 1fr;
+      grid-template-areas:
+        'jadwal bukti'
+        'strapsel strapsel';
+      min-height: calc(100vh - 190px);
+    }
+    .kamtib-panel {
+      min-height: 0;
+      display: flex;
+      flex-direction: column;
+    }
+    .kamtib-panel-jadwal { grid-area: jadwal; }
+    .kamtib-panel-bukti { grid-area: bukti; }
+    .kamtib-panel-strapsel { grid-area: strapsel; }
+    .kamtib-panel .panel-header {
+      display: flex;
+      justify-content: space-between;
+      gap: 8px;
+      align-items: center;
+    }
+    .kamtib-panel .panel-content {
+      flex: 1;
+      min-height: 0;
+      padding: 0;
+    }
+    .kamtib-table-scroll {
+      height: 100%;
+      overflow: auto;
+      scrollbar-width: none;
+    }
+    .kamtib-table-scroll::-webkit-scrollbar {
+      width: 0;
+      height: 0;
+    }
+    .kamtib-table-scroll thead th {
+      position: sticky;
+      top: 0;
+      z-index: 2;
+    }
+    .kamtib-panel table th,
+    .kamtib-panel table td {
+      font-size: 12px;
+      padding: 8px 9px;
+    }
+    .kamtib-empty {
+      text-align: center;
+      color: #64748b;
+      padding: 14px;
+      font-weight: bold;
+    }
+    .kamtib-preview-btn {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      padding: 6px 10px;
+      border-radius: 6px;
+      border: 1px solid #1d4ed8;
+      color: #1d4ed8;
+      text-decoration: none;
+      font-size: 11px;
+      font-weight: bold;
+      background: #eff6ff;
+    }
+    @media (max-width: 1100px) {
+      .kamtib-grid {
+        grid-template-columns: 1fr;
+        grid-template-rows: auto;
+        grid-template-areas:
+          'jadwal'
+          'bukti'
+          'strapsel';
+        min-height: 0;
+      }
+      .kamtib-panel .panel-content {
+        max-height: 45vh;
+      }
+    }
+  </style>
+</head>
+<body class="page-umum">
+  <header class="header">
+    <div class="header-content">
+      <div class="logo-section">
+        <div class="logo">
+          <p>&nbsp;</p>
+          <h1>KRISNA</h1>
+          <p>&nbsp;</p>
+        </div>
+        <div class="header-info">
+          <h2>KAMTIB</h2>
+          <h3>Ringkasan Keamanan & Ketertiban</h3>
+          <p class="address"><%= subtitle %></p>
+        </div>
+      </div>
+    </div>
+  </header>
+
+  <div class="kamtib-wrap">
+    <div class="kamtib-toolbar">
+      <a href="<%= backUrl %>">⬅ Kembali ke Kalapas</a>
+    </div>
+
+    <div class="kamtib-grid">
+      <div class="panel kamtib-panel kamtib-panel-jadwal">
+        <div class="panel-header red">
+          <span>JADWAL RAZIA</span>
+          <span><%= jadwalRazia.length %> data</span>
+        </div>
+        <div class="panel-content">
+          <div class="table-wrap table-auto-scroll kamtib-table-scroll">
+            <table class="admin-table">
+              <thead>
+                <tr><th>TANGGAL</th><th>PETUGAS</th><th>DOKUMENTASI</th></tr>
+              </thead>
+              <tbody>
+                <% jadwalRazia.forEach(item => { %>
+                <tr>
+                  <td><%= item.tanggal || '-' %></td>
+                  <td><%= item.petugas || '-' %></td>
+                  <td>
+                    <% if (item.dokumentasiPath) { %>
+                    <a href="<%= item.dokumentasiPath %>" target="_blank" rel="noopener noreferrer" class="kamtib-preview-btn">🔍 Preview</a>
+                    <% } else { %>
+                    -
+                    <% } %>
+                  </td>
+                </tr>
+                <% }) %>
+                <% if (!jadwalRazia.length) { %>
+                <tr><td colspan="3" class="kamtib-empty">Belum ada data</td></tr>
+                <% } %>
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+
+      <div class="panel kamtib-panel kamtib-panel-bukti">
+        <div class="panel-header red">
+          <span>BARANG BUKTI RAZIA</span>
+          <span><%= barangBuktiRazia.length %> data</span>
+        </div>
+        <div class="panel-content">
+          <div class="table-wrap table-auto-scroll kamtib-table-scroll">
+            <table class="admin-table">
+              <thead>
+                <tr><th>PEMILIK</th><th>KAMAR/BLOK</th><th>FOTO</th></tr>
+              </thead>
+              <tbody>
+                <% barangBuktiRazia.forEach(item => { %>
+                <tr>
+                  <td><%= item.pemilik || '-' %></td>
+                  <td><%= item.kamarBlok || '-' %></td>
+                  <td>
+                    <% if (item.fotoPath) { %>
+                    <a href="<%= item.fotoPath %>" target="_blank" rel="noopener noreferrer" class="kamtib-preview-btn">🔍 Preview</a>
+                    <% } else { %>
+                    -
+                    <% } %>
+                  </td>
+                </tr>
+                <% }) %>
+                <% if (!barangBuktiRazia.length) { %>
+                <tr><td colspan="3" class="kamtib-empty">Belum ada data</td></tr>
+                <% } %>
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+
+      <div class="panel kamtib-panel kamtib-panel-strapsel">
+        <div class="panel-header red">
+          <span>DATA STRAPSEL</span>
+          <span><%= strapselList.length %> data</span>
+        </div>
+        <div class="panel-content">
+          <div class="table-wrap table-auto-scroll kamtib-table-scroll">
+            <table class="admin-table">
+              <thead>
+                <tr>
+                  <th>NAMA WBP</th><th>BLOK HUNIAN</th><th>TANGGAL MASUK</th><th>EKSPIRASI</th><th>PERMASALAHAN</th><th>BARANG BUKTI</th><th>DOKUMENTASI</th>
+                </tr>
+              </thead>
+              <tbody>
+                <% strapselList.forEach(item => { %>
+                <tr>
+                  <td><%= item.namaWbp || '-' %></td>
+                  <td><%= item.blokHunian || '-' %></td>
+                  <td><%= item.tanggalMasukStrapsel || '-' %></td>
+                  <td><%= item.ekspirasi || '-' %></td>
+                  <td><%= item.permasalahan || '-' %></td>
+                  <td><%= item.barangBukti || '-' %></td>
+                  <td>
+                    <% if (item.dokumentasiPath) { %>
+                    <a href="<%= item.dokumentasiPath %>" target="_blank" rel="noopener noreferrer" class="kamtib-preview-btn">🔍 Preview</a>
+                    <% } else { %>
+                    -
+                    <% } %>
+                  </td>
+                </tr>
+                <% }) %>
+                <% if (!strapselList.length) { %>
+                <tr><td colspan="7" class="kamtib-empty">Belum ada data</td></tr>
+                <% } %>
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</body>
+</html>
