@@ -1,0 +1,104 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Pengamanan - Kalapas</title>
+  <link rel="stylesheet" href="/css/style.css?v=<%= Date.now() %>">
+  <style>
+    .logo.kalapas-logo { background-color: transparent; padding: 0; }
+    .kalapas-logo-img { width: 86px; height: 86px; object-fit: contain; display: block; }
+
+    .pengamanan-wrap { padding: 14px 15px; }
+    .pengamanan-toolbar {
+      display: flex;
+      gap: 8px;
+      flex-wrap: wrap;
+      margin-bottom: 12px;
+    }
+    .pengamanan-toolbar a {
+      text-decoration: none;
+      color: #fff;
+      background: #1a4bb8;
+      border: 1px solid rgba(255, 255, 255, .35);
+      border-radius: 6px;
+      padding: 7px 11px;
+      font-size: 12px;
+      font-weight: bold;
+    }
+    .pengamanan-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 12px;
+    }
+    .pengamanan-card {
+      border: 1px solid #cbd5e1;
+      border-radius: 8px;
+      background: #fff;
+      padding: 12px;
+    }
+    .pengamanan-card h3 {
+      margin: 0 0 8px;
+      font-size: 14px;
+      color: #0f2e78;
+      font-weight: 800;
+      text-transform: uppercase;
+      letter-spacing: .3px;
+    }
+    .pengamanan-card p {
+      margin: 0 0 10px;
+      font-size: 12px;
+      color: #334155;
+      line-height: 1.45;
+    }
+    .pengamanan-link {
+      display: inline-block;
+      text-decoration: none;
+      background: #1d4ed8;
+      color: #fff;
+      border-radius: 6px;
+      padding: 7px 10px;
+      font-size: 12px;
+      font-weight: 700;
+    }
+    @media (max-width: 900px) {
+      .pengamanan-grid { grid-template-columns: 1fr; }
+    }
+  </style>
+</head>
+<body class="page-umum">
+  <header class="header">
+    <div class="header-content">
+      <div class="logo-section">
+        <div class="logo kalapas-logo">
+          <img src="/images/Logo.png" alt="Logo SIMWASPIM" class="kalapas-logo-img">
+        </div>
+        <div class="header-info">
+          <h1>SIMWASPIM – SISTEM PENGAWASAN PIMPINAN</h1>
+          <h3>MENU PENGAMANAN</h3>
+        </div>
+      </div>
+    </div>
+  </header>
+
+  <div class="pengamanan-wrap">
+    <div class="pengamanan-toolbar">
+      <a href="/kalapas">⬅ Kembali Dashboard Kalapas</a>
+    </div>
+
+    <div class="pengamanan-grid">
+      <div class="pengamanan-card">
+        <h3>Kamar / Blok</h3>
+        <p>Menampilkan data gedung, blok, kamar, jumlah penghuni, kapasitas, dan okupansi.</p>
+        <a class="pengamanan-link" href="/kalapas/table/kamar-blok">Buka Tabel Kamar/Blok</a>
+      </div>
+
+      <div class="pengamanan-card">
+        <h3>Tabel Papan Keadaan Isi</h3>
+        <p>Menampilkan tabel papan keadaan isi lapas secara lengkap.</p>
+        <a class="pengamanan-link" href="/kalapas/papan-isi">Buka Tabel Papan Keadaan Isi</a>
+      </div>
+    </div>
+  </div>
+</body>
+</html>

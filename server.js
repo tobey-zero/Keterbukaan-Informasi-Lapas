@@ -105,6 +105,17 @@ function getAppSetting(settingKey, fallbackValue = '') {
   return row?.value || fallbackValue;
 }
 
+function getTodayYmd() {
+  const parts = new Intl.DateTimeFormat('en-CA', {
+    timeZone: 'Asia/Jakarta',
+    year: 'numeric',
+    month: '2-digit',
+    day: '2-digit'
+  }).formatToParts(new Date());
+  const map = Object.fromEntries(parts.filter(part => part.type !== 'literal').map(part => [part.type, part.value]));
+  return `${map.year}-${map.month}-${map.day}`;
+}
+
 function syncPembinaanMasterByName(namaWbp, statusIntegrasi) {
   const normalizedName = (namaWbp || '').trim().toUpperCase();
   if (!normalizedName) return;
@@ -174,13 +185,25 @@ function getPublicData() {
   const remisiTitle = getAppSetting('remisi_title', 'BESARAN REMISI');
   const menuTitle = getAppSetting('menu_title', 'DAFTAR MENU MAKAN HARI INI');
   const kataBijak = getAppSetting('kata_bijak_text', 'KRISNA adalah sistem Keterbukaan Informasi Warga Binaan di Lapas Kelas I Medan.');
+  const todayYmd = getTodayYmd();
+  const todayMenuLabel = new Intl.DateTimeFormat('id-ID', {
+    timeZone: 'Asia/Jakarta',
+    weekday: 'long',
+    day: 'numeric',
+    month: 'long',
+    year: 'numeric'
+  }).format(new Date());
 
   const besaranRemisi = db
     .prepare('SELECT jenis, nama, besaran, remisi_total AS remisiTotal FROM besaran_remisi ORDER BY nama COLLATE NOCASE ASC')
     .all();
 
   const menuMakan = db
-    .prepare('SELECT waktu, menu, photo_path AS photoPath FROM menu_makan ORDER BY id')
+    .prepare('SELECT tanggal, waktu, menu, photo_path AS photoPath FROM menu_makan WHERE tanggal = ? ORDER BY id')
+    .all(todayYmd);
+
+  const menuMakanHistory = db
+    .prepare('SELECT tanggal, waktu, menu, photo_path AS photoPath FROM menu_makan ORDER BY tanggal DESC, id DESC')
     .all();
 
   const rawPembinaan = db
@@ -223,8 +246,11 @@ function getPublicData() {
     remisiTitle,
     menuTitle,
     kataBijak,
+    todayMenuLabel,
+    todayYmd,
     besaranRemisi,
     menuMakan,
+    menuMakanHistory,
     pentahapanPembinaan,
     pentahapanPembinaanDetail,
     jadwalKegiatan,
@@ -509,6 +535,12 @@ app.get('/klinik', (req, res) => {
 
 app.get('/kalapas', (req, res) => {
   res.render('kalapas', { ...getKalapasData(), activePage: 'kalapas' });
+});
+
+app.get('/kalapas/table/pengamanan', (req, res) => {
+  res.render('kalapas-pengamanan', {
+    activePage: 'kalapas'
+  });
 });
 
 app.get('/kalapas/papan-isi', (req, res) => {
@@ -927,7 +959,9 @@ app.post('/admin/kata-bijak/update', requireAccess('kata-bijak'), (req, res) => 
 
 // ── Menu Makan ────────────────────────────────────────────────────
 app.get('/admin/menu', requireAccess('menu'), (req, res) => {
-  const list = db.prepare('SELECT * FROM menu_makan ORDER BY id').all();
+  const selectedTanggal = (req.query.tanggal || '').trim() || getTodayYmd();
+  const list = db.prepare('SELECT * FROM menu_makan WHERE tanggal = ? ORDER BY id DESC').all(selectedTanggal);
+  const totalHistory = db.prepare('SELECT COUNT(*) AS c FROM menu_makan').get().c;
   const edit = req.query.edit ? db.prepare('SELECT * FROM menu_makan WHERE id=?').get(Number(req.query.edit)) : null;
   const menuTitle = getAppSetting('menu_title', 'DAFTAR MENU MAKAN HARI INI');
   res.render('admin/menu', {
@@ -935,6 +969,9 @@ app.get('/admin/menu', requireAccess('menu'), (req, res) => {
     list,
     edit,
     menuTitle,
+    todayYmd: getTodayYmd(),
+    selectedTanggal,
+    totalHistory,
     active: 'menu',
     success: req.query.success,
     titleSuccess: req.query.titleSuccess,
@@ -953,13 +990,15 @@ app.post('/admin/menu/title/update', requireAccess('menu'), (req, res) => {
 });
 
 app.post('/admin/menu/add', requireAccess('menu'), menuUpload.single('photo'), (req, res) => {
+  const tanggal = (req.body.tanggal || '').trim() || getTodayYmd();
   const { waktu, menu } = req.body;
   const photoPath = req.file ? `/uploads/menu/${req.file.filename}` : null;
-  db.prepare('INSERT INTO menu_makan (waktu, menu, photo_path) VALUES (?, ?, ?)').run(waktu, menu, photoPath);
+  db.prepare('INSERT INTO menu_makan (tanggal, waktu, menu, photo_path) VALUES (?, ?, ?, ?)').run(tanggal, waktu, menu, photoPath);
   res.redirect('/admin/menu?success=1');
 });
 
 app.post('/admin/menu/:id/update', requireAccess('menu'), menuUpload.single('photo'), (req, res) => {
+  const tanggal = (req.body.tanggal || '').trim() || getTodayYmd();
   const { waktu, menu } = req.body;
   const id = Number(req.params.id);
   const existing = db.prepare('SELECT photo_path FROM menu_makan WHERE id=?').get(id);
@@ -970,7 +1009,7 @@ app.post('/admin/menu/:id/update', requireAccess('menu'), menuUpload.single('pho
     nextPhotoPath = `/uploads/menu/${req.file.filename}`;
   }
 
-  db.prepare('UPDATE menu_makan SET waktu=?, menu=?, photo_path=? WHERE id=?').run(waktu, menu, nextPhotoPath, id);
+  db.prepare('UPDATE menu_makan SET tanggal=?, waktu=?, menu=?, photo_path=? WHERE id=?').run(tanggal, waktu, menu, nextPhotoPath, id);
   res.redirect('/admin/menu?success=1');
 });
 

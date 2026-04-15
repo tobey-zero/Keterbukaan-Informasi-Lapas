@@ -31,12 +31,33 @@
         </div>
       </div>
 
+      <div class="card">
+        <div class="card-header"><h3>🗓 Filter Tanggal Menu</h3></div>
+        <div class="card-body">
+          <form method="GET" action="/admin/menu" style="display:flex; gap:10px; flex-wrap:wrap; align-items:end;">
+            <div class="form-group" style="min-width: 220px; margin:0;">
+              <label>Tanggal tampil</label>
+              <input type="date" name="tanggal" value="<%= selectedTanggal || todayYmd %>">
+            </div>
+            <div style="display:flex; gap:8px; align-items:center;">
+              <button type="submit" class="btn btn-primary btn-sm">🔎 Tampilkan</button>
+              <a href="/admin/menu" class="btn btn-secondary btn-sm">↺ Hari ini</a>
+            </div>
+          </form>
+          <div style="margin-top:10px; font-size:12px; color:#64748b; font-weight:700;">Tanggal aktif: <%= selectedTanggal || todayYmd %> | Total history tersimpan: <%= totalHistory %></div>
+        </div>
+      </div>
+
       <!-- Form Tambah -->
       <div class="card">
         <div class="card-header"><h3>➕ Tambah Menu</h3></div>
         <div class="card-body">
           <form method="POST" action="/admin/menu/add" enctype="multipart/form-data">
-            <div class="form-grid col-2" style="margin-bottom:12px;">
+            <div class="form-grid col-3" style="margin-bottom:12px;">
+              <div class="form-group">
+                <label>Tanggal</label>
+                <input type="date" name="tanggal" value="<%= todayYmd %>" required>
+              </div>
               <div class="form-group">
                 <label>Waktu Makan</label>
                 <select name="waktu" required>
@@ -67,7 +88,11 @@
       <div class="edit-panel">
         <h4>✏️ Edit Menu (ID: <%= edit.id %>)</h4>
         <form method="POST" action="/admin/menu/<%= edit.id %>/update" enctype="multipart/form-data">
-          <div class="form-grid col-2" style="margin-bottom:12px;">
+          <div class="form-grid col-3" style="margin-bottom:12px;">
+            <div class="form-group">
+              <label>Tanggal</label>
+              <input type="date" name="tanggal" value="<%= edit.tanggal || todayYmd %>" required>
+            </div>
             <div class="form-group">
               <label>Waktu Makan</label>
               <select name="waktu" required>
@@ -101,15 +126,16 @@
 
       <!-- Tabel -->
       <div class="card">
-        <div class="card-header"><h3>Daftar Menu (<%= list.length %> item)</h3></div>
+        <div class="card-header"><h3>Daftar Menu Tanggal <%= selectedTanggal || todayYmd %> (<%= list.length %> item)</h3></div>
         <div class="card-body" style="padding:0;">
           <div class="table-wrap">
             <table class="admin-table">
-              <thead><tr><th>#</th><th>Foto</th><th>Waktu</th><th>Menu</th><th>Aksi</th></tr></thead>
+              <thead><tr><th>#</th><th>Tanggal</th><th>Foto</th><th>Waktu</th><th>Menu</th><th>Aksi</th></tr></thead>
               <tbody>
                 <% list.forEach((item, i) => { %>
                 <tr>
                   <td><%= i+1 %></td>
+                  <td><%= item.tanggal %></td>
                   <td>
                     <% if (item.photo_path) { %>
                       <img src="<%= item.photo_path %>" alt="Foto menu" class="admin-menu-photo-thumb">
@@ -129,7 +155,7 @@
                   </td>
                 </tr>
                 <% }) %>
-                <% if (!list.length) { %><tr><td colspan="5" style="text-align:center;color:#aaa;padding:20px;">Belum ada data</td></tr><% } %>
+                <% if (!list.length) { %><tr><td colspan="6" style="text-align:center;color:#aaa;padding:20px;">Belum ada data pada tanggal ini</td></tr><% } %>
               </tbody>
             </table>
           </div>

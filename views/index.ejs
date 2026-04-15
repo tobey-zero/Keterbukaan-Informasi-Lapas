@@ -209,6 +209,7 @@
                 <!-- Sub-panel Kanan: Dokumentasi -->
                 <div class="panel sub-panel">
                     <div class="panel-header red"><%= menuTitle %></div>
+                    <div style="padding: 8px 12px 0; font-size: 11px; font-weight: 700; color: #64748b;">Tanggal: <%= todayMenuLabel %></div>
                     <div class="panel-content">
                     <table class="table-menu">
                         <tbody>
@@ -229,6 +230,11 @@
                                     </td>
                                 </tr>
                                 <% }) %>
+                                <% if (!menuMakan.length) { %>
+                                <tr>
+                                    <td colspan="3" style="text-align:center; padding: 14px; color: #6b7280; font-weight: 700;">Belum ada menu untuk hari ini</td>
+                                </tr>
+                                <% } %>
                         </tbody>
                     </table>
                 </div>

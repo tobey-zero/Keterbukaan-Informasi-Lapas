@@ -30,6 +30,7 @@ db.exec(`
 
   CREATE TABLE IF NOT EXISTS menu_makan (
     id INTEGER PRIMARY KEY AUTOINCREMENT,
+    tanggal TEXT NOT NULL DEFAULT '',
     waktu TEXT NOT NULL,
     menu TEXT NOT NULL,
     photo_path TEXT
@@ -211,10 +212,19 @@ db.exec(`
 `);
 
 const menuColumns = db.prepare("PRAGMA table_info('menu_makan')").all();
+const hasMenuTanggal = menuColumns.some(col => col.name === 'tanggal');
+if (!hasMenuTanggal) {
+  db.exec("ALTER TABLE menu_makan ADD COLUMN tanggal TEXT NOT NULL DEFAULT ''");
+}
 const hasMenuPhotoPath = menuColumns.some(col => col.name === 'photo_path');
 if (!hasMenuPhotoPath) {
   db.exec('ALTER TABLE menu_makan ADD COLUMN photo_path TEXT');
 }
+
+db.exec(`
+  UPDATE menu_makan
+  SET tanggal = COALESCE(NULLIF(TRIM(tanggal), ''), date('now', 'localtime'))
+`);
 
 const strapselColumns = db.prepare("PRAGMA table_info('strapsel_data')").all();
 const strapselColumnNames = strapselColumns.map(col => col.name);
@@ -336,13 +346,13 @@ seedIfEmpty('besaran_remisi', () => {
 });
 
 seedIfEmpty('menu_makan', () => {
-  const insert = db.prepare('INSERT INTO menu_makan (waktu, menu) VALUES (?, ?)');
+  const insert = db.prepare('INSERT INTO menu_makan (tanggal, waktu, menu) VALUES (?, ?, ?)');
   const rows = [
-    ['MAKAN PAGI',  'Nasi Putih, Telur rebus, Tumis wortel + kacang panjang'],
-    ['SNACK',       'Bubur Kc hijau'],
-    ['MAKAN SIANG', 'Nasi putih, Ayam kecap, Tahu goreng Tumis sawi + wortel, Sambal, Pisang'],
-    ['SNACK',       'Ubi rebus'],
-    ['MAKAN SORE',  'Nasi putih, Ikan goreng, Kacang tanah giling Pecel sayuran, Sambal'],
+    ['2026-04-15', 'MAKAN PAGI',  'Nasi Putih, Telur rebus, Tumis wortel + kacang panjang'],
+    ['2026-04-15', 'SNACK',       'Bubur Kc hijau'],
+    ['2026-04-15', 'MAKAN SIANG', 'Nasi putih, Ayam kecap, Tahu goreng Tumis sawi + wortel, Sambal, Pisang'],
+    ['2026-04-15', 'SNACK',       'Ubi rebus'],
+    ['2026-04-15', 'MAKAN SORE',  'Nasi putih, Ikan goreng, Kacang tanah giling Pecel sayuran, Sambal'],
   ];
   rows.forEach(r => insert.run(...r));
 });
