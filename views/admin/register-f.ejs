@@ -1,0 +1,189 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+  <meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Register F – Admin Lapas</title>
+  <link rel="stylesheet" href="/css/admin.css">
+</head>
+<body>
+<div class="admin-wrapper">
+  <%- include('_sidebar') %>
+  <div class="main-content">
+    <div class="topbar">
+      <div class="topbar-title"><h2>📘 Register F</h2><p>Kelola data pelanggaran tata tertib WBP</p></div>
+      <div class="topbar-actions"><a href="/kalapas/table/register-f" target="_blank" class="btn-public">🧭 Lihat Tabel Kalapas</a></div>
+    </div>
+    <div class="content-area">
+      <% if (success) { %><div class="alert alert-success">✅ Data berhasil disimpan.</div><% } %>
+
+      <div class="card">
+        <div class="card-header"><h3>➕ Tambah Data Register F</h3></div>
+        <div class="card-body">
+          <form method="POST" action="/admin/register-f/add<%= filterQuery %>">
+            <div class="form-grid col-3" style="margin-bottom:12px;">
+              <div class="form-group">
+                <label>No Register</label>
+                <input type="text" name="no_register" placeholder="Contoh: RF-001/IV/2026" required>
+              </div>
+              <div class="form-group">
+                <label>Nama WBP</label>
+                <input type="text" name="nama_wbp" placeholder="Nama WBP" required>
+              </div>
+              <div class="form-group">
+                <label>Jenis Pelanggaran</label>
+                <input type="text" name="jenis_pelanggaran" placeholder="Contoh: Membawa barang terlarang" required>
+              </div>
+              <div class="form-group">
+                <label>Tanggal Melakukan Pelanggaran</label>
+                <input type="date" name="tanggal_pelanggaran" required>
+              </div>
+              <div class="form-group">
+                <label>Lama Hukuman yang Dijatuhkan</label>
+                <input type="text" name="lama_hukuman" placeholder="Contoh: 14 Hari">
+              </div>
+              <div class="form-group">
+                <label>Hukuman Tata Tertib Mulai Dari</label>
+                <input type="date" name="hukuman_mulai">
+              </div>
+              <div class="form-group">
+                <label>Hukuman Tata Tertib s.d</label>
+                <input type="date" name="hukuman_selesai">
+              </div>
+              <div class="form-group full">
+                <label>Keterangan</label>
+                <textarea name="keterangan" rows="2" placeholder="Keterangan tambahan"></textarea>
+              </div>
+            </div>
+            <button type="submit" class="btn btn-primary btn-sm">➕ Tambah</button>
+          </form>
+        </div>
+      </div>
+
+      <% if (edit) { %>
+      <div class="edit-panel">
+        <h4>✏️ Edit Data Register F (ID: <%= edit.id %>)</h4>
+        <form method="POST" action="/admin/register-f/<%= edit.id %>/update<%= filterQuery %>">
+          <div class="form-grid col-3" style="margin-bottom:12px;">
+            <div class="form-group">
+              <label>No Register</label>
+              <input type="text" name="no_register" value="<%= edit.no_register %>" required>
+            </div>
+            <div class="form-group">
+              <label>Nama WBP</label>
+              <input type="text" name="nama_wbp" value="<%= edit.nama_wbp %>" required>
+            </div>
+            <div class="form-group">
+              <label>Jenis Pelanggaran</label>
+              <input type="text" name="jenis_pelanggaran" value="<%= edit.jenis_pelanggaran %>" required>
+            </div>
+            <div class="form-group">
+              <label>Tanggal Melakukan Pelanggaran</label>
+              <input type="date" name="tanggal_pelanggaran" value="<%= edit.tanggal_pelanggaran %>" required>
+            </div>
+            <div class="form-group">
+              <label>Lama Hukuman yang Dijatuhkan</label>
+              <input type="text" name="lama_hukuman" value="<%= edit.lama_hukuman || '' %>">
+            </div>
+            <div class="form-group">
+              <label>Hukuman Tata Tertib Mulai Dari</label>
+              <input type="date" name="hukuman_mulai" value="<%= edit.hukuman_mulai || '' %>">
+            </div>
+            <div class="form-group">
+              <label>Hukuman Tata Tertib s.d</label>
+              <input type="date" name="hukuman_selesai" value="<%= edit.hukuman_selesai || '' %>">
+            </div>
+            <div class="form-group full">
+              <label>Keterangan</label>
+              <textarea name="keterangan" rows="2"><%= edit.keterangan || '' %></textarea>
+            </div>
+          </div>
+          <div style="display:flex;gap:8px;">
+            <button type="submit" class="btn btn-success btn-sm">💾 Simpan</button>
+            <a href="/admin/register-f<%= filterQuery %>" class="btn btn-secondary btn-sm">✕ Batal</a>
+          </div>
+        </form>
+      </div>
+      <% } %>
+
+      <div class="card">
+        <div class="card-header">
+          <h3>
+            <% if (searchKeyword) { %>
+              Hasil Pencarian Register F (<%= list.length %> data) - Seluruh Riwayat
+            <% } else { %>
+              Daftar Register F Sedang Menjalani Hukuman (<%= list.length %> data)
+            <% } %>
+          </h3>
+        </div>
+        <div class="card-body" style="padding:0;">
+          <div style="padding:12px 12px 0;">
+            <form method="GET" action="/admin/register-f" style="display:flex; gap:10px; flex-wrap:wrap; align-items:end;">
+              <div class="form-group" style="min-width: 320px; margin:0;">
+                <label>Pencarian Riwayat Register F</label>
+                <input type="text" name="search" value="<%= searchKeyword || '' %>" placeholder="Cari no register, nama, pelanggaran, hukuman, keterangan">
+              </div>
+              <div style="display:flex; gap:8px; align-items:center;">
+                <button type="submit" class="btn btn-primary btn-sm">🔎 Tampilkan</button>
+                <a href="/admin/register-f" class="btn btn-secondary btn-sm">↺ Reset</a>
+              </div>
+            </form>
+            <div style="margin-top:8px; font-size:12px; color:#64748b; font-weight:700;">
+              <% if (searchKeyword) { %>
+                <span style="color:#1e3a8a;">Mode pencarian aktif: menampilkan seluruh riwayat (termasuk data lama)</span>
+              <% } else { %>
+                Menampilkan data WBP yang sedang menjalani hukuman saat ini.
+              <% } %>
+            </div>
+          </div>
+          <div class="table-wrap">
+            <table class="admin-table">
+              <thead>
+                <tr>
+                  <th rowspan="2">#</th>
+                  <th rowspan="2">No Register</th>
+                  <th rowspan="2">Nama WBP</th>
+                  <th rowspan="2">Jenis Pelanggaran</th>
+                  <th rowspan="2">Tanggal Melakukan Pelanggaran</th>
+                  <th rowspan="2">Lama Hukuman yang Dijatuhkan</th>
+                  <th colspan="2">Hukuman Tata Tertib</th>
+                  <th rowspan="2">Keterangan</th>
+                  <th rowspan="2">Aksi</th>
+                </tr>
+                <tr>
+                  <th>Mulai Dari</th>
+                  <th>s.d</th>
+                </tr>
+              </thead>
+              <tbody>
+                <% list.forEach((item, i) => { %>
+                <tr>
+                  <td><%= i+1 %></td>
+                  <td><%= item.no_register %></td>
+                  <td><%= item.nama_wbp %></td>
+                  <td><%= item.jenis_pelanggaran %></td>
+                  <td><%= item.tanggal_pelanggaran %></td>
+                  <td><%= item.lama_hukuman || '-' %></td>
+                  <td><%= item.hukuman_mulai || '-' %></td>
+                  <td><%= item.hukuman_selesai || '-' %></td>
+                  <td><%= item.keterangan || '-' %></td>
+                  <td>
+                    <div class="actions">
+                      <a href="/admin/register-f?edit=<%= item.id %><%= filterQueryWithAmp %>" class="btn btn-warning btn-xs">✏️ Edit</a>
+                      <form method="POST" action="/admin/register-f/<%= item.id %>/delete<%= filterQuery %>" style="display:inline" onsubmit="return confirm('Hapus data ini?')">
+                        <button class="btn btn-danger btn-xs">🗑 Hapus</button>
+                      </form>
+                    </div>
+                  </td>
+                </tr>
+                <% }) %>
+                <% if (!list.length) { %><tr><td colspan="10" style="text-align:center;color:#aaa;padding:20px;">Belum ada data</td></tr><% } %>
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+</body>
+</html>

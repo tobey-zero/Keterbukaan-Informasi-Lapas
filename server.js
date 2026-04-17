@@ -156,6 +156,66 @@ function getJakartaNowDatetimeLocal() {
   return `${map.year}-${map.month}-${map.day}T${map.hour}:${map.minute}`;
 }
 
+function normalizeDateToYmd(value) {
+  const raw = String(value || '').trim();
+  if (!raw) return null;
+
+  if (/^\d{4}-\d{2}-\d{2}$/.test(raw)) return raw;
+
+  const slashMatch = raw.match(/^(\d{1,2})\/(\d{1,2})\/(\d{4})$/);
+  if (slashMatch) {
+    const day = slashMatch[1].padStart(2, '0');
+    const month = slashMatch[2].padStart(2, '0');
+    const year = slashMatch[3];
+    return `${year}-${month}-${day}`;
+  }
+
+  const dashMatch = raw.match(/^(\d{1,2})-(\d{1,2})-(\d{4})$/);
+  if (dashMatch) {
+    const day = dashMatch[1].padStart(2, '0');
+    const month = dashMatch[2].padStart(2, '0');
+    const year = dashMatch[3];
+    return `${year}-${month}-${day}`;
+  }
+
+  const monthMap = {
+    januari: '01',
+    februari: '02',
+    maret: '03',
+    april: '04',
+    mei: '05',
+    juni: '06',
+    juli: '07',
+    agustus: '08',
+    september: '09',
+    oktober: '10',
+    november: '11',
+    desember: '12',
+  };
+  const indoMatch = raw.match(/^(\d{1,2})\s+([A-Za-zÀ-ÿ.]+)\s+(\d{4})$/);
+  if (indoMatch) {
+    const day = indoMatch[1].padStart(2, '0');
+    const monthRaw = indoMatch[2].toLowerCase().replace(/\./g, '');
+    const year = indoMatch[3];
+    const month = monthMap[monthRaw];
+    if (month) return `${year}-${month}-${day}`;
+  }
+
+  return null;
+}
+
+function isOnGoingPunishment(selectedYmd, startDateValue, endDateValue) {
+  const selected = normalizeDateToYmd(selectedYmd);
+  const start = normalizeDateToYmd(startDateValue);
+  const end = normalizeDateToYmd(endDateValue);
+  if (!selected) return false;
+
+  if (start && end) return selected >= start && selected <= end;
+  if (start && !end) return selected >= start;
+  if (!start && end) return selected <= end;
+  return false;
+}
+
 function parseMoneyNumber(value) {
   const cleaned = String(value ?? '').replace(/[^\d.-]/g, '');
   const parsed = Number(cleaned);
@@ -245,13 +305,13 @@ app.use(session({
 const ROLES = ['superadmin', 'registrasi', 'pembinaan', 'klinik', 'dapur', 'humas', 'kamtib', 'tata_usaha', 'pengamanan'];
 
 const roleAccess = {
-  superadmin: ['dashboard', 'statistik', 'remisi', 'kata-bijak', 'menu', 'jadwal', 'pembinaan-detail', 'razia', 'pengawalan', 'strapsel', 'tu-umum', 'kamar-blok', 'papan-isi', 'luar-tembok', 'users', 'video', 'klinik-medis', 'klinik-berobat', 'klinik-oncall', 'klinik-kontrol', 'klinik-statistik'],
+  superadmin: ['dashboard', 'statistik', 'remisi', 'kata-bijak', 'menu', 'jadwal', 'pembinaan-detail', 'razia', 'pengawalan', 'register-f', 'strapsel', 'tu-umum', 'kamar-blok', 'papan-isi', 'luar-tembok', 'users', 'video', 'klinik-medis', 'klinik-berobat', 'klinik-oncall', 'klinik-kontrol', 'klinik-statistik'],
   registrasi: ['dashboard', 'statistik', 'remisi', 'papan-isi'],
   pembinaan: ['dashboard', 'jadwal', 'pembinaan-detail'],
   klinik: ['dashboard', 'klinik-medis', 'klinik-berobat', 'klinik-oncall', 'klinik-kontrol', 'klinik-statistik'],
   dapur: ['dashboard', 'menu'],
   humas: ['dashboard', 'video', 'kata-bijak'],
-  kamtib: ['dashboard',  'razia', 'pengawalan', 'strapsel', 'kamar-blok'],
+  kamtib: ['dashboard',  'razia', 'pengawalan', 'register-f', 'strapsel', 'kamar-blok'],
   tata_usaha: ['dashboard', 'tu-umum'],
   pengamanan: ['dashboard', 'kamar-blok', 'luar-tembok'],
   pengamana: ['dashboard', 'kamar-blok', 'luar-tembok'],
@@ -450,7 +510,12 @@ function getRaziaData() {
   };
 }
 
-function getSecurityData() {
+function getSecurityData(filter = {}) {
+  const selectedTanggal = /^\d{4}-\d{2}-\d{2}$/.test(String(filter.tanggal || ''))
+    ? String(filter.tanggal)
+    : getTodayYmd();
+  const searchKeyword = String(filter.search || '').trim();
+
   const strapselList = db
     .prepare(`SELECT
       id,
@@ -462,12 +527,63 @@ function getSecurityData() {
       barang_bukti AS barangBukti,
       dokumentasi_path AS dokumentasiPath
     FROM strapsel_data ORDER BY id DESC`)
+    .all()
+    .filter(item => {
+      if (searchKeyword) {
+        const haystack = [
+          item.namaWbp,
+          item.blokHunian,
+          item.tanggalMasukStrapsel,
+          item.ekspirasi,
+          item.permasalahan,
+          item.barangBukti,
+        ].map(v => String(v || '').toLowerCase()).join(' ');
+        return haystack.includes(searchKeyword.toLowerCase());
+      }
+
+      return isOnGoingPunishment(selectedTanggal, item.tanggalMasukStrapsel, item.ekspirasi);
+    });
+
+  const registerFBase = db
+    .prepare(`SELECT
+      id,
+      no_register AS noRegister,
+      nama_wbp AS namaWbp,
+      jenis_pelanggaran AS jenisPelanggaran,
+      tanggal_pelanggaran AS tanggalPelanggaran,
+      lama_hukuman AS lamaHukuman,
+      hukuman_mulai AS hukumanMulai,
+      hukuman_selesai AS hukumanSelesai,
+      keterangan
+    FROM register_f ORDER BY id DESC`)
     .all();
+
+  const registerFList = registerFBase.filter(item => {
+    if (searchKeyword) {
+      const haystack = [
+        item.noRegister,
+        item.namaWbp,
+        item.jenisPelanggaran,
+        item.tanggalPelanggaran,
+        item.lamaHukuman,
+        item.hukumanMulai,
+        item.hukumanSelesai,
+        item.keterangan,
+      ].map(v => String(v || '').toLowerCase()).join(' ');
+      return haystack.includes(searchKeyword.toLowerCase());
+    }
+
+    return isOnGoingPunishment(selectedTanggal, item.hukumanMulai, item.hukumanSelesai);
+  });
 
   return {
     strapselList,
+    registerFList,
+    selectedTanggal,
+    searchKeyword,
     securitySummary: {
       totalStrapsel: strapselList.length,
+      totalRegisterF: registerFList.length,
     }
   };
 }
@@ -741,6 +857,7 @@ function getKalapasData() {
     barangBuktiRazia: razia.barangBuktiRazia,
     raziaSummary: razia.raziaSummary,
     strapselList: security.strapselList,
+    registerFList: security.registerFList,
     securitySummary: security.securitySummary,
     pengawalanList: pengawalan.list,
     pengawalanSummary: {
@@ -1001,7 +1118,8 @@ app.get('/kalapas/table/razia-barang-bukti', (req, res) => {
 });
 
 app.get('/kalapas/table/strapsel', (req, res) => {
-  const security = getSecurityData();
+  const searchKeyword = String(req.query.search || '').trim();
+  const security = getSecurityData({ search: searchKeyword });
   const rows = security.strapselList.map(item => [
     item.namaWbp || '-',
     item.blokHunian || '-',
@@ -1015,8 +1133,69 @@ app.get('/kalapas/table/strapsel', (req, res) => {
   res.render('kalapas-table', {
     pageTitle: 'Data Strapsel',
     sectionTitle: 'DATA STRAPSEL',
-    subtitle: `Total data: ${rows.length}`,
+    subtitle: searchKeyword
+      ? `Pencarian: "${searchKeyword}" | Total riwayat ditemukan: ${rows.length}`
+      : `Sedang menjalani hukuman: ${rows.length}`,
+    dateFilter: {
+      action: '/kalapas/table/strapsel',
+      dateEnabled: false,
+      resetUrl: '/kalapas/table/strapsel',
+      searchEnabled: true,
+      searchLabel: 'Pencarian riwayat strapsel',
+      searchPlaceholder: 'Cari nama, blok, permasalahan, barang bukti, tanggal...',
+      searchValue: searchKeyword
+    },
     columns: ['NAMA WBP', 'BLOK HUNIAN', 'TANGGAL MASUK STRAPSEL', 'EKSPIRASI', 'PERMASALAHAN', 'BARANG BUKTI', 'DOKUMENTASI'],
+    rows,
+    backUrl: '/kalapas'
+  });
+});
+
+app.get('/kalapas/table/register-f', (req, res) => {
+  const searchKeyword = String(req.query.search || '').trim();
+  const security = getSecurityData({ search: searchKeyword });
+  const rows = security.registerFList.map(item => [
+    item.noRegister || '-',
+    item.namaWbp || '-',
+    item.jenisPelanggaran || '-',
+    item.tanggalPelanggaran || '-',
+    item.lamaHukuman || '-',
+    item.hukumanMulai || '-',
+    item.hukumanSelesai || '-',
+    item.keterangan || '-',
+  ]);
+
+  res.render('kalapas-table', {
+    pageTitle: 'Register F',
+    sectionTitle: 'REGISTER F',
+    subtitle: searchKeyword
+      ? `Pencarian: "${searchKeyword}" | Total riwayat ditemukan: ${rows.length}`
+      : `Sedang menjalani hukuman: ${rows.length}`,
+    dateFilter: {
+      action: '/kalapas/table/register-f',
+      dateEnabled: false,
+      resetUrl: '/kalapas/table/register-f',
+      searchEnabled: true,
+      searchLabel: 'Pencarian riwayat Register F',
+      searchPlaceholder: 'Cari no register, nama, pelanggaran, hukuman, keterangan...',
+      searchValue: searchKeyword
+    },
+    columns: ['NO REGISTER', 'NAMA WBP', 'JENIS PELANGGARAN', 'TANGGAL MELAKUKAN PELANGGARAN', 'LAMA HUKUMAN YANG DIJATUHKAN', 'HUKUMAN MULAI DARI', 'HUKUMAN S.D', 'KETERANGAN'],
+    headerRows: [
+      [
+        { label: 'NO REGISTER', rowspan: 2 },
+        { label: 'NAMA WBP', rowspan: 2 },
+        { label: 'JENIS PELANGGARAN', rowspan: 2 },
+        { label: 'TANGGAL MELAKUKAN PELANGGARAN', rowspan: 2 },
+        { label: 'LAMA HUKUMAN YANG DIJATUHKAN', rowspan: 2 },
+        { label: 'HUKUMAN TATA TERTIB', colspan: 2 },
+        { label: 'KETERANGAN', rowspan: 2 },
+      ],
+      [
+        { label: 'MULAI DARI' },
+        { label: 'SAMPAI DENGAN' },
+      ]
+    ],
     rows,
     backUrl: '/kalapas'
   });
@@ -1024,7 +1203,10 @@ app.get('/kalapas/table/strapsel', (req, res) => {
 
 app.get('/kalapas/table/kamtib', (req, res) => {
   const razia = getRaziaData();
-  const security = getSecurityData();
+  const strapselSearch = String(req.query.strapselSearch || '').trim();
+  const registerFSearch = String(req.query.registerFSearch || '').trim();
+  const strapselSecurity = getSecurityData({ search: strapselSearch });
+  const registerFSecurity = getSecurityData({ search: registerFSearch });
   const [defaultYear, defaultMonth] = getTodayYmd().split('-');
   const selectedYear = /^\d{4}$/.test(String(req.query.year || '')) ? String(req.query.year) : defaultYear;
   const selectedMonth = /^(0[1-9]|1[0-2])$/.test(String(req.query.month || '')) ? String(req.query.month) : defaultMonth;
@@ -1048,15 +1230,18 @@ app.get('/kalapas/table/kamtib', (req, res) => {
 
   res.render('kalapas-kamtib', {
     pageTitle: 'Kamtib',
-    subtitle: `Jadwal Razia: ${razia.jadwalRazia.length} | Barang Bukti: ${razia.barangBuktiRazia.length} | Giat Pengawalan: ${pengawalan.list.length} (${activeMonthLabel} ${selectedYear}) | Strapsel: ${security.strapselList.length}`,
+    subtitle: `Jadwal Razia: ${razia.jadwalRazia.length} | Barang Bukti: ${razia.barangBuktiRazia.length} | Giat Pengawalan: ${pengawalan.list.length} (${activeMonthLabel} ${selectedYear}) | Strapsel: ${strapselSecurity.strapselList.length} | Register F: ${registerFSecurity.registerFList.length}`,
     jadwalRazia: razia.jadwalRazia,
     barangBuktiRazia: razia.barangBuktiRazia,
     pengawalanList: pengawalan.list,
     selectedMonth,
     selectedYear,
+    strapselSearch,
+    registerFSearch,
     monthOptions,
     yearOptions: pengawalan.years.length ? pengawalan.years : [defaultYear],
-    strapselList: security.strapselList,
+    strapselList: strapselSecurity.strapselList,
+    registerFList: registerFSecurity.registerFList,
     backUrl: '/kalapas'
   });
 });
@@ -1821,12 +2006,40 @@ app.post('/admin/pengawalan/:id/delete', requireAccess('pengawalan'), (req, res)
 
 // ── Strapsel ──────────────────────────────────────────────────────
 app.get('/admin/strapsel', requireAccess('strapsel'), (req, res) => {
-  const list = db.prepare('SELECT * FROM strapsel_data ORDER BY id DESC').all();
+  const searchKeyword = String(req.query.search || '').trim();
+  const list = db.prepare('SELECT * FROM strapsel_data ORDER BY id DESC').all().filter(item => {
+    if (searchKeyword) {
+      const haystack = [
+        item.nama_wbp,
+        item.blok_hunian,
+        item.tanggal_masuk_strapsel,
+        item.ekspirasi,
+        item.permasalahan,
+        item.barang_bukti,
+      ].map(v => String(v || '').toLowerCase()).join(' ');
+      return haystack.includes(searchKeyword.toLowerCase());
+    }
+
+    return isOnGoingPunishment(getTodayYmd(), item.tanggal_masuk_strapsel, item.ekspirasi);
+  });
   const edit = req.query.edit ? db.prepare('SELECT * FROM strapsel_data WHERE id=?').get(Number(req.query.edit)) : null;
-  res.render('admin/strapsel', { user: req.session.user, list, edit, active: 'strapsel', success: req.query.success, error: req.query.error });
+  const filterParams = new URLSearchParams();
+  if (searchKeyword) filterParams.set('search', searchKeyword);
+  res.render('admin/strapsel', {
+    user: req.session.user,
+    list,
+    edit,
+    searchKeyword,
+    filterQuery: filterParams.toString() ? `?${filterParams.toString()}` : '',
+    filterQueryWithAmp: filterParams.toString() ? `&${filterParams.toString()}` : '',
+    active: 'strapsel',
+    success: req.query.success,
+    error: req.query.error
+  });
 });
 
 app.post('/admin/strapsel/add', requireAccess('strapsel'), raziaUpload.single('dokumentasi'), (req, res) => {
+  const searchKeyword = String(req.query.search || '').trim();
   const { nama_wbp, blok_hunian, tanggal_masuk_strapsel, ekspirasi, permasalahan, barang_bukti } = req.body;
   const dokumentasiPath = req.file ? `/uploads/razia/${req.file.filename}` : null;
   db.prepare(`
@@ -1834,10 +2047,13 @@ app.post('/admin/strapsel/add', requireAccess('strapsel'), raziaUpload.single('d
       (nama_wbp, blok_hunian, tanggal_masuk_strapsel, ekspirasi, permasalahan, barang_bukti, dokumentasi_path)
     VALUES (?, ?, ?, ?, ?, ?, ?)
   `).run(nama_wbp, blok_hunian, tanggal_masuk_strapsel, ekspirasi || '', permasalahan || '', barang_bukti || '', dokumentasiPath);
-  res.redirect('/admin/strapsel?success=1');
+  const redirectParams = new URLSearchParams({ success: '1' });
+  if (searchKeyword) redirectParams.set('search', searchKeyword);
+  res.redirect(`/admin/strapsel?${redirectParams.toString()}`);
 });
 
 app.post('/admin/strapsel/:id/update', requireAccess('strapsel'), raziaUpload.single('dokumentasi'), (req, res) => {
+  const searchKeyword = String(req.query.search || '').trim();
   const id = Number(req.params.id);
   const { nama_wbp, blok_hunian, tanggal_masuk_strapsel, ekspirasi, permasalahan, barang_bukti } = req.body;
   const existing = db.prepare('SELECT dokumentasi_path FROM strapsel_data WHERE id=?').get(id);
@@ -1853,15 +2069,115 @@ app.post('/admin/strapsel/:id/update', requireAccess('strapsel'), raziaUpload.si
     SET nama_wbp=?, blok_hunian=?, tanggal_masuk_strapsel=?, ekspirasi=?, permasalahan=?, barang_bukti=?, dokumentasi_path=?
     WHERE id=?
   `).run(nama_wbp, blok_hunian, tanggal_masuk_strapsel, ekspirasi || '', permasalahan || '', barang_bukti || '', nextPath, id);
-  res.redirect('/admin/strapsel?success=1');
+  const redirectParams = new URLSearchParams({ success: '1' });
+  if (searchKeyword) redirectParams.set('search', searchKeyword);
+  res.redirect(`/admin/strapsel?${redirectParams.toString()}`);
 });
 
 app.post('/admin/strapsel/:id/delete', requireAccess('strapsel'), (req, res) => {
+  const searchKeyword = String(req.query.search || '').trim();
   const id = Number(req.params.id);
   const existing = db.prepare('SELECT dokumentasi_path FROM strapsel_data WHERE id=?').get(id);
   if (existing?.dokumentasi_path) removeUploadedFile(existing.dokumentasi_path);
   db.prepare('DELETE FROM strapsel_data WHERE id=?').run(id);
-  res.redirect('/admin/strapsel?success=1');
+  const redirectParams = new URLSearchParams({ success: '1' });
+  if (searchKeyword) redirectParams.set('search', searchKeyword);
+  res.redirect(`/admin/strapsel?${redirectParams.toString()}`);
+});
+
+app.get('/admin/register-f', requireAccess('register-f'), (req, res) => {
+  const searchKeyword = String(req.query.search || '').trim();
+  const list = db.prepare('SELECT * FROM register_f ORDER BY id DESC').all().filter(item => {
+    if (searchKeyword) {
+      const haystack = [
+        item.no_register,
+        item.nama_wbp,
+        item.jenis_pelanggaran,
+        item.tanggal_pelanggaran,
+        item.lama_hukuman,
+        item.hukuman_mulai,
+        item.hukuman_selesai,
+        item.keterangan,
+      ].map(v => String(v || '').toLowerCase()).join(' ');
+      return haystack.includes(searchKeyword.toLowerCase());
+    }
+
+    return isOnGoingPunishment(getTodayYmd(), item.hukuman_mulai, item.hukuman_selesai);
+  });
+  const edit = req.query.edit ? db.prepare('SELECT * FROM register_f WHERE id=?').get(Number(req.query.edit)) : null;
+  const filterParams = new URLSearchParams();
+  if (searchKeyword) filterParams.set('search', searchKeyword);
+  res.render('admin/register-f', {
+    user: req.session.user,
+    list,
+    edit,
+    searchKeyword,
+    filterQuery: filterParams.toString() ? `?${filterParams.toString()}` : '',
+    filterQueryWithAmp: filterParams.toString() ? `&${filterParams.toString()}` : '',
+    active: 'register-f',
+    success: req.query.success,
+  });
+});
+
+app.post('/admin/register-f/add', requireAccess('register-f'), (req, res) => {
+  const searchKeyword = String(req.query.search || '').trim();
+  const noRegister = (req.body.no_register || '').trim().toUpperCase();
+  const namaWbp = (req.body.nama_wbp || '').trim().toUpperCase();
+  const jenisPelanggaran = (req.body.jenis_pelanggaran || '').trim();
+  const tanggalPelanggaran = (req.body.tanggal_pelanggaran || '').trim();
+  const lamaHukuman = (req.body.lama_hukuman || '').trim().toUpperCase();
+  const hukumanMulai = (req.body.hukuman_mulai || '').trim();
+  const hukumanSelesai = (req.body.hukuman_selesai || '').trim();
+  const keterangan = (req.body.keterangan || '').trim();
+
+  if (!noRegister || !namaWbp || !jenisPelanggaran || !tanggalPelanggaran) {
+    return res.redirect('/admin/register-f');
+  }
+
+  db.prepare(`
+    INSERT INTO register_f
+      (no_register, nama_wbp, jenis_pelanggaran, tanggal_pelanggaran, lama_hukuman, hukuman_mulai, hukuman_selesai, keterangan)
+    VALUES (?, ?, ?, ?, ?, ?, ?, ?)
+  `).run(noRegister, namaWbp, jenisPelanggaran, tanggalPelanggaran, lamaHukuman, hukumanMulai, hukumanSelesai, keterangan);
+
+  const redirectParams = new URLSearchParams({ success: '1' });
+  if (searchKeyword) redirectParams.set('search', searchKeyword);
+  res.redirect(`/admin/register-f?${redirectParams.toString()}`);
+});
+
+app.post('/admin/register-f/:id/update', requireAccess('register-f'), (req, res) => {
+  const searchKeyword = String(req.query.search || '').trim();
+  const id = Number(req.params.id);
+  const noRegister = (req.body.no_register || '').trim().toUpperCase();
+  const namaWbp = (req.body.nama_wbp || '').trim().toUpperCase();
+  const jenisPelanggaran = (req.body.jenis_pelanggaran || '').trim();
+  const tanggalPelanggaran = (req.body.tanggal_pelanggaran || '').trim();
+  const lamaHukuman = (req.body.lama_hukuman || '').trim().toUpperCase();
+  const hukumanMulai = (req.body.hukuman_mulai || '').trim();
+  const hukumanSelesai = (req.body.hukuman_selesai || '').trim();
+  const keterangan = (req.body.keterangan || '').trim();
+
+  if (!noRegister || !namaWbp || !jenisPelanggaran || !tanggalPelanggaran) {
+    return res.redirect('/admin/register-f');
+  }
+
+  db.prepare(`
+    UPDATE register_f
+    SET no_register=?, nama_wbp=?, jenis_pelanggaran=?, tanggal_pelanggaran=?, lama_hukuman=?, hukuman_mulai=?, hukuman_selesai=?, keterangan=?
+    WHERE id=?
+  `).run(noRegister, namaWbp, jenisPelanggaran, tanggalPelanggaran, lamaHukuman, hukumanMulai, hukumanSelesai, keterangan, id);
+
+  const redirectParams = new URLSearchParams({ success: '1' });
+  if (searchKeyword) redirectParams.set('search', searchKeyword);
+  res.redirect(`/admin/register-f?${redirectParams.toString()}`);
+});
+
+app.post('/admin/register-f/:id/delete', requireAccess('register-f'), (req, res) => {
+  const searchKeyword = String(req.query.search || '').trim();
+  db.prepare('DELETE FROM register_f WHERE id=?').run(Number(req.params.id));
+  const redirectParams = new URLSearchParams({ success: '1' });
+  if (searchKeyword) redirectParams.set('search', searchKeyword);
+  res.redirect(`/admin/register-f?${redirectParams.toString()}`);
 });
 
 // ── TU Bagian Umum ───────────────────────────────────────────────

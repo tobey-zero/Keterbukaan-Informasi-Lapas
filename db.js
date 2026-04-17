@@ -172,6 +172,18 @@ db.exec(`
     created_at TEXT NOT NULL DEFAULT (datetime('now','localtime'))
   );
 
+  CREATE TABLE IF NOT EXISTS register_f (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    no_register TEXT NOT NULL,
+    nama_wbp TEXT NOT NULL,
+    jenis_pelanggaran TEXT NOT NULL,
+    tanggal_pelanggaran TEXT NOT NULL,
+    lama_hukuman TEXT NOT NULL DEFAULT '',
+    hukuman_mulai TEXT NOT NULL DEFAULT '',
+    hukuman_selesai TEXT NOT NULL DEFAULT '',
+    keterangan TEXT NOT NULL DEFAULT ''
+  );
+
   CREATE TABLE IF NOT EXISTS tu_umum_barang (
     id INTEGER PRIMARY KEY AUTOINCREMENT,
     kode TEXT NOT NULL,
@@ -319,6 +331,17 @@ if (!jadwalColumnNames.includes('hari')) db.exec("ALTER TABLE jadwal_kegiatan AD
 if (!jadwalColumnNames.includes('waktu')) db.exec("ALTER TABLE jadwal_kegiatan ADD COLUMN waktu TEXT NOT NULL DEFAULT ''");
 if (!jadwalColumnNames.includes('lokasi')) db.exec("ALTER TABLE jadwal_kegiatan ADD COLUMN lokasi TEXT NOT NULL DEFAULT ''");
 if (!jadwalColumnNames.includes('penanggung_jawab')) db.exec("ALTER TABLE jadwal_kegiatan ADD COLUMN penanggung_jawab TEXT NOT NULL DEFAULT ''");
+
+const registerFColumns = db.prepare("PRAGMA table_info('register_f')").all();
+const registerFColumnNames = registerFColumns.map(col => col.name);
+if (!registerFColumnNames.includes('no_register')) db.exec("ALTER TABLE register_f ADD COLUMN no_register TEXT NOT NULL DEFAULT ''");
+if (!registerFColumnNames.includes('nama_wbp')) db.exec("ALTER TABLE register_f ADD COLUMN nama_wbp TEXT NOT NULL DEFAULT ''");
+if (!registerFColumnNames.includes('jenis_pelanggaran')) db.exec("ALTER TABLE register_f ADD COLUMN jenis_pelanggaran TEXT NOT NULL DEFAULT ''");
+if (!registerFColumnNames.includes('tanggal_pelanggaran')) db.exec("ALTER TABLE register_f ADD COLUMN tanggal_pelanggaran TEXT NOT NULL DEFAULT ''");
+if (!registerFColumnNames.includes('lama_hukuman')) db.exec("ALTER TABLE register_f ADD COLUMN lama_hukuman TEXT NOT NULL DEFAULT ''");
+if (!registerFColumnNames.includes('hukuman_mulai')) db.exec("ALTER TABLE register_f ADD COLUMN hukuman_mulai TEXT NOT NULL DEFAULT ''");
+if (!registerFColumnNames.includes('hukuman_selesai')) db.exec("ALTER TABLE register_f ADD COLUMN hukuman_selesai TEXT NOT NULL DEFAULT ''");
+if (!registerFColumnNames.includes('keterangan')) db.exec("ALTER TABLE register_f ADD COLUMN keterangan TEXT NOT NULL DEFAULT ''");
 
 const remisiColumns = db.prepare("PRAGMA table_info('besaran_remisi')").all();
 const remisiColumnNames = remisiColumns.map(col => col.name);
@@ -640,6 +663,19 @@ seedIfEmpty('giat_pengawalan', () => {
   const rows = [
     ['2026-04-12', 'WBP A.N. E\nWBP A.N. F', 'Tim Pengawalan Regu A\nStaf B', 'Pengawalan sidang lanjutan', null],
     ['2026-04-15', 'WBP A.N. G', 'Tim Pengawalan Regu B', 'Kontrol rumah sakit', null],
+  ];
+  rows.forEach(r => insert.run(...r));
+});
+
+seedIfEmpty('register_f', () => {
+  const insert = db.prepare(`
+    INSERT INTO register_f
+      (no_register, nama_wbp, jenis_pelanggaran, tanggal_pelanggaran, lama_hukuman, hukuman_mulai, hukuman_selesai, keterangan)
+    VALUES (?, ?, ?, ?, ?, ?, ?, ?)
+  `);
+  const rows = [
+    ['RF-001/IV/2026', 'WBP A.N. H', 'Membawa barang terlarang', '2026-04-10', '14 HARI', '2026-04-11', '2026-04-24', 'Pembinaan khusus blok disiplin'],
+    ['RF-002/IV/2026', 'WBP A.N. I', 'Pelanggaran tata tertib kamar', '2026-04-13', '7 HARI', '2026-04-14', '2026-04-20', 'Teguran tertulis dan monitoring'],
   ];
   rows.forEach(r => insert.run(...r));
 });

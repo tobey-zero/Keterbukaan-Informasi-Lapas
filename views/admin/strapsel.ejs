@@ -20,7 +20,7 @@
       <div class="card">
         <div class="card-header"><h3>➕ Tambah Data Strapsel</h3></div>
         <div class="card-body">
-          <form method="POST" action="/admin/strapsel/add" enctype="multipart/form-data">
+          <form method="POST" action="/admin/strapsel/add<%= filterQuery %>" enctype="multipart/form-data">
             <div class="form-grid col-3" style="margin-bottom:12px;">
               <div class="form-group">
                 <label>Nama WBP</label>
@@ -59,7 +59,7 @@
       <% if (edit) { %>
       <div class="edit-panel">
         <h4>✏️ Edit Data Strapsel (ID: <%= edit.id %>)</h4>
-        <form method="POST" action="/admin/strapsel/<%= edit.id %>/update" enctype="multipart/form-data">
+        <form method="POST" action="/admin/strapsel/<%= edit.id %>/update<%= filterQuery %>" enctype="multipart/form-data">
           <div class="form-grid col-3" style="margin-bottom:12px;">
             <div class="form-group">
               <label>Nama WBP</label>
@@ -98,15 +98,42 @@
           </div>
           <div style="display:flex;gap:8px;">
             <button type="submit" class="btn btn-success btn-sm">💾 Simpan</button>
-            <a href="/admin/strapsel" class="btn btn-secondary btn-sm">✕ Batal</a>
+            <a href="/admin/strapsel<%= filterQuery %>" class="btn btn-secondary btn-sm">✕ Batal</a>
           </div>
         </form>
       </div>
       <% } %>
 
       <div class="card">
-        <div class="card-header"><h3>Daftar Strapsel (<%= list.length %> data)</h3></div>
+        <div class="card-header">
+          <h3>
+            <% if (searchKeyword) { %>
+              Hasil Pencarian Strapsel (<%= list.length %> data) - Seluruh Riwayat
+            <% } else { %>
+              Daftar Strapsel Sedang Menjalani Hukuman (<%= list.length %> data)
+            <% } %>
+          </h3>
+        </div>
         <div class="card-body" style="padding:0;">
+          <div style="padding:12px 12px 0;">
+            <form method="GET" action="/admin/strapsel" style="display:flex; gap:10px; flex-wrap:wrap; align-items:end;">
+              <div class="form-group" style="min-width: 320px; margin:0;">
+                <label>Pencarian Riwayat Strapsel</label>
+                <input type="text" name="search" value="<%= searchKeyword || '' %>" placeholder="Cari nama, blok, permasalahan, barang bukti, tanggal">
+              </div>
+              <div style="display:flex; gap:8px; align-items:center;">
+                <button type="submit" class="btn btn-primary btn-sm">🔎 Tampilkan</button>
+                <a href="/admin/strapsel" class="btn btn-secondary btn-sm">↺ Reset</a>
+              </div>
+            </form>
+            <div style="margin-top:8px; font-size:12px; color:#64748b; font-weight:700;">
+              <% if (searchKeyword) { %>
+                <span style="color:#1e3a8a;">Mode pencarian aktif: menampilkan seluruh riwayat (termasuk data lama)</span>
+              <% } else { %>
+                Menampilkan data WBP yang sedang menjalani hukuman saat ini.
+              <% } %>
+            </div>
+          </div>
           <div class="table-wrap">
             <table class="admin-table">
               <thead><tr><th>#</th><th>Nama WBP</th><th>Blok Hunian</th><th>Tanggal Masuk</th><th>Ekspirasi</th><th>Permasalahan</th><th>Barang Bukti</th><th>Dokumentasi</th><th>Aksi</th></tr></thead>
@@ -129,8 +156,8 @@
                   </td>
                   <td>
                     <div class="actions">
-                      <a href="/admin/strapsel?edit=<%= item.id %>" class="btn btn-warning btn-xs">✏️ Edit</a>
-                      <form method="POST" action="/admin/strapsel/<%= item.id %>/delete" style="display:inline" onsubmit="return confirm('Hapus data ini?')">
+                      <a href="/admin/strapsel?edit=<%= item.id %><%= filterQueryWithAmp %>" class="btn btn-warning btn-xs">✏️ Edit</a>
+                      <form method="POST" action="/admin/strapsel/<%= item.id %>/delete<%= filterQuery %>" style="display:inline" onsubmit="return confirm('Hapus data ini?')">
                         <button class="btn btn-danger btn-xs">🗑 Hapus</button>
                       </form>
                     </div>

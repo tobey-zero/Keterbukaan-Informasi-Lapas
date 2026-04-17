@@ -46,6 +46,16 @@
       color: #0f172a;
       background: #fff;
     }
+    .kamtib-panel-filter input[type="text"] {
+      border: 1px solid rgba(255,255,255,.4);
+      border-radius: 4px;
+      padding: 4px 8px;
+      font-size: 11px;
+      font-weight: 700;
+      color: #0f172a;
+      background: #fff;
+      min-width: 240px;
+    }
     .kamtib-panel-filter button {
       border: 1px solid rgba(255,255,255,.4);
       border-radius: 4px;
@@ -56,15 +66,26 @@
       background: #eff6ff;
       cursor: pointer;
     }
+    .kamtib-panel-filter .reset {
+      text-decoration: none;
+      border: 1px solid rgba(255,255,255,.4);
+      border-radius: 4px;
+      padding: 4px 9px;
+      font-size: 11px;
+      font-weight: 700;
+      color: #1e3a8a;
+      background: #eff6ff;
+    }
     .kamtib-grid {
       display: grid;
       gap: 12px;
       grid-template-columns: 1fr 1fr;
-      grid-template-rows: 1fr 1fr 1fr;
+      grid-template-rows: 1fr 1fr 1fr 1fr;
       grid-template-areas:
         'jadwal bukti'
         'pengawalan pengawalan'
-        'strapsel strapsel';
+        'strapsel strapsel'
+        'registerf registerf';
       min-height: calc(100vh - 190px);
     }
     .kamtib-panel {
@@ -76,6 +97,7 @@
     .kamtib-panel-bukti { grid-area: bukti; }
     .kamtib-panel-pengawalan { grid-area: pengawalan; }
     .kamtib-panel-strapsel { grid-area: strapsel; }
+    .kamtib-panel-registerf { grid-area: registerf; }
     .kamtib-panel .panel-header {
       display: flex;
       justify-content: space-between;
@@ -137,7 +159,8 @@
           'jadwal'
           'bukti'
           'pengawalan'
-          'strapsel';
+          'strapsel'
+          'registerf';
         min-height: 0;
       }
       .kamtib-panel .panel-content {
@@ -245,6 +268,8 @@
         <div class="panel-header red">
           <span>GIAT PENGAWALAN</span>
           <form method="GET" action="/kalapas/table/kamtib" class="kamtib-panel-filter">
+            <input type="hidden" name="strapselSearch" value="<%= strapselSearch || '' %>">
+            <input type="hidden" name="registerFSearch" value="<%= registerFSearch || '' %>">
             <span class="kamtib-panel-filter-label">Filter Giat Pengawalan</span>
             <select name="month" aria-label="Filter bulan pengawalan">
               <% monthOptions.forEach(opt => { %>
@@ -294,7 +319,16 @@
       <div class="panel kamtib-panel kamtib-panel-strapsel">
         <div class="panel-header red">
           <span>DATA STRAPSEL</span>
-          <span><%= strapselList.length %> data</span>
+          <form method="GET" action="/kalapas/table/kamtib" class="kamtib-panel-filter">
+            <input type="hidden" name="month" value="<%= selectedMonth %>">
+            <input type="hidden" name="year" value="<%= selectedYear %>">
+            <input type="hidden" name="registerFSearch" value="<%= registerFSearch || '' %>">
+            <span class="kamtib-panel-filter-label">Pencarian Strapsel</span>
+            <input type="text" name="strapselSearch" value="<%= strapselSearch || '' %>" placeholder="Cari nama, blok, permasalahan, barang bukti...">
+            <button type="submit">Terapkan</button>
+            <a href="/kalapas/table/kamtib?month=<%= selectedMonth %>&year=<%= selectedYear %><%= registerFSearch ? ('&registerFSearch=' + encodeURIComponent(registerFSearch)) : '' %>" class="reset">Reset</a>
+            <span><%= strapselList.length %> data</span>
+          </form>
         </div>
         <div class="panel-content">
           <div class="table-wrap table-auto-scroll kamtib-table-scroll">
@@ -324,6 +358,60 @@
                 <% }) %>
                 <% if (!strapselList.length) { %>
                 <tr><td colspan="7" class="kamtib-empty">Belum ada data</td></tr>
+                <% } %>
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+
+      <div class="panel kamtib-panel kamtib-panel-registerf">
+        <div class="panel-header red">
+          <span>REGISTER F</span>
+          <form method="GET" action="/kalapas/table/kamtib" class="kamtib-panel-filter">
+            <input type="hidden" name="month" value="<%= selectedMonth %>">
+            <input type="hidden" name="year" value="<%= selectedYear %>">
+            <input type="hidden" name="strapselSearch" value="<%= strapselSearch || '' %>">
+            <span class="kamtib-panel-filter-label">Pencarian Register F</span>
+            <input type="text" name="registerFSearch" value="<%= registerFSearch || '' %>" placeholder="Cari no register, nama, pelanggaran, hukuman...">
+            <button type="submit">Terapkan</button>
+            <a href="/kalapas/table/kamtib?month=<%= selectedMonth %>&year=<%= selectedYear %><%= strapselSearch ? ('&strapselSearch=' + encodeURIComponent(strapselSearch)) : '' %>" class="reset">Reset</a>
+            <span><%= registerFList.length %> data</span>
+          </form>
+        </div>
+        <div class="panel-content">
+          <div class="table-wrap table-auto-scroll kamtib-table-scroll">
+            <table class="admin-table">
+              <thead>
+                <tr>
+                  <th rowspan="2">NO REGISTER</th>
+                  <th rowspan="2">NAMA WBP</th>
+                  <th rowspan="2">JENIS PELANGGARAN</th>
+                  <th rowspan="2">TANGGAL PELANGGARAN</th>
+                  <th rowspan="2">LAMA HUKUMAN</th>
+                  <th colspan="2">HUKUMAN TATA TERTIB</th>
+                  <th rowspan="2">KETERANGAN</th>
+                </tr>
+                <tr>
+                  <th>MULAI DARI</th>
+                  <th>SAMPAI DENGAN</th>
+                </tr>
+              </thead>
+              <tbody>
+                <% registerFList.forEach(item => { %>
+                <tr>
+                  <td><%= item.noRegister || '-' %></td>
+                  <td><%= item.namaWbp || '-' %></td>
+                  <td><%= item.jenisPelanggaran || '-' %></td>
+                  <td><%= item.tanggalPelanggaran || '-' %></td>
+                  <td><%= item.lamaHukuman || '-' %></td>
+                  <td><%= item.hukumanMulai || '-' %></td>
+                  <td><%= item.hukumanSelesai || '-' %></td>
+                  <td><%= item.keterangan || '-' %></td>
+                </tr>
+                <% }) %>
+                <% if (!registerFList.length) { %>
+                <tr><td colspan="8" class="kamtib-empty">Belum ada data</td></tr>
                 <% } %>
               </tbody>
             </table>

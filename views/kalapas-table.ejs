@@ -72,6 +72,18 @@
       color: #fff;
       background: #1a4bb8;
     }
+    .kalapas-search-server-form .reset {
+      text-decoration: none;
+      border: 1px solid #cbd5e1;
+      border-radius: 6px;
+      padding: 7px 11px;
+      font-size: 12px;
+      font-weight: bold;
+      color: #1e3a8a;
+      background: #eff6ff;
+      display: inline-flex;
+      align-items: center;
+    }
     .kalapas-date-filter .label {
       font-size: 11px;
       color: #334155;
@@ -349,22 +361,28 @@
           <% if (dateFilter.searchEnabled) { %>
             <div class="kalapas-filter-split">
               <form method="GET" action="<%= dateFilter.action || '' %>" class="kalapas-search-server-form">
-                <input type="hidden" name="tanggal" value="<%= dateFilter.value || dateFilter.todayValue || '' %>">
+                <% if (dateFilter.dateEnabled !== false) { %>
+                  <input type="hidden" name="tanggal" value="<%= dateFilter.value || dateFilter.todayValue || '' %>">
+                <% } %>
                 <div class="search-box">
                   <div class="kalapas-search-label" style="color:#334155;"><%= dateFilter.searchLabel || 'Pencarian tabel ini' %></div>
                   <input id="tableSearchServer" name="search" class="kalapas-search" type="text" value="<%= dateFilter.searchValue || '' %>" placeholder="<%= dateFilter.searchPlaceholder || 'Cari data...' %>" style="max-width:100%; width:100%;">
                 </div>
                 <button type="submit">Terapkan</button>
+                <% if (dateFilter.dateEnabled === false) { %>
+                  <a href="<%= dateFilter.resetUrl || (dateFilter.action || '') %>" class="reset">Reset</a>
+                <% } %>
               </form>
-              <form method="GET" action="<%= dateFilter.action || '' %>" class="kalapas-date-filter">
-                <input type="hidden" name="search" value="<%= dateFilter.searchValue || '' %>">
-                <div>
-                  <div class="label"><%= dateFilter.label || 'Filter tanggal' %></div>
-                  <input type="date" name="tanggal" value="<%= dateFilter.value || dateFilter.todayValue || '' %>">
-                </div>
-                <button type="submit">Terapkan</button>
-                <a href="<%= (dateFilter.resetUrl || (dateFilter.action || '')) + ((dateFilter.searchValue || '').trim() ? ('?search=' + encodeURIComponent(dateFilter.searchValue)) : '') %>" class="reset">Hari ini</a>
-              </form>
+              <% if (dateFilter.dateEnabled !== false) { %>
+                <form method="GET" action="<%= dateFilter.action || '' %>" class="kalapas-date-filter">
+                  <div>
+                    <div class="label"><%= dateFilter.label || 'Filter tanggal' %></div>
+                    <input type="date" name="tanggal" value="<%= dateFilter.value || dateFilter.todayValue || '' %>">
+                  </div>
+                  <button type="submit">Terapkan</button>
+                  <a href="<%= dateFilter.resetUrl || (dateFilter.action || '') %>" class="reset">Hari ini</a>
+                </form>
+              <% } %>
             </div>
           <% } else { %>
             <div class="kalapas-date-filter-wrap">
@@ -393,9 +411,19 @@
         <div class="table-wrap">
           <table class="admin-table" id="dataTable">
             <thead>
-              <tr>
-                <% columns.forEach(col => { %><th><%= col %></th><% }) %>
-              </tr>
+              <% if (typeof headerRows !== 'undefined' && Array.isArray(headerRows) && headerRows.length) { %>
+                <% headerRows.forEach((headerRow) => { %>
+                  <tr>
+                    <% (headerRow || []).forEach((cell) => { %>
+                      <th <% if (cell.rowspan) { %>rowspan="<%= cell.rowspan %>"<% } %> <% if (cell.colspan) { %>colspan="<%= cell.colspan %>"<% } %>><%= cell.label %></th>
+                    <% }) %>
+                  </tr>
+                <% }) %>
+              <% } else { %>
+                <tr>
+                  <% columns.forEach(col => { %><th><%= col %></th><% }) %>
+                </tr>
+              <% } %>
             </thead>
             <tbody>
               <% rows.forEach(row => { %>
@@ -412,7 +440,12 @@
                 </tr>
               <% }) %>
               <% if (!rows.length) { %>
-                <tr><td colspan="<%= columns.length %>" class="kalapas-empty">Belum ada data</td></tr>
+                <% const emptyColspan = (Array.isArray(columns) && columns.length)
+                  ? columns.length
+                  : ((typeof headerRows !== 'undefined' && Array.isArray(headerRows) && headerRows.length)
+                    ? (headerRows[headerRows.length - 1] || []).reduce((sum, cell) => sum + (Number(cell.colspan) || 1), 0)
+                    : 1); %>
+                <tr><td colspan="<%= emptyColspan %>" class="kalapas-empty">Belum ada data</td></tr>
               <% } %>
             </tbody>
           </table>

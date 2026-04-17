@@ -19,7 +19,7 @@
       <span class="icon">🌐</span><span>Lihat Publik</span>
     </a>
 
-    <% if (['statistik','remisi','kata-bijak','menu','video','jadwal','pembinaan-detail','razia','pengawalan','strapsel','tu-umum','kamar-blok','papan-isi','luar-tembok'].some(p => allowed.includes(p))) { %>
+    <% if (['statistik','remisi','kata-bijak','menu','video','jadwal','pembinaan-detail','razia','pengawalan','register-f','strapsel','tu-umum','kamar-blok','papan-isi','luar-tembok'].some(p => allowed.includes(p))) { %>
     <div class="nav-label">Kelola Data</div>
     <% } %>
 
@@ -74,6 +74,12 @@
     <% if (allowed.includes('pengawalan')) { %>
     <a href="/admin/pengawalan" class="nav-item <%= active==='pengawalan'?'active':'' %>">
       <span class="icon">🛡️</span><span>Giat Pengawalan</span>
+    </a>
+    <% } %>
+
+    <% if (allowed.includes('register-f')) { %>
+    <a href="/admin/register-f" class="nav-item <%= active==='register-f'?'active':'' %>">
+      <span class="icon">📘</span><span>Register F</span>
     </a>
     <% } %>
 

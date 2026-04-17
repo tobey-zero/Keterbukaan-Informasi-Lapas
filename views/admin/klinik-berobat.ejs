@@ -174,13 +174,12 @@
                 <button type="submit" class="btn btn-primary btn-sm">Terapkan</button>
               </form>
               <form method="GET" action="/admin/klinik-berobat" class="berobat-filter-date">
-                <input type="hidden" name="search" value="<%= searchKeyword || '' %>">
                 <div class="form-group" style="min-width: 220px; margin:0;">
                   <label>Filter Tanggal WBP Berobat</label>
                   <input type="date" name="tanggal" value="<%= selectedTanggal || todayYmd %>">
                 </div>
                 <button type="submit" class="btn btn-primary btn-sm">Terapkan</button>
-                <a href="/admin/klinik-berobat<%= searchKeyword ? ('?search=' + encodeURIComponent(searchKeyword)) : '' %>" class="btn btn-secondary btn-sm">↺ Hari ini</a>
+                <a href="/admin/klinik-berobat" class="btn btn-secondary btn-sm">↺ Hari ini</a>
               </form>
             </div>
             <div style="margin-top:8px; font-size:12px; color:#64748b; font-weight:700;">
