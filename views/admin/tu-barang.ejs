@@ -1,0 +1,116 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+  <meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Daftar Barang TU – Admin Lapas</title>
+  <link rel="stylesheet" href="/css/admin.css">
+</head>
+<body>
+<div class="admin-wrapper">
+  <%- include('_sidebar') %>
+  <div class="main-content">
+    <div class="topbar">
+      <div class="topbar-title"><h2>📦 Daftar Barang TU</h2><p>Kelola laporan barang pengguna (mutasi dan saldo)</p></div>
+      <div class="topbar-actions"><a href="/kalapas/table/tu-umum" target="_blank" class="btn-public">🧭 Lihat Tabel Kalapas</a></div>
+    </div>
+    <div class="content-area">
+      <% if (success) { %><div class="alert alert-success">✅ Data berhasil disimpan.</div><% } %>
+
+      <div class="card">
+        <div class="card-header"><h3>➕ Tambah Data TU Bagian Umum</h3></div>
+        <div class="card-body">
+          <form method="POST" action="/admin/tu-umum/add">
+            <div class="form-grid col-4" style="margin-bottom:12px;">
+              <div class="form-group"><label>Kode</label><input type="text" name="kode" required></div>
+              <div class="form-group"><label>Uraian</label><input type="text" name="uraian" required></div>
+              <div class="form-group"><label>Satuan</label><input type="text" name="satuan" required></div>
+              <div class="form-group"><label>Saldo Awal Kuantitas</label><input type="text" name="saldo_awal_kuantitas" value="0"></div>
+              <div class="form-group"><label>Saldo Awal Nilai</label><input type="text" name="saldo_awal_nilai" value="0"></div>
+              <div class="form-group"><label>Bertambah Kuantitas</label><input type="text" name="bertambah_kuantitas" value="0"></div>
+              <div class="form-group"><label>Bertambah Nilai</label><input type="text" name="bertambah_nilai" value="0"></div>
+              <div class="form-group"><label>Berkurang Kuantitas</label><input type="text" name="berkurang_kuantitas" value="0"></div>
+              <div class="form-group"><label>Berkurang Nilai</label><input type="text" name="berkurang_nilai" value="0"></div>
+              <div class="form-group"><label>Saldo Akhir Kuantitas</label><input type="text" name="saldo_akhir_kuantitas" value="0"></div>
+              <div class="form-group"><label>Saldo Akhir Nilai</label><input type="text" name="saldo_akhir_nilai" value="0"></div>
+            </div>
+            <button type="submit" class="btn btn-primary btn-sm">➕ Tambah</button>
+          </form>
+        </div>
+      </div>
+
+      <% if (edit) { %>
+      <div class="edit-panel">
+        <h4>✏️ Edit Data TU Bagian Umum (ID: <%= edit.id %>)</h4>
+        <form method="POST" action="/admin/tu-umum/<%= edit.id %>/update">
+          <div class="form-grid col-4" style="margin-bottom:12px;">
+            <div class="form-group"><label>Kode</label><input type="text" name="kode" value="<%= edit.kode %>" required></div>
+            <div class="form-group"><label>Uraian</label><input type="text" name="uraian" value="<%= edit.uraian %>" required></div>
+            <div class="form-group"><label>Satuan</label><input type="text" name="satuan" value="<%= edit.satuan %>" required></div>
+            <div class="form-group"><label>Saldo Awal Kuantitas</label><input type="text" name="saldo_awal_kuantitas" value="<%= edit.saldo_awal_kuantitas || '0' %>"></div>
+            <div class="form-group"><label>Saldo Awal Nilai</label><input type="text" name="saldo_awal_nilai" value="<%= edit.saldo_awal_nilai || '0' %>"></div>
+            <div class="form-group"><label>Bertambah Kuantitas</label><input type="text" name="bertambah_kuantitas" value="<%= edit.bertambah_kuantitas || '0' %>"></div>
+            <div class="form-group"><label>Bertambah Nilai</label><input type="text" name="bertambah_nilai" value="<%= edit.bertambah_nilai || '0' %>"></div>
+            <div class="form-group"><label>Berkurang Kuantitas</label><input type="text" name="berkurang_kuantitas" value="<%= edit.berkurang_kuantitas || '0' %>"></div>
+            <div class="form-group"><label>Berkurang Nilai</label><input type="text" name="berkurang_nilai" value="<%= edit.berkurang_nilai || '0' %>"></div>
+            <div class="form-group"><label>Saldo Akhir Kuantitas</label><input type="text" name="saldo_akhir_kuantitas" value="<%= edit.saldo_akhir_kuantitas || '0' %>"></div>
+            <div class="form-group"><label>Saldo Akhir Nilai</label><input type="text" name="saldo_akhir_nilai" value="<%= edit.saldo_akhir_nilai || '0' %>"></div>
+          </div>
+          <div style="display:flex;gap:8px;">
+            <button type="submit" class="btn btn-success btn-sm">💾 Simpan</button>
+            <a href="/admin/tu-umum/barang" class="btn btn-secondary btn-sm">✕ Batal</a>
+          </div>
+        </form>
+      </div>
+      <% } %>
+
+      <div class="card">
+        <div class="card-header"><h3>Daftar TU Bagian Umum (<%= list.length %> data)</h3></div>
+        <div class="card-body" style="padding:0;">
+          <div class="table-wrap">
+            <table class="admin-table">
+              <thead>
+                <tr>
+                  <th>#</th><th>Kode</th><th>Uraian</th><th>Satuan</th>
+                  <th>Saldo Awal QTY</th><th>Saldo Awal Nilai</th>
+                  <th>Bertambah QTY</th><th>Bertambah Nilai</th>
+                  <th>Berkurang QTY</th><th>Berkurang Nilai</th>
+                  <th>Saldo Akhir QTY</th><th>Saldo Akhir Nilai</th><th>Aksi</th>
+                </tr>
+              </thead>
+              <tbody>
+                <% list.forEach((item, i) => { %>
+                <tr>
+                  <td><%= i+1 %></td>
+                  <td><%= item.kode %></td>
+                  <td><%= item.uraian %></td>
+                  <td><%= item.satuan %></td>
+                  <td><%= item.saldo_awal_kuantitas || '0' %></td>
+                  <td><%= item.saldo_awal_nilai || '0' %></td>
+                  <td><%= item.bertambah_kuantitas || '0' %></td>
+                  <td><%= item.bertambah_nilai || '0' %></td>
+                  <td><%= item.berkurang_kuantitas || '0' %></td>
+                  <td><%= item.berkurang_nilai || '0' %></td>
+                  <td><%= item.saldo_akhir_kuantitas || '0' %></td>
+                  <td><%= item.saldo_akhir_nilai || '0' %></td>
+                  <td>
+                    <div class="actions">
+                      <a href="/admin/tu-umum/barang?edit=<%= item.id %>" class="btn btn-warning btn-xs">✏️ Edit</a>
+                      <form method="POST" action="/admin/tu-umum/<%= item.id %>/delete" style="display:inline" onsubmit="return confirm('Hapus data ini?')">
+                        <button class="btn btn-danger btn-xs">🗑 Hapus</button>
+                      </form>
+                    </div>
+                  </td>
+                </tr>
+                <% }) %>
+                <% if (!list.length) { %><tr><td colspan="13" style="text-align:center;color:#aaa;padding:20px;">Belum ada data</td></tr><% } %>
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+
+    </div>
+  </div>
+</div>
+</body>
+</html>

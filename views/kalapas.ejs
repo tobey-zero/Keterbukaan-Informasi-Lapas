@@ -57,17 +57,38 @@
         .summary-value { font-size: 24px; color: #1e3a8a; font-weight: bold; line-height: 1; }
         .summary-link { display: inline-block; margin-top: 5px; font-size: 10px; font-weight: bold; color: #1d4ed8; text-decoration: none; }
 
-        .bar-chart { display: flex; flex-direction: column; gap: 6px; }
-        .bar-row {
+        .finance-summary {
             display: grid;
-            grid-template-columns: 1.3fr 3fr auto;
+            grid-template-columns: 110px 1fr;
+            gap: 8px;
             align-items: center;
-            gap: 6px;
-            font-size: 11px;
-            color: #1e293b;
         }
-        .bar-track { width: 100%; height: 9px; border-radius: 99px; background: #e2e8f0; overflow: hidden; }
-        .bar-fill { height: 100%; border-radius: 99px; background: linear-gradient(90deg, #1d4ed8 0%, #60a5fa 100%); }
+
+        .finance-list {
+            display: grid;
+            gap: 5px;
+            font-size: 11px;
+            color: #0f172a;
+        }
+
+        .finance-row {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 8px;
+        }
+
+        .finance-row strong {
+            color: #0f2e78;
+            font-size: 12px;
+        }
+
+        .finance-updated {
+            margin-top: 6px;
+            font-size: 10px;
+            color: #475569;
+            line-height: 1.35;
+        }
 
         .donut-layout {
             display: grid;
@@ -354,7 +375,6 @@
             { label: 'Data Strapsel', value: securitySummary.totalStrapsel, link: '/kalapas/table/strapsel' },
             { label: 'TU Bagian Umum', value: tuUmumSummary.totalTuUmum, link: '/kalapas/table/tu-umum' }
         ];
-        const maxSummary = Math.max(...summaryRows.map(item => Number(item.value) || 0), 1);
         const occupied = Number(totalPenghuni) || 0;
         const capacityNum = Number(kapasitas) || 0;
         const available = Math.max(capacityNum - occupied, 0);
@@ -379,16 +399,22 @@
         </div>
 
         <div class="panel panel-barutama">
-            <div class="panel-header">GRAFIK BATANG DATA UTAMA</div>
+            <div class="panel-header">PIE CHART DATA KEUANGAN</div>
             <div class="panel-content">
-                <div class="bar-chart">
-                    <% summaryRows.slice(0, 4).forEach(item => { %>
-                        <div class="bar-row">
-                            <strong><%= item.label %></strong>
-                            <div class="bar-track"><div class="bar-fill" data-percent="<%= Math.round((item.value / maxSummary) * 100) %>"></div></div>
-                            <strong><%= item.value %></strong>
+                <div class="finance-summary">
+                    <div class="pie-card clickable-chart" tabindex="0" role="link" data-link="/kalapas/table/tu-umum" data-values="<%= [financeSummary.realisasiBelanja, financeSummary.sisaPagu].join(',') %>" data-labels="Realisasi Belanja|Sisa Pagu" data-center-mode="percent" data-center-value="<%= financeSummary.realisasiPercent.toFixed(1) %>">
+                        <div class="pie-layout" style="grid-template-columns:1fr;">
+                            <div class="pie-chart"><div class="pie-center"><%= financeSummary.realisasiPercent.toFixed(0) %>%</div></div>
                         </div>
-                    <% }) %>
+                    </div>
+                    <div>
+                        <div class="finance-list">
+                            <div class="finance-row"><span>Total Pagu</span><strong><%= financeSummary.totalPaguLabel %></strong></div>
+                            <div class="finance-row"><span>Realisasi Belanja</span><strong><%= financeSummary.realisasiBelanjaLabel %></strong></div>
+                            <div class="finance-row"><span>Sisa Pagu</span><strong><%= financeSummary.sisaPaguLabel %></strong></div>
+                        </div>
+                        <div class="finance-updated">Data per <%= financeSummary.updatedAtLabel %></div>
+                    </div>
                 </div>
             </div>
         </div>
@@ -518,11 +544,6 @@
                 '#264653', '#8ECAE6', '#219EBC', '#6A4C93', '#F15BB5'
             ];
 
-            document.querySelectorAll('.bar-fill[data-percent]').forEach(function (el) {
-                var value = Number(el.getAttribute('data-percent')) || 0;
-                el.style.width = Math.max(0, Math.min(100, value)) + '%';
-            });
-
             document.querySelectorAll('.room-fill[data-room-percent]').forEach(function (el) {
                 var value = Number(el.getAttribute('data-room-percent')) || 0;
                 el.style.width = Math.max(0, Math.min(100, value)) + '%';
@@ -552,15 +573,23 @@
                 var chartEl = card.querySelector('.pie-chart');
                 var centerEl = card.querySelector('.pie-center');
                 var legendEl = card.querySelector('.pie-legend');
+                var centerMode = (card.getAttribute('data-center-mode') || '').toLowerCase();
+                var centerValue = Number(card.getAttribute('data-center-value')) || 0;
 
-                if (!chartEl || !centerEl || !legendEl) return;
+                if (!chartEl || !centerEl) return;
 
-                centerEl.textContent = total;
-                legendEl.innerHTML = '';
+                if (centerMode === 'percent') {
+                    centerEl.textContent = Math.max(0, Math.min(100, centerValue)).toFixed(0) + '%';
+                } else {
+                    centerEl.textContent = total;
+                }
+                if (legendEl) legendEl.innerHTML = '';
 
                 if (!pairs.length || total <= 0) {
                     chartEl.style.background = '#dbeafe';
-                    legendEl.innerHTML = '<li><span class="pie-label"><span class="pie-dot" style="background:' + colorPalette[1] + ';"></span><span>Belum ada data</span></span><strong>0</strong></li>';
+                    if (legendEl) {
+                        legendEl.innerHTML = '<li><span class="pie-label"><span class="pie-dot" style="background:' + colorPalette[1] + ';"></span><span>Belum ada data</span></span><strong>0</strong></li>';
+                    }
                     return;
                 }
 
@@ -574,9 +603,11 @@
                     segments.push(color + ' ' + current.toFixed(2) + '% ' + next.toFixed(2) + '%');
                     current = next;
 
-                    var li = document.createElement('li');
-                    li.innerHTML = '<span class="pie-label"><span class="pie-dot" style="background:' + color + ';"></span><span>' + item.label + '</span></span><strong>' + item.value + '</strong>';
-                    legendEl.appendChild(li);
+                    if (legendEl) {
+                        var li = document.createElement('li');
+                        li.innerHTML = '<span class="pie-label"><span class="pie-dot" style="background:' + color + ';"></span><span>' + item.label + '</span></span><strong>' + item.value + '</strong>';
+                        legendEl.appendChild(li);
+                    }
                 });
 
                 chartEl.style.background = 'conic-gradient(' + segments.join(',') + ')';

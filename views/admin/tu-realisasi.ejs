@@ -1,0 +1,53 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+  <meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Realisasi Keuangan – Admin Lapas</title>
+  <link rel="stylesheet" href="/css/admin.css">
+</head>
+<body>
+<div class="admin-wrapper">
+  <%- include('_sidebar') %>
+  <div class="main-content">
+    <div class="topbar">
+      <div class="topbar-title"><h2>💰 Realisasi Keuangan</h2><p>Kelola data pagu dan realisasi belanja</p></div>
+      <div class="topbar-actions"><a href="/kalapas/table/tu-umum" target="_blank" class="btn-public">🧭 Lihat Tabel Kalapas</a></div>
+    </div>
+    <div class="content-area">
+      <% if (success) { %><div class="alert alert-success">✅ Data berhasil disimpan.</div><% } %>
+
+      <div class="card">
+        <div class="card-header"><h3>💰 Data Keuangan (Kelolaan Tata Usaha)</h3></div>
+        <div class="card-body">
+          <form method="POST" action="/admin/tu-umum/keuangan/update">
+            <div class="form-grid col-4" style="margin-bottom:12px;">
+              <div class="form-group">
+                <label>Total Pagu (Rp)</label>
+                <input type="number" min="0" step="1" name="total_pagu" value="<%= financeSummary.totalPagu %>" required>
+              </div>
+              <div class="form-group">
+                <label>Realisasi Belanja (Rp)</label>
+                <input type="number" min="0" step="1" name="realisasi_belanja" value="<%= financeSummary.realisasiBelanja %>" required>
+              </div>
+              <div class="form-group">
+                <label>Data Per Tanggal & Jam</label>
+                <input type="datetime-local" name="updated_at" value="<%= financeSummary.updatedAtRaw %>">
+              </div>
+              <div class="form-group">
+                <label>Sisa Pagu (otomatis)</label>
+                <input type="text" value="<%= financeSummary.sisaPaguLabel %>" disabled>
+              </div>
+            </div>
+            <div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap;">
+              <button type="submit" class="btn btn-primary btn-sm">💾 Simpan Data Keuangan</button>
+              <span style="font-size:12px;color:#475569;">Data publik terakhir: <strong><%= financeSummary.updatedAtLabel %></strong></span>
+            </div>
+          </form>
+        </div>
+      </div>
+
+    </div>
+  </div>
+</div>
+</body>
+</html>

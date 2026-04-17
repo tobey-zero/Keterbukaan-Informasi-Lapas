@@ -84,8 +84,14 @@
     <% } %>
 
     <% if (allowed.includes('tu-umum')) { %>
-    <a href="/admin/tu-umum" class="nav-item <%= active==='tu-umum'?'active':'' %>">
-      <span class="icon">📑</span><span>TU Bagian Umum</span>
+    <a href="/admin/tu-umum/realisasi" class="nav-item <%= active==='tu-realisasi'?'active':'' %>">
+      <span class="icon">💰</span><span>TU Realisasi</span>
+    </a>
+    <a href="/admin/tu-umum/barang" class="nav-item <%= active==='tu-barang'?'active':'' %>">
+      <span class="icon">📦</span><span>TU Daftar Barang</span>
+    </a>
+    <a href="/admin/tu-umum/kepegawaian" class="nav-item <%= active==='tu-kepegawaian'?'active':'' %>">
+      <span class="icon">👥</span><span>TU Kepegawaian</span>
     </a>
     <% } %>
 

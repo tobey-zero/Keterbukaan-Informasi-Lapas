@@ -142,6 +142,69 @@ function getTodayYmd() {
   return `${map.year}-${map.month}-${map.day}`;
 }
 
+function getJakartaNowDatetimeLocal() {
+  const parts = new Intl.DateTimeFormat('en-CA', {
+    timeZone: 'Asia/Jakarta',
+    year: 'numeric',
+    month: '2-digit',
+    day: '2-digit',
+    hour: '2-digit',
+    minute: '2-digit',
+    hourCycle: 'h23'
+  }).formatToParts(new Date());
+  const map = Object.fromEntries(parts.filter(part => part.type !== 'literal').map(part => [part.type, part.value]));
+  return `${map.year}-${map.month}-${map.day}T${map.hour}:${map.minute}`;
+}
+
+function parseMoneyNumber(value) {
+  const cleaned = String(value ?? '').replace(/[^\d.-]/g, '');
+  const parsed = Number(cleaned);
+  if (!Number.isFinite(parsed)) return 0;
+  return Math.max(0, parsed);
+}
+
+function formatRupiah(value) {
+  return new Intl.NumberFormat('id-ID').format(Number(value) || 0);
+}
+
+function formatFinanceUpdatedAt(rawValue) {
+  const raw = String(rawValue || '').trim();
+  if (!/^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}$/.test(raw)) return '-';
+  const [datePart, timePart] = raw.split('T');
+  const dateObj = new Date(`${datePart}T00:00:00`);
+  if (Number.isNaN(dateObj.getTime())) return '-';
+  const formattedDate = new Intl.DateTimeFormat('id-ID', {
+    timeZone: 'Asia/Jakarta',
+    day: 'numeric',
+    month: 'long',
+    year: 'numeric'
+  }).format(dateObj);
+  return `${formattedDate} pukul ${timePart} WIB`;
+}
+
+function getFinanceSummary() {
+  const totalPagu = parseMoneyNumber(getAppSetting('keuangan_total_pagu', '0'));
+  const realisasiBelanja = parseMoneyNumber(getAppSetting('keuangan_realisasi_belanja', '0'));
+  const sisaPagu = Math.max(totalPagu - realisasiBelanja, 0);
+  const updatedAtRaw = getAppSetting('keuangan_updated_at', getJakartaNowDatetimeLocal());
+  const chartTotal = Math.max(totalPagu, realisasiBelanja + sisaPagu);
+  const realisasiPercent = chartTotal > 0 ? ((realisasiBelanja / chartTotal) * 100) : 0;
+  const sisaPercent = chartTotal > 0 ? ((sisaPagu / chartTotal) * 100) : 0;
+
+  return {
+    totalPagu,
+    realisasiBelanja,
+    sisaPagu,
+    updatedAtRaw,
+    updatedAtLabel: formatFinanceUpdatedAt(updatedAtRaw),
+    realisasiPercent: Number(realisasiPercent.toFixed(1)),
+    sisaPercent: Number(sisaPercent.toFixed(1)),
+    totalPaguLabel: `Rp ${formatRupiah(totalPagu)}`,
+    realisasiBelanjaLabel: `Rp ${formatRupiah(realisasiBelanja)}`,
+    sisaPaguLabel: `Rp ${formatRupiah(sisaPagu)}`,
+  };
+}
+
 function syncPembinaanMasterByName(namaWbp, statusIntegrasi) {
   const normalizedName = (namaWbp || '').trim().toUpperCase();
   if (!normalizedName) return;
@@ -460,10 +523,30 @@ function getTuUmumData() {
     FROM tu_umum_barang ORDER BY id DESC`)
     .all();
 
+  const pegawaiList = db
+    .prepare(`SELECT
+      id,
+      nama_pegawai AS namaPegawai,
+      nip,
+      pangkat_gol AS pangkatGol,
+      jabatan,
+      agama,
+      status,
+      pendidikan,
+      penempatan_seksi AS penempatanSeksi,
+      penempatan_bidang AS penempatanBidang,
+      jenis_kelamin AS jenisKelamin,
+      type_pegawai AS typePegawai
+    FROM tu_kepegawaian ORDER BY id ASC`)
+    .all();
+
   return {
     tuUmumList,
+    pegawaiList,
+    financeSummary: getFinanceSummary(),
     tuUmumSummary: {
       totalTuUmum: tuUmumList.length,
+      totalPegawai: pegawaiList.length,
     }
   };
 }
@@ -653,6 +736,7 @@ function getKalapasData() {
     strapselList: security.strapselList,
     securitySummary: security.securitySummary,
     tuUmumList: tuUmum.tuUmumList,
+    financeSummary: tuUmum.financeSummary,
     tuUmumSummary: tuUmum.tuUmumSummary,
     housingBlocks: housing.housingBlocks,
     housingRooms: housing.housingRooms,
@@ -927,12 +1011,31 @@ app.get('/kalapas/table/tu-umum', (req, res) => {
     item.saldoAkhirNilai || '0',
   ]);
 
+  const pegawaiRows = data.pegawaiList.map((item, index) => [
+    String(index + 1),
+    item.namaPegawai || '-',
+    item.nip || '-',
+    item.pangkatGol || '-',
+    item.jabatan || '-',
+    item.agama || '-',
+    item.status || '-',
+    item.pendidikan || '-',
+    item.penempatanSeksi || '-',
+    item.penempatanBidang || '-',
+    item.jenisKelamin || '-',
+    item.typePegawai || '-',
+  ]);
+
   res.render('kalapas-table', {
     pageTitle: 'TU Bagian Umum',
     sectionTitle: 'LAPORAN BARANG PENGGUNA - TU BAGIAN UMUM',
     subtitle: `Total data: ${rows.length}`,
+    financeSummary: data.financeSummary,
     columns: ['KODE', 'URAIAN', 'SATUAN', 'SALDO AWAL QTY', 'SALDO AWAL NILAI', 'BERTAMBAH QTY', 'BERTAMBAH NILAI', 'BERKURANG QTY', 'BERKURANG NILAI', 'SALDO AKHIR QTY', 'SALDO AKHIR NILAI'],
     rows,
+    secondarySectionTitle: `DATA KEPEGAWAIAN (${pegawaiRows.length} data)`,
+    secondaryColumns: ['No', 'Nama Pegawai', 'NIP', 'Pangkat/Gol', 'Jabatan', 'Agama', 'Status', 'Pendidikan', 'Penempatan/Seksi', 'Penempatan/Bidang', 'Jenis Kelamin', 'Type Pegawai'],
+    secondaryRows: pegawaiRows,
     backUrl: '/kalapas'
   });
 });
@@ -1531,9 +1634,68 @@ app.post('/admin/strapsel/:id/delete', requireAccess('strapsel'), (req, res) => 
 
 // ── TU Bagian Umum ───────────────────────────────────────────────
 app.get('/admin/tu-umum', requireAccess('tu-umum'), (req, res) => {
+  res.redirect('/admin/tu-umum/realisasi');
+});
+
+app.get('/admin/tu-umum/realisasi', requireAccess('tu-umum'), (req, res) => {
+  res.render('admin/tu-realisasi', {
+    user: req.session.user,
+    active: 'tu-realisasi',
+    success: req.query.success,
+    financeSummary: getFinanceSummary(),
+  });
+});
+
+app.get('/admin/tu-umum/barang', requireAccess('tu-umum'), (req, res) => {
   const list = db.prepare('SELECT * FROM tu_umum_barang ORDER BY id DESC').all();
   const edit = req.query.edit ? db.prepare('SELECT * FROM tu_umum_barang WHERE id=?').get(Number(req.query.edit)) : null;
-  res.render('admin/tu-umum', { user: req.session.user, list, edit, active: 'tu-umum', success: req.query.success });
+  res.render('admin/tu-barang', {
+    user: req.session.user,
+    list,
+    edit,
+    active: 'tu-barang',
+    success: req.query.success,
+  });
+});
+
+app.get('/admin/tu-umum/kepegawaian', requireAccess('tu-umum'), (req, res) => {
+  const pegawaiList = db.prepare('SELECT * FROM tu_kepegawaian ORDER BY id ASC').all();
+  const editPegawai = req.query.editPegawai ? db.prepare('SELECT * FROM tu_kepegawaian WHERE id=?').get(Number(req.query.editPegawai)) : null;
+  res.render('admin/tu-kepegawaian', {
+    user: req.session.user,
+    pegawaiList,
+    editPegawai,
+    active: 'tu-kepegawaian',
+    success: req.query.success,
+  });
+});
+
+app.post('/admin/tu-umum/keuangan/update', requireAccess('tu-umum'), (req, res) => {
+  const totalPagu = parseMoneyNumber(req.body.total_pagu);
+  const realisasiBelanja = parseMoneyNumber(req.body.realisasi_belanja);
+  const updatedAtRaw = /^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}$/.test(String(req.body.updated_at || '').trim())
+    ? String(req.body.updated_at).trim()
+    : getJakartaNowDatetimeLocal();
+
+  db.prepare(`
+    INSERT INTO app_settings (key, value)
+    VALUES (?, ?)
+    ON CONFLICT(key) DO UPDATE SET value=excluded.value
+  `).run('keuangan_total_pagu', String(totalPagu));
+
+  db.prepare(`
+    INSERT INTO app_settings (key, value)
+    VALUES (?, ?)
+    ON CONFLICT(key) DO UPDATE SET value=excluded.value
+  `).run('keuangan_realisasi_belanja', String(realisasiBelanja));
+
+  db.prepare(`
+    INSERT INTO app_settings (key, value)
+    VALUES (?, ?)
+    ON CONFLICT(key) DO UPDATE SET value=excluded.value
+  `).run('keuangan_updated_at', updatedAtRaw);
+
+  res.redirect('/admin/tu-umum/realisasi?success=1');
 });
 
 app.post('/admin/tu-umum/add', requireAccess('tu-umum'), (req, res) => {
@@ -1557,7 +1719,7 @@ app.post('/admin/tu-umum/add', requireAccess('tu-umum'), (req, res) => {
     saldo_akhir_kuantitas || '0', saldo_akhir_nilai || '0'
   );
 
-  res.redirect('/admin/tu-umum?success=1');
+  res.redirect('/admin/tu-umum/barang?success=1');
 });
 
 app.post('/admin/tu-umum/:id/update', requireAccess('tu-umum'), (req, res) => {
@@ -1582,12 +1744,69 @@ app.post('/admin/tu-umum/:id/update', requireAccess('tu-umum'), (req, res) => {
     Number(req.params.id)
   );
 
-  res.redirect('/admin/tu-umum?success=1');
+  res.redirect('/admin/tu-umum/barang?success=1');
 });
 
 app.post('/admin/tu-umum/:id/delete', requireAccess('tu-umum'), (req, res) => {
   db.prepare('DELETE FROM tu_umum_barang WHERE id=?').run(Number(req.params.id));
-  res.redirect('/admin/tu-umum?success=1');
+  res.redirect('/admin/tu-umum/barang?success=1');
+});
+
+app.post('/admin/tu-umum/pegawai/add', requireAccess('tu-umum'), (req, res) => {
+  const namaPegawai = (req.body.nama_pegawai || '').trim().toUpperCase();
+  if (!namaPegawai) return res.redirect('/admin/tu-umum/kepegawaian');
+
+  db.prepare(`
+    INSERT INTO tu_kepegawaian
+      (nama_pegawai, nip, pangkat_gol, jabatan, agama, status, pendidikan, penempatan_seksi, penempatan_bidang, jenis_kelamin, type_pegawai)
+    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+  `).run(
+    namaPegawai,
+    (req.body.nip || '').trim(),
+    (req.body.pangkat_gol || '').trim(),
+    (req.body.jabatan || '').trim(),
+    (req.body.agama || '').trim(),
+    (req.body.status || '').trim(),
+    (req.body.pendidikan || '').trim(),
+    (req.body.penempatan_seksi || '').trim(),
+    (req.body.penempatan_bidang || '').trim(),
+    (req.body.jenis_kelamin || '').trim(),
+    (req.body.type_pegawai || '').trim(),
+  );
+
+  res.redirect('/admin/tu-umum/kepegawaian?success=1');
+});
+
+app.post('/admin/tu-umum/pegawai/:id/update', requireAccess('tu-umum'), (req, res) => {
+  const id = Number(req.params.id);
+  const namaPegawai = (req.body.nama_pegawai || '').trim().toUpperCase();
+  if (!namaPegawai) return res.redirect('/admin/tu-umum/kepegawaian');
+
+  db.prepare(`
+    UPDATE tu_kepegawaian
+    SET nama_pegawai=?, nip=?, pangkat_gol=?, jabatan=?, agama=?, status=?, pendidikan=?, penempatan_seksi=?, penempatan_bidang=?, jenis_kelamin=?, type_pegawai=?
+    WHERE id=?
+  `).run(
+    namaPegawai,
+    (req.body.nip || '').trim(),
+    (req.body.pangkat_gol || '').trim(),
+    (req.body.jabatan || '').trim(),
+    (req.body.agama || '').trim(),
+    (req.body.status || '').trim(),
+    (req.body.pendidikan || '').trim(),
+    (req.body.penempatan_seksi || '').trim(),
+    (req.body.penempatan_bidang || '').trim(),
+    (req.body.jenis_kelamin || '').trim(),
+    (req.body.type_pegawai || '').trim(),
+    id,
+  );
+
+  res.redirect('/admin/tu-umum/kepegawaian?success=1');
+});
+
+app.post('/admin/tu-umum/pegawai/:id/delete', requireAccess('tu-umum'), (req, res) => {
+  db.prepare('DELETE FROM tu_kepegawaian WHERE id=?').run(Number(req.params.id));
+  res.redirect('/admin/tu-umum/kepegawaian?success=1');
 });
 
 // ── Kamar/Blok ──────────────────────────────────────────────────

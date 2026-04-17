@@ -86,7 +86,11 @@
           <% if(allowed.includes('razia'))            { %><a href="/admin/razia"    class="btn btn-danger">🚨 Razia</a><% } %>
           <% if(allowed.includes('pengawalan'))       { %><a href="/admin/pengawalan" class="btn btn-danger">🛡️ Giat Pengawalan</a><% } %>
           <% if(allowed.includes('strapsel'))         { %><a href="/admin/strapsel" class="btn btn-secondary">🛡️ Strapsel</a><% } %>
-          <% if(allowed.includes('tu-umum'))          { %><a href="/admin/tu-umum" class="btn btn-primary">📑 TU Bagian Umum</a><% } %>
+          <% if(allowed.includes('tu-umum'))          { %>
+            <a href="/admin/tu-umum/realisasi" class="btn btn-primary">💰 TU Realisasi</a>
+            <a href="/admin/tu-umum/barang" class="btn btn-primary">📦 TU Daftar Barang</a>
+            <a href="/admin/tu-umum/kepegawaian" class="btn btn-primary">👥 TU Kepegawaian</a>
+          <% } %>
           <% if(allowed.includes('kamar-blok'))       { %><a href="/admin/kamar-blok" class="btn btn-success">🛏️ Kamar/Blok</a><% } %>
           <% if(allowed.includes('papan-isi'))        { %><a href="/admin/papan-isi" class="btn btn-warning">📌 Papan Keadaan Isi</a><% } %>
           <% if(allowed.includes('luar-tembok'))      { %><a href="/admin/luar-tembok" class="btn btn-warning">🧾 WBP Luar Tembok</a><% } %>

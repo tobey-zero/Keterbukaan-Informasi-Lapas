@@ -187,6 +187,21 @@ db.exec(`
     saldo_akhir_nilai TEXT DEFAULT '0'
   );
 
+  CREATE TABLE IF NOT EXISTS tu_kepegawaian (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    nama_pegawai TEXT NOT NULL,
+    nip TEXT NOT NULL DEFAULT '',
+    pangkat_gol TEXT NOT NULL DEFAULT '',
+    jabatan TEXT NOT NULL DEFAULT '',
+    agama TEXT NOT NULL DEFAULT '',
+    status TEXT NOT NULL DEFAULT '',
+    pendidikan TEXT NOT NULL DEFAULT '',
+    penempatan_seksi TEXT NOT NULL DEFAULT '',
+    penempatan_bidang TEXT NOT NULL DEFAULT '',
+    jenis_kelamin TEXT NOT NULL DEFAULT '',
+    type_pegawai TEXT NOT NULL DEFAULT ''
+  );
+
   CREATE TABLE IF NOT EXISTS housing_blocks (
     id INTEGER PRIMARY KEY AUTOINCREMENT,
     gedung TEXT NOT NULL DEFAULT '',
@@ -643,6 +658,19 @@ seedIfEmpty('tu_umum_barang', () => {
   rows.forEach(r => insert.run(...r));
 });
 
+seedIfEmpty('tu_kepegawaian', () => {
+  const insert = db.prepare(`
+    INSERT INTO tu_kepegawaian
+      (nama_pegawai, nip, pangkat_gol, jabatan, agama, status, pendidikan, penempatan_seksi, penempatan_bidang, jenis_kelamin, type_pegawai)
+    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+  `);
+  const rows = [
+    ['FONIKA AFFANDI, A.Md.I.P., S.H., M.H.', '198005282000121001', 'Pembina Tingkat I (IV/b)', 'KALAPAS', 'ISLAM', 'MENIKAH', 'STRATA 2', 'TATA USAHA', 'TATA USAHA', 'Laki-Laki', 'STRUKTURAL'],
+    ['MARIA REZKI SANTOSO, A.Md.I.P., S.H., M.H.', '197903112000122001', 'Pembina (IV/a)', 'Kabag Tata Usaha', 'ISLAM', 'MENIKAH', 'STRATA 2', 'TATA USAHA', 'TATA USAHA', 'Perempuan', 'STRUKTURAL'],
+  ];
+  rows.forEach(r => insert.run(...r));
+});
+
 seedIfEmpty('housing_blocks', () => {
   const insertBlock = db.prepare('INSERT INTO housing_blocks (gedung, nama_block) VALUES (?, ?)');
   const blockRows = [
@@ -752,5 +780,8 @@ seedIfEmpty('board_wna_negara', () => {
 db.prepare('INSERT OR IGNORE INTO app_settings (key, value) VALUES (?, ?)').run('remisi_title', 'BESARAN REMISI');
 db.prepare('INSERT OR IGNORE INTO app_settings (key, value) VALUES (?, ?)').run('kata_bijak_text', 'KRISNA adalah sistem Keterbukaan Informasi Warga Binaan di Lapas Kelas I Medan.');
 db.prepare('INSERT OR IGNORE INTO app_settings (key, value) VALUES (?, ?)').run('menu_title', 'DAFTAR MENU MAKAN HARI INI');
+db.prepare('INSERT OR IGNORE INTO app_settings (key, value) VALUES (?, ?)').run('keuangan_total_pagu', '57736940000');
+db.prepare('INSERT OR IGNORE INTO app_settings (key, value) VALUES (?, ?)').run('keuangan_realisasi_belanja', '17819254771');
+db.prepare('INSERT OR IGNORE INTO app_settings (key, value) VALUES (?, ?)').run('keuangan_updated_at', '2026-04-16T13:39');
 
 module.exports = db;

@@ -50,6 +50,9 @@
       padding: 14px;
       font-weight: bold;
     }
+    .kalapas-table-panel + .kalapas-table-panel {
+      margin-top: 12px;
+    }
     .kalapas-preview-btn {
       display: inline-flex;
       align-items: center;
@@ -62,6 +65,90 @@
       font-size: 11px;
       font-weight: bold;
       background: #eff6ff;
+    }
+
+    .finance-hero {
+      border: 1px solid #1e40af;
+      border-radius: 10px;
+      background: linear-gradient(180deg, #0ea5e9 0%, #38bdf8 100%);
+      color: #fff;
+      padding: 12px;
+      margin-bottom: 10px;
+    }
+
+    .finance-hero-top {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 10px;
+      margin-bottom: 8px;
+    }
+
+    .finance-hero-box {
+      border-radius: 8px;
+      border: 1px solid rgba(255, 255, 255, .35);
+      background: rgba(15, 23, 42, .22);
+      padding: 8px 10px;
+    }
+
+    .finance-hero-box .label {
+      font-size: 11px;
+      opacity: .95;
+      font-weight: bold;
+      margin-bottom: 3px;
+    }
+
+    .finance-hero-box .value {
+      font-size: 22px;
+      font-weight: bold;
+      line-height: 1.1;
+    }
+
+    .finance-hero-mid {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      gap: 8px;
+      font-weight: bold;
+      font-size: 12px;
+      margin-bottom: 5px;
+    }
+
+    .finance-hero-track {
+      width: 100%;
+      height: 16px;
+      border-radius: 99px;
+      background: rgba(15, 23, 42, .25);
+      overflow: hidden;
+      border: 1px solid rgba(255, 255, 255, .35);
+    }
+
+    .finance-hero-fill {
+      height: 100%;
+      background: #1d4ed8;
+      color: #fff;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 11px;
+      font-weight: bold;
+      white-space: nowrap;
+      min-width: 44px;
+    }
+
+    .finance-hero-bottom {
+      display: flex;
+      justify-content: space-between;
+      gap: 8px;
+      margin-top: 8px;
+      font-size: 12px;
+      font-weight: bold;
+      opacity: .95;
+    }
+
+    @media (max-width: 880px) {
+      .finance-hero-top { grid-template-columns: 1fr; }
+      .finance-hero-box .value { font-size: 18px; }
+      .finance-hero-bottom { flex-direction: column; }
     }
   </style>
 </head>
@@ -88,6 +175,37 @@
       <a href="<%= backUrl %>">⬅ Kembali ke Kalapas</a>
       <input id="tableSearch" class="kalapas-search" type="text" placeholder="Cari data (nama, no reg, diagnosa, dll)...">
     </div>
+
+    <% if (financeSummary) { %>
+      <div class="finance-hero">
+        <div class="finance-hero-top">
+          <div class="finance-hero-box">
+            <div class="label">Total Pagu</div>
+            <div class="value"><%= financeSummary.totalPaguLabel %></div>
+          </div>
+          <div class="finance-hero-box">
+            <div class="label">Realisasi Belanja</div>
+            <div class="value"><%= financeSummary.realisasiBelanjaLabel %></div>
+          </div>
+          <div class="finance-hero-box" style="background: rgba(245, 158, 11, .55);">
+            <div class="label">Sisa Pagu</div>
+            <div class="value"><%= financeSummary.sisaPaguLabel %></div>
+          </div>
+        </div>
+
+        <div class="finance-hero-mid">
+          <span>Total Realisasi Belanja <%= financeSummary.realisasiPercent.toFixed(0) %>%</span>
+          <span>Sisa Pagu <%= financeSummary.sisaPercent.toFixed(0) %>%</span>
+        </div>
+        <div class="finance-hero-track">
+          <div class="finance-hero-fill" style="width:<%= Math.max(0, Math.min(100, financeSummary.realisasiPercent)) %>%;"><%= financeSummary.realisasiPercent.toFixed(0) %>%</div>
+        </div>
+        <div class="finance-hero-bottom">
+          <span>Realisasi: <%= financeSummary.realisasiBelanjaLabel %></span>
+          <span>Data per <%= financeSummary.updatedAtLabel %></span>
+        </div>
+      </div>
+    <% } %>
 
     <div class="panel kalapas-table-panel">
       <div class="panel-header red">
@@ -124,6 +242,44 @@
         </div>
       </div>
     </div>
+
+    <% if (Array.isArray(secondaryRows) && Array.isArray(secondaryColumns)) { %>
+      <div class="panel kalapas-table-panel">
+        <div class="panel-header red">
+          <span><%= secondarySectionTitle || 'DATA TAMBAHAN' %></span>
+          <span id="rowCountSecondary"><%= secondaryRows.length %> data</span>
+        </div>
+        <div class="panel-content" style="padding:0;">
+          <div class="table-wrap">
+            <table class="admin-table" id="dataTableSecondary">
+              <thead>
+                <tr>
+                  <% secondaryColumns.forEach(col => { %><th><%= col %></th><% }) %>
+                </tr>
+              </thead>
+              <tbody>
+                <% secondaryRows.forEach(row => { %>
+                  <tr>
+                    <% row.forEach(cell => { %>
+                      <td>
+                        <% if (typeof cell === 'string' && cell.startsWith('/uploads/') && /\.(png|jpg|jpeg|webp|gif)$/i.test(cell)) { %>
+                          <a href="<%= cell %>" target="_blank" rel="noopener noreferrer" class="kalapas-preview-btn">🔍 Preview</a>
+                        <% } else { %>
+                          <%= cell %>
+                        <% } %>
+                      </td>
+                    <% }) %>
+                  </tr>
+                <% }) %>
+                <% if (!secondaryRows.length) { %>
+                  <tr><td colspan="<%= secondaryColumns.length %>" class="kalapas-empty">Belum ada data</td></tr>
+                <% } %>
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+    <% } %>
   </div>
 
   <script>
@@ -132,19 +288,32 @@
       const table = document.getElementById('dataTable');
       const bodyRows = Array.from(table.querySelectorAll('tbody tr'));
       const rowCount = document.getElementById('rowCount');
+      const secondaryTable = document.getElementById('dataTableSecondary');
+      const secondaryRows = secondaryTable ? Array.from(secondaryTable.querySelectorAll('tbody tr')) : [];
+      const rowCountSecondary = document.getElementById('rowCountSecondary');
 
       function applyFilter() {
         const keyword = (searchInput.value || '').toLowerCase().trim();
-        let visible = 0;
+        let visiblePrimary = 0;
+        let visibleSecondary = 0;
 
         bodyRows.forEach((row) => {
           const text = row.textContent.toLowerCase();
           const match = !keyword || text.includes(keyword);
           row.style.display = match ? '' : 'none';
-          if (match) visible += 1;
+          if (match) visiblePrimary += 1;
         });
 
-        rowCount.textContent = visible + ' data';
+        if (rowCount) rowCount.textContent = visiblePrimary + ' data';
+
+        secondaryRows.forEach((row) => {
+          const text = row.textContent.toLowerCase();
+          const match = !keyword || text.includes(keyword);
+          row.style.display = match ? '' : 'none';
+          if (match) visibleSecondary += 1;
+        });
+
+        if (rowCountSecondary) rowCountSecondary.textContent = visibleSecondary + ' data';
       }
 
       searchInput.addEventListener('input', applyFilter);

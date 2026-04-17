@@ -17,6 +17,36 @@
       <% if (success) { %><div class="alert alert-success">✅ Data berhasil disimpan.</div><% } %>
 
       <div class="card">
+        <div class="card-header"><h3>💰 Data Keuangan (Kelolaan Tata Usaha)</h3></div>
+        <div class="card-body">
+          <form method="POST" action="/admin/tu-umum/keuangan/update">
+            <div class="form-grid col-4" style="margin-bottom:12px;">
+              <div class="form-group">
+                <label>Total Pagu (Rp)</label>
+                <input type="number" min="0" step="1" name="total_pagu" value="<%= financeSummary.totalPagu %>" required>
+              </div>
+              <div class="form-group">
+                <label>Realisasi Belanja (Rp)</label>
+                <input type="number" min="0" step="1" name="realisasi_belanja" value="<%= financeSummary.realisasiBelanja %>" required>
+              </div>
+              <div class="form-group">
+                <label>Data Per Tanggal & Jam</label>
+                <input type="datetime-local" name="updated_at" value="<%= financeSummary.updatedAtRaw %>">
+              </div>
+              <div class="form-group">
+                <label>Sisa Pagu (otomatis)</label>
+                <input type="text" value="<%= financeSummary.sisaPaguLabel %>" disabled>
+              </div>
+            </div>
+            <div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap;">
+              <button type="submit" class="btn btn-primary btn-sm">💾 Simpan Data Keuangan</button>
+              <span style="font-size:12px;color:#475569;">Data publik terakhir: <strong><%= financeSummary.updatedAtLabel %></strong></span>
+            </div>
+          </form>
+        </div>
+      </div>
+
+      <div class="card">
         <div class="card-header"><h3>➕ Tambah Data TU Bagian Umum</h3></div>
         <div class="card-body">
           <form method="POST" action="/admin/tu-umum/add">
@@ -103,6 +133,107 @@
                 </tr>
                 <% }) %>
                 <% if (!list.length) { %><tr><td colspan="13" style="text-align:center;color:#aaa;padding:20px;">Belum ada data</td></tr><% } %>
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+
+      <div class="card">
+        <div class="card-header"><h3>➕ Tambah Data Kepegawaian</h3></div>
+        <div class="card-body">
+          <form method="POST" action="/admin/tu-umum/pegawai/add">
+            <div class="form-grid col-4" style="margin-bottom:12px;">
+              <div class="form-group"><label>Nama Pegawai</label><input type="text" name="nama_pegawai" required></div>
+              <div class="form-group"><label>NIP</label><input type="text" name="nip"></div>
+              <div class="form-group"><label>Pangkat/Gol</label><input type="text" name="pangkat_gol"></div>
+              <div class="form-group"><label>Jabatan</label><input type="text" name="jabatan"></div>
+              <div class="form-group"><label>Agama</label><input type="text" name="agama"></div>
+              <div class="form-group"><label>Status</label><input type="text" name="status"></div>
+              <div class="form-group"><label>Pendidikan</label><input type="text" name="pendidikan"></div>
+              <div class="form-group"><label>Penempatan/Seksi</label><input type="text" name="penempatan_seksi"></div>
+              <div class="form-group"><label>Penempatan/Bidang</label><input type="text" name="penempatan_bidang"></div>
+              <div class="form-group"><label>Jenis Kelamin</label><input type="text" name="jenis_kelamin"></div>
+              <div class="form-group"><label>Type Pegawai</label><input type="text" name="type_pegawai"></div>
+            </div>
+            <button type="submit" class="btn btn-primary btn-sm">➕ Tambah Pegawai</button>
+          </form>
+        </div>
+      </div>
+
+      <% if (editPegawai) { %>
+      <div class="edit-panel">
+        <h4>✏️ Edit Data Kepegawaian (ID: <%= editPegawai.id %>)</h4>
+        <form method="POST" action="/admin/tu-umum/pegawai/<%= editPegawai.id %>/update">
+          <div class="form-grid col-4" style="margin-bottom:12px;">
+            <div class="form-group"><label>Nama Pegawai</label><input type="text" name="nama_pegawai" value="<%= editPegawai.nama_pegawai %>" required></div>
+            <div class="form-group"><label>NIP</label><input type="text" name="nip" value="<%= editPegawai.nip || '' %>"></div>
+            <div class="form-group"><label>Pangkat/Gol</label><input type="text" name="pangkat_gol" value="<%= editPegawai.pangkat_gol || '' %>"></div>
+            <div class="form-group"><label>Jabatan</label><input type="text" name="jabatan" value="<%= editPegawai.jabatan || '' %>"></div>
+            <div class="form-group"><label>Agama</label><input type="text" name="agama" value="<%= editPegawai.agama || '' %>"></div>
+            <div class="form-group"><label>Status</label><input type="text" name="status" value="<%= editPegawai.status || '' %>"></div>
+            <div class="form-group"><label>Pendidikan</label><input type="text" name="pendidikan" value="<%= editPegawai.pendidikan || '' %>"></div>
+            <div class="form-group"><label>Penempatan/Seksi</label><input type="text" name="penempatan_seksi" value="<%= editPegawai.penempatan_seksi || '' %>"></div>
+            <div class="form-group"><label>Penempatan/Bidang</label><input type="text" name="penempatan_bidang" value="<%= editPegawai.penempatan_bidang || '' %>"></div>
+            <div class="form-group"><label>Jenis Kelamin</label><input type="text" name="jenis_kelamin" value="<%= editPegawai.jenis_kelamin || '' %>"></div>
+            <div class="form-group"><label>Type Pegawai</label><input type="text" name="type_pegawai" value="<%= editPegawai.type_pegawai || '' %>"></div>
+          </div>
+          <div style="display:flex;gap:8px;">
+            <button type="submit" class="btn btn-success btn-sm">💾 Simpan</button>
+            <a href="/admin/tu-umum" class="btn btn-secondary btn-sm">✕ Batal</a>
+          </div>
+        </form>
+      </div>
+      <% } %>
+
+      <div class="card">
+        <div class="card-header"><h3>Daftar Kepegawaian (<%= pegawaiList.length %> data)</h3></div>
+        <div class="card-body" style="padding:0;">
+          <div class="table-wrap">
+            <table class="admin-table">
+              <thead>
+                <tr>
+                  <th>No</th>
+                  <th>Nama Pegawai</th>
+                  <th>NIP</th>
+                  <th>Pangkat/Gol</th>
+                  <th>Jabatan</th>
+                  <th>Agama</th>
+                  <th>Status</th>
+                  <th>Pendidikan</th>
+                  <th>Penempatan/Seksi</th>
+                  <th>Penempatan/Bidang</th>
+                  <th>Jenis Kelamin</th>
+                  <th>Type Pegawai</th>
+                  <th>Aksi</th>
+                </tr>
+              </thead>
+              <tbody>
+                <% pegawaiList.forEach((item, i) => { %>
+                <tr>
+                  <td><%= i + 1 %></td>
+                  <td><%= item.nama_pegawai || '-' %></td>
+                  <td><%= item.nip || '-' %></td>
+                  <td><%= item.pangkat_gol || '-' %></td>
+                  <td><%= item.jabatan || '-' %></td>
+                  <td><%= item.agama || '-' %></td>
+                  <td><%= item.status || '-' %></td>
+                  <td><%= item.pendidikan || '-' %></td>
+                  <td><%= item.penempatan_seksi || '-' %></td>
+                  <td><%= item.penempatan_bidang || '-' %></td>
+                  <td><%= item.jenis_kelamin || '-' %></td>
+                  <td><%= item.type_pegawai || '-' %></td>
+                  <td>
+                    <div class="actions">
+                      <a href="/admin/tu-umum?editPegawai=<%= item.id %>" class="btn btn-warning btn-xs">✏️ Edit</a>
+                      <form method="POST" action="/admin/tu-umum/pegawai/<%= item.id %>/delete" style="display:inline" onsubmit="return confirm('Hapus data pegawai ini?')">
+                        <button class="btn btn-danger btn-xs">🗑 Hapus</button>
+                      </form>
+                    </div>
+                  </td>
+                </tr>
+                <% }) %>
+                <% if (!pegawaiList.length) { %><tr><td colspan="13" style="text-align:center;color:#aaa;padding:20px;">Belum ada data</td></tr><% } %>
               </tbody>
             </table>
           </div>
