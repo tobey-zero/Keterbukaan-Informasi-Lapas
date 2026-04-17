@@ -476,7 +476,7 @@ function getBoardData() {
     .all();
 
   const wnaNegara = db
-    .prepare('SELECT id, nama_negara AS namaNegara, jumlah, keterangan FROM board_wna_negara ORDER BY nama_negara COLLATE NOCASE ASC')
+    .prepare('SELECT id, nama_negara AS namaWna, keterangan FROM board_wna_negara ORDER BY nama_negara COLLATE NOCASE ASC')
     .all();
 
   const totalPidanaKhusus = pidanaKhusus.reduce((sum, row) => sum + (Number(row.jumlah) || 0), 0);
@@ -494,7 +494,7 @@ function getBoardData() {
   const totalRegistrasiJumlah = registrasiHunian.reduce((sum, row) => {
     return sum + (Number(row.wniIsi) || 0) + (Number(row.wniTambah) || 0) + (Number(row.wnaIsi) || 0) + (Number(row.wnaTambah) || 0);
   }, 0);
-  const totalWnaNegara = wnaNegara.reduce((sum, row) => sum + (Number(row.jumlah) || 0), 0);
+  const totalWnaNegara = wnaNegara.length;
 
   return {
     pidanaKhusus,
@@ -873,6 +873,19 @@ app.get('/kalapas/table/luar-tembok', (req, res) => {
     sectionTitle: 'WBP DI LUAR TEMBOK',
     subtitle: `Total data: ${rows.length}`,
     columns: ['NO REGISTRASI', 'NAMA', 'TANGGAL', 'PENDAMPING', 'KETERANGAN'],
+    rows,
+    backUrl: '/kalapas'
+  });
+});
+
+app.get('/kalapas/table/wna', (req, res) => {
+  const board = getBoardData();
+  const rows = board.wnaNegara.map(item => [item.namaWna || '-']);
+  res.render('kalapas-table', {
+    pageTitle: 'Daftar Nama WNA',
+    sectionTitle: 'DAFTAR NAMA WARGA NEGARA ASING',
+    subtitle: `Total data: ${rows.length}`,
+    columns: ['NAMA WNA'],
     rows,
     backUrl: '/kalapas'
   });
@@ -1456,7 +1469,7 @@ app.get('/admin/papan-isi', requireAccess('papan-isi'), (req, res) => {
   const editLuar = req.query.editLuar ? db.prepare('SELECT * FROM board_luar_tembok WHERE id=?').get(Number(req.query.editLuar)) : null;
   const editAgama = req.query.editAgama ? db.prepare('SELECT * FROM board_agama WHERE id=?').get(Number(req.query.editAgama)) : null;
   const editRegistrasi = req.query.editRegistrasi ? db.prepare('SELECT * FROM board_registrasi_hunian WHERE id=?').get(Number(req.query.editRegistrasi)) : null;
-  const editWnaNegara = req.query.editWnaNegara ? db.prepare('SELECT * FROM board_wna_negara WHERE id=?').get(Number(req.query.editWnaNegara)) : null;
+  const editWnaNegara = req.query.editWnaNegara ? db.prepare('SELECT id, nama_negara, keterangan FROM board_wna_negara WHERE id=?').get(Number(req.query.editWnaNegara)) : null;
   res.render('admin/papan-isi', {
     user: req.session.user,
     active: 'papan-isi',
@@ -1663,18 +1676,18 @@ app.post('/admin/papan-isi/registrasi/:id/delete', requireAccess('papan-isi'), (
 });
 
 app.post('/admin/papan-isi/wna-negara/add', requireAccess('papan-isi'), (req, res) => {
-  const namaNegara = (req.body.nama_negara || '').trim().toUpperCase();
-  if (!namaNegara) return res.redirect('/admin/papan-isi');
+  const namaWna = (req.body.nama_wna || '').trim().toUpperCase();
+  if (!namaWna) return res.redirect('/admin/papan-isi');
   db.prepare('INSERT INTO board_wna_negara (nama_negara, jumlah, keterangan) VALUES (?, ?, ?)')
-    .run(namaNegara, Number(req.body.jumlah || 0), (req.body.keterangan || '').trim());
+    .run(namaWna, 1, (req.body.keterangan || '').trim());
   res.redirect('/admin/papan-isi?success=1');
 });
 
 app.post('/admin/papan-isi/wna-negara/:id/update', requireAccess('papan-isi'), (req, res) => {
-  const namaNegara = (req.body.nama_negara || '').trim().toUpperCase();
-  if (!namaNegara) return res.redirect('/admin/papan-isi');
+  const namaWna = (req.body.nama_wna || '').trim().toUpperCase();
+  if (!namaWna) return res.redirect('/admin/papan-isi');
   db.prepare('UPDATE board_wna_negara SET nama_negara=?, jumlah=?, keterangan=? WHERE id=?')
-    .run(namaNegara, Number(req.body.jumlah || 0), (req.body.keterangan || '').trim(), Number(req.params.id));
+    .run(namaWna, 1, (req.body.keterangan || '').trim(), Number(req.params.id));
   res.redirect('/admin/papan-isi?success=1');
 });
 

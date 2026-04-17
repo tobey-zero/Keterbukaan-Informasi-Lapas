@@ -437,8 +437,8 @@
                 const umumLabels = (pidanaUmum || []).map(item => item.jenis);
                 const umumValues = (pidanaUmum || []).map(item => Number(item.jumlah) || 0);
 
-                const wnaNegaraLabels = (wnaNegara || []).map(item => item.namaNegara);
-                const wnaNegaraValues = (wnaNegara || []).map(item => Number(item.jumlah) || 0);
+                const wnaNegaraLabels = (wnaNegara || []).map(item => item.namaWna);
+                const wnaNegaraValues = (wnaNegara || []).map(() => 1);
 
                 const luarLabels = (luarTembok || []).map(item => item.status);
                 const luarValues = (luarTembok || []).map(item => (Number(item.wniKeluar)||0) + (Number(item.wniMasuk)||0) + (Number(item.wnaKeluar)||0) + (Number(item.wnaMasuk)||0));
@@ -468,7 +468,7 @@
                 </div>
 
                 <div class="board-col">
-                    <div class="pie-card clickable-chart" tabindex="0" role="link" data-link="/kalapas/papan-isi" data-values="<%= wnaNegaraValues.join(',') %>" data-labels="<%= wnaNegaraLabels.join('|') %>">
+                    <div class="pie-card clickable-chart" tabindex="0" role="link" data-link="/kalapas/table/wna" data-values="<%= wnaNegaraValues.join(',') %>" data-labels="<%= wnaNegaraLabels.join('|') %>">
                         <h4 class="pie-title">Warga Negara Asing</h4>
                         <div class="pie-layout">
                             <div class="pie-chart"><div class="pie-center">0</div></div>

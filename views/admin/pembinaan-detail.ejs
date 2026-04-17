@@ -35,7 +35,7 @@
                 <input type="text" name="tanggal2" placeholder="cth: 15 Oct 2020">
               </div>
               <div class="form-group">
-                <label>Tanggal Ekspirasi</label>
+                <label>Tanggal Ekspirasi Akhir</label>
                 <input type="text" name="tanggal4" placeholder="cth: 28 Dec 2023">
               </div>
               <div class="form-group">
@@ -80,13 +80,13 @@
               <input type="text" name="tanggal2" value="<%= edit.tanggal2 || '' %>">
             </div>
             <div class="form-group">
-              <label>Tanggal Ekspirasi</label>
+              <label>Tanggal Ekspirasi Akhir</label>
               <input type="text" name="tanggal4" value="<%= edit.tanggal4 || '' %>">
             </div>
             <div class="form-group">
               <label>Keterangan</label>
               <select name="keterangan">
-                <% ['HADIR','TIDAK HADIR','IZIN'].forEach(k => { %>
+                <% ['DITJEN','UPT'].forEach(k => { %>
                 <option value="<%= k %>" <%= edit.keterangan===k?'selected':'' %>><%= k %></option>
                 <% }) %>
               </select>
@@ -94,7 +94,7 @@
             <div class="form-group">
               <label>Status Integrasi</label>
               <select name="status_integrasi" required>
-                <% ['Menunggu SK','Sudah dijatuhi Permintaan','Sudah ada hasil SK','Proses Sidang','Ditolak'].forEach(s => { %>
+                <% ['Menunggu SK','Sudah ada hasil SK','Ditolak','Proses Verifikasi'].forEach(s => { %>
                 <option value="<%= s %>" <%= edit.status_integrasi===s?'selected':'' %>><%= s %></option>
                 <% }) %>
               </select>

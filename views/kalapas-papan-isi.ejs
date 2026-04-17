@@ -234,23 +234,19 @@
       <div class="board-panel">
         <h4>Warga Negara Asing</h4>
         <table class="board-table">
-          <thead><tr><th>Nama Negara</th><th>Jumlah</th><th>Keterangan</th></tr></thead>
+          <thead><tr><th>Nama WNA</th></tr></thead>
           <tbody>
             <% for (const item of wnaNegara) { %>
             <tr>
-              <td class="left"><%= item.namaNegara %></td>
-              <td><%= item.jumlah %></td>
-              <td class="left"><%= item.keterangan || '-' %></td>
+              <td class="left"><%= item.namaWna %></td>
             </tr>
             <% } %>
             <% if (!wnaNegara.length) { %>
-            <tr><td colspan="3">Belum ada data WNA per negara</td></tr>
+            <tr><td>Belum ada data nama WNA</td></tr>
             <% } %>
             <% if (wnaNegara.length) { %>
             <tr class="total-row">
-              <td class="left">Jumlah</td>
-              <td><%= boardSummary.totalWnaNegara %></td>
-              <td>-</td>
+              <td class="left">Jumlah: <%= boardSummary.totalWnaNegara %></td>
             </tr>
             <% } %>
           </tbody>

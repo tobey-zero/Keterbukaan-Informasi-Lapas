@@ -627,8 +627,8 @@ seedIfEmpty('board_luar_tembok', () => {
 seedIfEmpty('board_luar_tembok_detail', () => {
   const insert = db.prepare('INSERT INTO board_luar_tembok_detail (no_registrasi, nama, tanggal, pendamping, keterangan) VALUES (?, ?, ?, ?, ?)');
   const rows = [
-    ['BI.001-LT/2026', 'WBP A.N. E', '17 April 2026', 'Petugas Regu A', 'Kontrol rumah sakit'],
-    ['BI.002-LT/2026', 'WBP A.N. F', '17 April 2026', 'Petugas Regu B', 'Sidang lanjutan'],
+    ['BI.001-LT/2026', 'WBP A.N. E', '17 April 2026', 'Staf A', 'Kontrol rumah sakit'],
+    ['BI.002-LT/2026', 'WBP A.N. F', '17 April 2026', 'Staf B', 'Sidang lanjutan'],
   ];
   rows.forEach(r => insert.run(...r));
 });
@@ -672,8 +672,8 @@ seedIfEmpty('board_registrasi_hunian', () => {
 seedIfEmpty('board_wna_negara', () => {
   const insert = db.prepare('INSERT INTO board_wna_negara (nama_negara, jumlah, keterangan) VALUES (?, ?, ?)');
   const rows = [
-    ['MYANMAR', 2, '-'],
-    ['MALAYSIA', 5, '-'],
+    ['U AUNG NAING', 1, '-'],
+    ['MOHD FAIZ BIN YUSOF', 1, '-'],
   ];
   rows.forEach(r => insert.run(...r));
 });
