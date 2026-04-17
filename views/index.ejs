@@ -104,15 +104,22 @@
                 
                     <div class="panel-content documentation"
                         style="padding: 0; align-items: stretch; justify-content: stretch;">
-                        <% if (dokumentasiVideo) { %>
-                            <video src="<%= dokumentasiVideo %>" autoplay muted loop
-                                style="width: 100%; height: 100%; object-fit: cover; border-bottom-left-radius: 8px; border-bottom-right-radius: 8px; display: block;"></video>
+                        <% if (dokumentasiMedia && dokumentasiMedia.length) { %>
+                            <% const firstMedia = dokumentasiMedia[0]; %>
+                            <% if (firstMedia.mediaType === 'video') { %>
+                                <video id="doc-media-player" src="<%= firstMedia.mediaPath %>" autoplay muted playsinline controls
+                                    style="width: 100%; height: 100%; object-fit: cover; border-bottom-left-radius: 8px; border-bottom-right-radius: 8px; display: block;"></video>
                             <% } else { %>
+                                <img id="doc-media-player" src="<%= firstMedia.mediaPath %>" alt="Dokumentasi kegiatan"
+                                    style="width: 100%; height: 100%; object-fit: cover; border-bottom-left-radius: 8px; border-bottom-right-radius: 8px; display: block;">
+                            <% } %>
+                            <script id="doc-media-playlist" type="application/json"><%- JSON.stringify(dokumentasiMedia) %></script>
+                        <% } else { %>
                                 <div class="photo-placeholder"
                                     style="border-radius: 0 0 8px 8px; height: 100%; aspect-ratio: auto;">
-                                    <p>Video Dokumentasi Kegiatan</p>
+                                    <p>Media Dokumentasi Kegiatan</p>
                                 </div>
-                                <% } %>
+                        <% } %>
                     </div>
             </div>
 
@@ -133,7 +140,7 @@
                                 <th>NO. REG</th>
                                 <th>NAMA WARGA BINAAN</th>
                                 <th>TANGGAL 2/3</th>
-                                <th>TANGGAL EKSPIRASI</th>
+                                <th>TANGGAL EKSPIRASI AKHIR</th>
                                 <th>KETERANGAN PROGRAM PEMBINAAN</th>
                                 <th>STATUS INTEGRASI</th>
                             </tr>
@@ -265,6 +272,84 @@
                     window.location.href = '/kalapas';
                 });
             });
+
+            const playlistEl = document.getElementById('doc-media-playlist');
+            if (!playlistEl) return;
+
+            const mediaPlayerContainer = document.querySelector('.panel-content.documentation');
+            if (!mediaPlayerContainer) return;
+
+            let playlist = [];
+            try {
+                playlist = JSON.parse(playlistEl.textContent || '[]');
+            } catch (_) {
+                playlist = [];
+            }
+
+            if (!Array.isArray(playlist) || playlist.length <= 1) return;
+
+            let currentIndex = 0;
+            let imageTimer = null;
+
+            function clearImageTimer() {
+                if (imageTimer) {
+                    clearTimeout(imageTimer);
+                    imageTimer = null;
+                }
+            }
+
+            function nextMedia() {
+                clearImageTimer();
+                currentIndex = (currentIndex + 1) % playlist.length;
+                renderMedia();
+            }
+
+            function renderMedia() {
+                clearImageTimer();
+                const item = playlist[currentIndex];
+                mediaPlayerContainer.innerHTML = '';
+
+                if (!item || !item.mediaPath) {
+                    nextMedia();
+                    return;
+                }
+
+                if (item.mediaType === 'video') {
+                    const video = document.createElement('video');
+                    video.src = item.mediaPath;
+                    video.autoplay = true;
+                    video.muted = true;
+                    video.controls = true;
+                    video.playsInline = true;
+                    video.style.width = '100%';
+                    video.style.height = '100%';
+                    video.style.objectFit = 'cover';
+                    video.style.borderBottomLeftRadius = '8px';
+                    video.style.borderBottomRightRadius = '8px';
+                    video.style.display = 'block';
+
+                    video.addEventListener('ended', nextMedia);
+                    video.addEventListener('error', nextMedia);
+                    mediaPlayerContainer.appendChild(video);
+                } else {
+                    const image = document.createElement('img');
+                    image.src = item.mediaPath;
+                    image.alt = 'Dokumentasi kegiatan';
+                    image.style.width = '100%';
+                    image.style.height = '100%';
+                    image.style.objectFit = 'cover';
+                    image.style.borderBottomLeftRadius = '8px';
+                    image.style.borderBottomRightRadius = '8px';
+                    image.style.display = 'block';
+                    image.addEventListener('error', nextMedia);
+                    mediaPlayerContainer.appendChild(image);
+
+                    const duration = Number(item.displayDurationSec) > 0 ? Number(item.displayDurationSec) : 8;
+                    imageTimer = setTimeout(nextMedia, duration * 1000);
+                }
+            }
+
+            renderMedia();
         })();
     </script>
     <script src="/js/display-mode.js?v=<%= Date.now() %>"></script>

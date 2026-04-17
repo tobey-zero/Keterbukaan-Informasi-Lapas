@@ -66,6 +66,32 @@ const videoUpload = multer({
   }
 });
 
+const HUMAS_UPLOAD_DIR = path.join(__dirname, 'public', 'uploads', 'humas');
+if (!fs.existsSync(HUMAS_UPLOAD_DIR)) {
+  fs.mkdirSync(HUMAS_UPLOAD_DIR, { recursive: true });
+}
+
+const humasMediaStorage = multer.diskStorage({
+  destination: (_req, _file, cb) => cb(null, HUMAS_UPLOAD_DIR),
+  filename: (_req, file, cb) => {
+    const safeBase = path.basename(file.originalname, path.extname(file.originalname))
+      .toLowerCase()
+      .replace(/[^a-z0-9]+/g, '-')
+      .replace(/(^-|-$)/g, '')
+      .slice(0, 40) || 'media-humas';
+    cb(null, `${Date.now()}-${safeBase}${path.extname(file.originalname).toLowerCase()}`);
+  }
+});
+
+const humasMediaUpload = multer({
+  storage: humasMediaStorage,
+  limits: { fileSize: 50 * 1024 * 1024 },
+  fileFilter: (_req, file, cb) => {
+    if (file.mimetype.startsWith('video/') || file.mimetype.startsWith('image/')) return cb(null, true);
+    cb(new Error('File harus berupa foto atau video.'));
+  }
+});
+
 const RAZIA_UPLOAD_DIR = path.join(__dirname, 'public', 'uploads', 'razia');
 if (!fs.existsSync(RAZIA_UPLOAD_DIR)) {
   fs.mkdirSync(RAZIA_UPLOAD_DIR, { recursive: true });
@@ -239,7 +265,29 @@ function getPublicData() {
     .prepare('SELECT hari, waktu, kegiatan, lokasi, penanggung_jawab AS penanggungJawab FROM jadwal_kegiatan ORDER BY id')
     .all();
 
-  const dokumentasiVideoRow = db.prepare('SELECT video_path FROM dokumentasi_video WHERE id = 1').get();
+  const dokumentasiMedia = db.prepare(`
+    SELECT
+      id,
+      media_type AS mediaType,
+      media_path AS mediaPath,
+      display_duration_sec AS displayDurationSec,
+      sort_order AS sortOrder
+    FROM dokumentasi_media
+    ORDER BY sort_order ASC, id ASC
+  `).all();
+
+  const dokumentasiVideoFallbackRow = db.prepare('SELECT video_path FROM dokumentasi_video WHERE id = 1').get();
+  if (!dokumentasiMedia.length && dokumentasiVideoFallbackRow?.video_path) {
+    dokumentasiMedia.push({
+      id: 0,
+      mediaType: 'video',
+      mediaPath: dokumentasiVideoFallbackRow.video_path,
+      displayDurationSec: 8,
+      sortOrder: 1,
+    });
+  }
+
+  const dokumentasiVideo = dokumentasiMedia.find(item => item.mediaType === 'video')?.mediaPath || null;
 
   return {
     totalPenghuni: statistik.total_penghuni,
@@ -257,7 +305,8 @@ function getPublicData() {
     pentahapanPembinaan,
     pentahapanPembinaanDetail,
     jadwalKegiatan,
-    dokumentasiVideo: dokumentasiVideoRow?.video_path || null,
+    dokumentasiMedia,
+    dokumentasiVideo,
   };
 }
 
@@ -476,8 +525,24 @@ function getBoardData() {
     .all();
 
   const wnaNegara = db
-    .prepare('SELECT id, nama_negara AS namaWna, keterangan FROM board_wna_negara ORDER BY nama_negara COLLATE NOCASE ASC')
+    .prepare(`SELECT
+      id,
+      no_registrasi AS noRegistrasi,
+      nama_wbp AS namaWbp,
+      asal_negara AS asalNegara,
+      tindak_pidana AS tindakPidana
+      FROM board_wna_negara
+      ORDER BY nama_wbp COLLATE NOCASE ASC, id ASC`)
     .all();
+
+  const wnaNegaraRekapMap = {};
+  wnaNegara.forEach((item) => {
+    const negara = (item.asalNegara || '-').trim() || '-';
+    wnaNegaraRekapMap[negara] = (wnaNegaraRekapMap[negara] || 0) + 1;
+  });
+  const wnaNegaraRekap = Object.entries(wnaNegaraRekapMap)
+    .sort((a, b) => a[0].localeCompare(b[0], 'id', { sensitivity: 'base' }))
+    .map(([asalNegara, jumlah]) => ({ asalNegara, jumlah }));
 
   const totalPidanaKhusus = pidanaKhusus.reduce((sum, row) => sum + (Number(row.jumlah) || 0), 0);
   const totalPidanaUmum = pidanaUmum.reduce((sum, row) => sum + (Number(row.jumlah) || 0), 0);
@@ -504,6 +569,7 @@ function getBoardData() {
     agama,
     registrasiHunian,
     wnaNegara,
+    wnaNegaraRekap,
     boardSummary: {
       totalPidanaKhusus,
       totalPidanaUmum,
@@ -880,12 +946,17 @@ app.get('/kalapas/table/luar-tembok', (req, res) => {
 
 app.get('/kalapas/table/wna', (req, res) => {
   const board = getBoardData();
-  const rows = board.wnaNegara.map(item => [item.namaWna || '-']);
+  const rows = board.wnaNegara.map(item => [
+    item.noRegistrasi || '-',
+    item.namaWbp || '-',
+    item.asalNegara || '-',
+    item.tindakPidana || '-'
+  ]);
   res.render('kalapas-table', {
-    pageTitle: 'Daftar Nama WNA',
-    sectionTitle: 'DAFTAR NAMA WARGA NEGARA ASING',
+    pageTitle: 'Daftar WNA',
+    sectionTitle: 'DAFTAR WARGA NEGARA ASING',
     subtitle: `Total data: ${rows.length}`,
-    columns: ['NAMA WNA'],
+    columns: ['NO REGISTRASI', 'NAMA WBP', 'ASAL NEGARA', 'TINDAK PIDANA'],
     rows,
     backUrl: '/kalapas'
   });
@@ -1469,7 +1540,9 @@ app.get('/admin/papan-isi', requireAccess('papan-isi'), (req, res) => {
   const editLuar = req.query.editLuar ? db.prepare('SELECT * FROM board_luar_tembok WHERE id=?').get(Number(req.query.editLuar)) : null;
   const editAgama = req.query.editAgama ? db.prepare('SELECT * FROM board_agama WHERE id=?').get(Number(req.query.editAgama)) : null;
   const editRegistrasi = req.query.editRegistrasi ? db.prepare('SELECT * FROM board_registrasi_hunian WHERE id=?').get(Number(req.query.editRegistrasi)) : null;
-  const editWnaNegara = req.query.editWnaNegara ? db.prepare('SELECT id, nama_negara, keterangan FROM board_wna_negara WHERE id=?').get(Number(req.query.editWnaNegara)) : null;
+  const editWnaNegara = req.query.editWnaNegara
+    ? db.prepare('SELECT id, no_registrasi, nama_wbp, asal_negara, tindak_pidana FROM board_wna_negara WHERE id=?').get(Number(req.query.editWnaNegara))
+    : null;
   res.render('admin/papan-isi', {
     user: req.session.user,
     active: 'papan-isi',
@@ -1676,18 +1749,31 @@ app.post('/admin/papan-isi/registrasi/:id/delete', requireAccess('papan-isi'), (
 });
 
 app.post('/admin/papan-isi/wna-negara/add', requireAccess('papan-isi'), (req, res) => {
-  const namaWna = (req.body.nama_wna || '').trim().toUpperCase();
-  if (!namaWna) return res.redirect('/admin/papan-isi');
-  db.prepare('INSERT INTO board_wna_negara (nama_negara, jumlah, keterangan) VALUES (?, ?, ?)')
-    .run(namaWna, 1, (req.body.keterangan || '').trim());
+  const noRegistrasi = (req.body.no_registrasi || '').trim().toUpperCase();
+  const namaWbp = (req.body.nama_wbp || '').trim().toUpperCase();
+  const asalNegara = (req.body.asal_negara || '').trim().toUpperCase();
+  const tindakPidana = (req.body.tindak_pidana || '').trim().toUpperCase();
+  if (!noRegistrasi || !namaWbp || !asalNegara || !tindakPidana) return res.redirect('/admin/papan-isi');
+
+  db.prepare(`
+    INSERT INTO board_wna_negara (no_registrasi, nama_wbp, asal_negara, tindak_pidana, nama_negara, jumlah, keterangan)
+    VALUES (?, ?, ?, ?, ?, ?, ?)
+  `).run(noRegistrasi, namaWbp, asalNegara, tindakPidana, asalNegara, 1, '-');
   res.redirect('/admin/papan-isi?success=1');
 });
 
 app.post('/admin/papan-isi/wna-negara/:id/update', requireAccess('papan-isi'), (req, res) => {
-  const namaWna = (req.body.nama_wna || '').trim().toUpperCase();
-  if (!namaWna) return res.redirect('/admin/papan-isi');
-  db.prepare('UPDATE board_wna_negara SET nama_negara=?, jumlah=?, keterangan=? WHERE id=?')
-    .run(namaWna, 1, (req.body.keterangan || '').trim(), Number(req.params.id));
+  const noRegistrasi = (req.body.no_registrasi || '').trim().toUpperCase();
+  const namaWbp = (req.body.nama_wbp || '').trim().toUpperCase();
+  const asalNegara = (req.body.asal_negara || '').trim().toUpperCase();
+  const tindakPidana = (req.body.tindak_pidana || '').trim().toUpperCase();
+  if (!noRegistrasi || !namaWbp || !asalNegara || !tindakPidana) return res.redirect('/admin/papan-isi');
+
+  db.prepare(`
+    UPDATE board_wna_negara
+    SET no_registrasi=?, nama_wbp=?, asal_negara=?, tindak_pidana=?, nama_negara=?, jumlah=?, keterangan=?
+    WHERE id=?
+  `).run(noRegistrasi, namaWbp, asalNegara, tindakPidana, asalNegara, 1, '-', Number(req.params.id));
   res.redirect('/admin/papan-isi?success=1');
 });
 
@@ -1807,20 +1893,66 @@ app.post('/admin/klinik-statistik/update', requireAccess('klinik-statistik'), (r
 
 // ── Video Dokumentasi ──────────────────────────────────────────────
 app.get('/admin/video', requireAccess('video'), (req, res) => {
-  const data = db.prepare('SELECT * FROM dokumentasi_video WHERE id = 1').get();
-  res.render('admin/video', { user: req.session.user, data, active: 'video', success: req.query.success, error: req.query.error });
+  const list = db.prepare(`
+    SELECT
+      id,
+      media_type AS mediaType,
+      media_path AS mediaPath,
+      display_duration_sec AS displayDurationSec,
+      sort_order AS sortOrder,
+      created_at AS createdAt
+    FROM dokumentasi_media
+    ORDER BY sort_order ASC, id ASC
+  `).all();
+
+  const nextOrder = (list.reduce((max, item) => Math.max(max, Number(item.sortOrder) || 0), 0)) + 1;
+  const edit = req.query.edit
+    ? db.prepare('SELECT id, media_type AS mediaType, media_path AS mediaPath, display_duration_sec AS displayDurationSec, sort_order AS sortOrder FROM dokumentasi_media WHERE id = ?').get(Number(req.query.edit))
+    : null;
+
+  res.render('admin/video', {
+    user: req.session.user,
+    list,
+    nextOrder,
+    edit,
+    active: 'video',
+    success: req.query.success,
+    error: req.query.error
+  });
 });
 
-app.post('/admin/video/update', requireAccess('video'), videoUpload.single('video'), (req, res) => {
-  const existing = db.prepare('SELECT video_path FROM dokumentasi_video WHERE id = 1').get();
-  let nextVideoPath = existing?.video_path || null;
+app.post('/admin/video/add', requireAccess('video'), humasMediaUpload.single('media'), (req, res) => {
+  if (!req.file) return res.redirect('/admin/video?error=File+media+wajib+diunggah');
 
-  if (req.file) {
-    if (nextVideoPath) removeUploadedFile(nextVideoPath);
-    nextVideoPath = `/uploads/video/${req.file.filename}`;
-  }
+  const mediaType = req.file.mimetype.startsWith('image/') ? 'image' : 'video';
+  const mediaPath = `/uploads/humas/${req.file.filename}`;
+  const sortOrder = Number(req.body.sort_order || 1);
+  const displayDurationSec = Math.max(1, Number(req.body.display_duration_sec || 8));
 
-  db.prepare('UPDATE dokumentasi_video SET video_path=? WHERE id=1').run(nextVideoPath);
+  db.prepare(`
+    INSERT INTO dokumentasi_media (media_type, media_path, display_duration_sec, sort_order)
+    VALUES (?, ?, ?, ?)
+  `).run(mediaType, mediaPath, displayDurationSec, sortOrder);
+
+  res.redirect('/admin/video?success=1');
+});
+
+app.post('/admin/video/:id/update', requireAccess('video'), (req, res) => {
+  const id = Number(req.params.id);
+  const sortOrder = Number(req.body.sort_order || 1);
+  const displayDurationSec = Math.max(1, Number(req.body.display_duration_sec || 8));
+
+  db.prepare('UPDATE dokumentasi_media SET sort_order=?, display_duration_sec=? WHERE id=?')
+    .run(sortOrder, displayDurationSec, id);
+
+  res.redirect('/admin/video?success=1');
+});
+
+app.post('/admin/video/:id/delete', requireAccess('video'), (req, res) => {
+  const id = Number(req.params.id);
+  const existing = db.prepare('SELECT media_path FROM dokumentasi_media WHERE id=?').get(id);
+  if (existing?.media_path) removeUploadedFile(existing.media_path);
+  db.prepare('DELETE FROM dokumentasi_media WHERE id=?').run(id);
   res.redirect('/admin/video?success=1');
 });
 
@@ -1880,12 +2012,12 @@ app.use((err, req, res, next) => {
 
   if (req.path.startsWith('/admin/video')) {
     if (err instanceof multer.MulterError && err.code === 'LIMIT_FILE_SIZE') {
-      return res.redirect('/admin/video?error=Ukuran+video+maksimal+50MB');
+      return res.redirect('/admin/video?error=Ukuran+media+maksimal+50MB');
     }
-    if (err.message && err.message.includes('File harus berupa video')) {
-      return res.redirect('/admin/video?error=File+harus+berupa+video');
+    if (err.message && err.message.includes('File harus berupa foto atau video')) {
+      return res.redirect('/admin/video?error=File+harus+berupa+foto+atau+video');
     }
-    return res.redirect('/admin/video?error=Gagal+upload+video');
+    return res.redirect('/admin/video?error=Gagal+upload+media');
   }
 
   if (req.path.startsWith('/admin/razia')) {

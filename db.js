@@ -123,6 +123,15 @@ db.exec(`
     video_path TEXT
   );
 
+  CREATE TABLE IF NOT EXISTS dokumentasi_media (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    media_type TEXT NOT NULL CHECK (media_type IN ('video', 'image')),
+    media_path TEXT NOT NULL,
+    display_duration_sec INTEGER NOT NULL DEFAULT 8,
+    sort_order INTEGER NOT NULL DEFAULT 1,
+    created_at TEXT NOT NULL DEFAULT (datetime('now','localtime'))
+  );
+
   CREATE TABLE IF NOT EXISTS app_settings (
     key TEXT PRIMARY KEY,
     value TEXT NOT NULL DEFAULT ''
@@ -231,6 +240,10 @@ db.exec(`
 
   CREATE TABLE IF NOT EXISTS board_wna_negara (
     id INTEGER PRIMARY KEY AUTOINCREMENT,
+    no_registrasi TEXT NOT NULL DEFAULT '',
+    nama_wbp TEXT NOT NULL DEFAULT '',
+    asal_negara TEXT NOT NULL DEFAULT '',
+    tindak_pidana TEXT NOT NULL DEFAULT '',
     nama_negara TEXT NOT NULL,
     jumlah INTEGER NOT NULL DEFAULT 0,
     keterangan TEXT DEFAULT ''
@@ -351,6 +364,22 @@ if (!pembinaanDetailColumnNamesAfterMigration.includes('status_integrasi')) {
   db.exec("ALTER TABLE pentahapan_pembinaan_detail ADD COLUMN status_integrasi TEXT NOT NULL DEFAULT ''");
 }
 
+const wnaColumns = db.prepare("PRAGMA table_info('board_wna_negara')").all();
+const wnaColumnNames = wnaColumns.map(col => col.name);
+if (!wnaColumnNames.includes('no_registrasi')) db.exec("ALTER TABLE board_wna_negara ADD COLUMN no_registrasi TEXT NOT NULL DEFAULT ''");
+if (!wnaColumnNames.includes('nama_wbp')) db.exec("ALTER TABLE board_wna_negara ADD COLUMN nama_wbp TEXT NOT NULL DEFAULT ''");
+if (!wnaColumnNames.includes('asal_negara')) db.exec("ALTER TABLE board_wna_negara ADD COLUMN asal_negara TEXT NOT NULL DEFAULT ''");
+if (!wnaColumnNames.includes('tindak_pidana')) db.exec("ALTER TABLE board_wna_negara ADD COLUMN tindak_pidana TEXT NOT NULL DEFAULT ''");
+
+db.exec(`
+  UPDATE board_wna_negara
+  SET
+    no_registrasi = COALESCE(NULLIF(TRIM(no_registrasi), ''), '-'),
+    nama_wbp = COALESCE(NULLIF(TRIM(nama_wbp), ''), NULLIF(TRIM(nama_negara), ''), '-'),
+    asal_negara = COALESCE(NULLIF(TRIM(asal_negara), ''), '-'),
+    tindak_pidana = COALESCE(NULLIF(TRIM(tindak_pidana), ''), NULLIF(TRIM(keterangan), ''), '-')
+`);
+
 db.exec(`
   UPDATE pentahapan_pembinaan_detail
   SET status_integrasi = COALESCE(
@@ -364,6 +393,15 @@ db.exec(`
     ''
   )
 `);
+
+const oldVideoRow = db.prepare('SELECT video_path FROM dokumentasi_video WHERE id = 1').get();
+const mediaCountRow = db.prepare('SELECT COUNT(*) AS c FROM dokumentasi_media').get();
+if ((mediaCountRow?.c || 0) === 0 && oldVideoRow?.video_path) {
+  db.prepare(`
+    INSERT INTO dokumentasi_media (media_type, media_path, display_duration_sec, sort_order)
+    VALUES ('video', ?, 8, 1)
+  `).run(oldVideoRow.video_path);
+}
 
 // ─── Seed Data (hanya jika tabel masih kosong) ────────────────────────────────
 
@@ -527,6 +565,16 @@ seedIfEmpty('dokumentasi_video', () => {
   db.prepare('INSERT INTO dokumentasi_video (id, video_path) VALUES (1, NULL)').run();
 });
 
+seedIfEmpty('dokumentasi_media', () => {
+  const oldVideo = db.prepare('SELECT video_path FROM dokumentasi_video WHERE id = 1').get();
+  if (oldVideo?.video_path) {
+    db.prepare(`
+      INSERT INTO dokumentasi_media (media_type, media_path, display_duration_sec, sort_order)
+      VALUES ('video', ?, 8, 1)
+    `).run(oldVideo.video_path);
+  }
+});
+
 seedIfEmpty('razia_jadwal', () => {
   const insert = db.prepare('INSERT INTO razia_jadwal (tanggal, petugas, dokumentasi_path) VALUES (?, ?, ?)');
   const rows = [
@@ -670,10 +718,10 @@ seedIfEmpty('board_registrasi_hunian', () => {
 });
 
 seedIfEmpty('board_wna_negara', () => {
-  const insert = db.prepare('INSERT INTO board_wna_negara (nama_negara, jumlah, keterangan) VALUES (?, ?, ?)');
+  const insert = db.prepare('INSERT INTO board_wna_negara (no_registrasi, nama_wbp, asal_negara, tindak_pidana, nama_negara, jumlah, keterangan) VALUES (?, ?, ?, ?, ?, ?, ?)');
   const rows = [
-    ['U AUNG NAING', 1, '-'],
-    ['MOHD FAIZ BIN YUSOF', 1, '-'],
+    ['BI.100-WNA/2026', 'U AUNG NAING', 'MYANMAR', 'NARKOTIKA', 'MYANMAR', 1, '-'],
+    ['BI.101-WNA/2026', 'MOHD FAIZ BIN YUSOF', 'MALAYSIA', 'NARKOTIKA', 'MALAYSIA', 1, '-'],
   ];
   rows.forEach(r => insert.run(...r));
 });

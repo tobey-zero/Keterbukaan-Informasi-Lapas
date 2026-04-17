@@ -41,12 +41,14 @@
       </div>
 
       <div class="card">
-        <div class="card-header"><h3><%= editWnaNegara ? '✏️ Edit Nama WNA' : '➕ Tambah Nama WNA' %></h3></div>
+        <div class="card-header"><h3><%= editWnaNegara ? '✏️ Edit Data WNA' : '➕ Tambah Data WNA' %></h3></div>
         <div class="card-body">
           <form method="POST" action="<%= editWnaNegara ? '/admin/papan-isi/wna-negara/' + editWnaNegara.id + '/update' : '/admin/papan-isi/wna-negara/add' %>">
-            <div class="form-grid col-2" style="margin-bottom:12px;">
-              <div class="form-group"><label>Nama WNA</label><input type="text" name="nama_wna" required value="<%= editWnaNegara ? editWnaNegara.nama_negara : '' %>" placeholder="Contoh: JOHN DOE"></div>
-              <div class="form-group"><label>Keterangan</label><input type="text" name="keterangan" value="<%= editWnaNegara ? (editWnaNegara.keterangan || '') : '' %>" placeholder="Opsional"></div>
+            <div class="form-grid col-4" style="margin-bottom:12px;">
+              <div class="form-group"><label>No Registrasi</label><input type="text" name="no_registrasi" required value="<%= editWnaNegara ? editWnaNegara.no_registrasi : '' %>" placeholder="Contoh: BI.100-WNA/2026"></div>
+              <div class="form-group"><label>Nama WBP</label><input type="text" name="nama_wbp" required value="<%= editWnaNegara ? editWnaNegara.nama_wbp : '' %>" placeholder="Contoh: JOHN DOE"></div>
+              <div class="form-group"><label>Asal Negara</label><input type="text" name="asal_negara" required value="<%= editWnaNegara ? editWnaNegara.asal_negara : '' %>" placeholder="Contoh: MALAYSIA"></div>
+              <div class="form-group"><label>Tindak Pidana</label><input type="text" name="tindak_pidana" required value="<%= editWnaNegara ? editWnaNegara.tindak_pidana : '' %>" placeholder="Contoh: NARKOTIKA"></div>
             </div>
             <div style="display:flex;gap:8px;">
               <button type="submit" class="btn <%= editWnaNegara ? 'btn-success' : 'btn-primary' %> btn-sm"><%= editWnaNegara ? '💾 Simpan' : '➕ Tambah' %></button>
@@ -162,17 +164,19 @@
       </div>
 
       <div class="card">
-        <div class="card-header"><h3>Daftar Nama WNA</h3></div>
+        <div class="card-header"><h3>Daftar WNA</h3></div>
         <div class="card-body" style="padding:0;">
           <div class="table-wrap">
             <table class="admin-table">
-              <thead><tr><th>#</th><th>Nama WNA</th><th>Keterangan</th><th>Aksi</th></tr></thead>
+              <thead><tr><th>#</th><th>No Registrasi</th><th>Nama WBP</th><th>Asal Negara</th><th>Tindak Pidana</th><th>Aksi</th></tr></thead>
               <tbody>
                 <% wnaNegara.forEach((item, i) => { %>
                 <tr>
                   <td><%= i+1 %></td>
-                  <td><%= item.namaWna %></td>
-                  <td><%= item.keterangan || '-' %></td>
+                  <td><%= item.noRegistrasi || '-' %></td>
+                  <td><%= item.namaWbp || '-' %></td>
+                  <td><%= item.asalNegara || '-' %></td>
+                  <td><%= item.tindakPidana || '-' %></td>
                   <td>
                     <div class="actions">
                       <a href="/admin/papan-isi?editWnaNegara=<%= item.id %>" class="btn btn-warning btn-xs">✏️ Edit</a>
@@ -183,7 +187,7 @@
                   </td>
                 </tr>
                 <% }) %>
-                <% if (!wnaNegara.length) { %><tr><td colspan="4" style="text-align:center;color:#aaa;padding:20px;">Belum ada data</td></tr><% } %>
+                <% if (!wnaNegara.length) { %><tr><td colspan="6" style="text-align:center;color:#aaa;padding:20px;">Belum ada data</td></tr><% } %>
               </tbody>
             </table>
           </div>

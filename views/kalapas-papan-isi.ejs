@@ -234,19 +234,21 @@
       <div class="board-panel">
         <h4>Warga Negara Asing</h4>
         <table class="board-table">
-          <thead><tr><th>Nama WNA</th></tr></thead>
+          <thead><tr><th>Asal Negara</th><th>Jumlah</th></tr></thead>
           <tbody>
-            <% for (const item of wnaNegara) { %>
+            <% for (const item of wnaNegaraRekap) { %>
             <tr>
-              <td class="left"><%= item.namaWna %></td>
+              <td class="left"><%= item.asalNegara || '-' %></td>
+              <td><%= item.jumlah || 0 %></td>
             </tr>
             <% } %>
-            <% if (!wnaNegara.length) { %>
-            <tr><td>Belum ada data nama WNA</td></tr>
+            <% if (!wnaNegaraRekap.length) { %>
+            <tr><td colspan="2">Belum ada data WNA</td></tr>
             <% } %>
-            <% if (wnaNegara.length) { %>
+            <% if (wnaNegaraRekap.length) { %>
             <tr class="total-row">
-              <td class="left">Jumlah: <%= boardSummary.totalWnaNegara %></td>
+              <td class="left">Jumlah</td>
+              <td><%= boardSummary.totalWnaNegara %></td>
             </tr>
             <% } %>
           </tbody>

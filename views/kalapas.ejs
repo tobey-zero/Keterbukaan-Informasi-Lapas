@@ -437,8 +437,13 @@
                 const umumLabels = (pidanaUmum || []).map(item => item.jenis);
                 const umumValues = (pidanaUmum || []).map(item => Number(item.jumlah) || 0);
 
-                const wnaNegaraLabels = (wnaNegara || []).map(item => item.namaWna);
-                const wnaNegaraValues = (wnaNegara || []).map(() => 1);
+                const wnaByNegara = {};
+                (wnaNegara || []).forEach(item => {
+                    const negara = item.asalNegara || '-';
+                    wnaByNegara[negara] = (wnaByNegara[negara] || 0) + 1;
+                });
+                const wnaNegaraLabels = Object.keys(wnaByNegara);
+                const wnaNegaraValues = wnaNegaraLabels.map(label => wnaByNegara[label]);
 
                 const luarLabels = (luarTembok || []).map(item => item.status);
                 const luarValues = (luarTembok || []).map(item => (Number(item.wniKeluar)||0) + (Number(item.wniMasuk)||0) + (Number(item.wnaKeluar)||0) + (Number(item.wnaMasuk)||0));
