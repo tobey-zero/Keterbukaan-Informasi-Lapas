@@ -86,6 +86,48 @@ body.display-mode {
     letter-spacing: 3px;
 }
 
+.logo.kalapas-logo {
+    background-color: transparent;
+    padding: 0;
+}
+
+.logo.kalapas-logo .kalapas-logo-img {
+    width: 86px;
+    height: 86px;
+    max-width: 86px;
+    object-fit: contain;
+    display: block;
+}
+
+body.page-umum .logo:not(.kalapas-logo),
+body.page-klinik .logo:not(.kalapas-logo) {
+    padding: 3px 4px;
+}
+
+body.page-umum .logo:not(.kalapas-logo) img,
+body.page-klinik .logo:not(.kalapas-logo) img {
+    width: 120px;
+    height: 120px;
+    max-width: 120px;
+    object-fit: contain;
+    display: block;
+}
+
+@media (max-width: 1200px) {
+    .logo.kalapas-logo .kalapas-logo-img {
+        width: 72px;
+        height: 72px;
+        max-width: 72px;
+    }
+
+    body.page-umum .logo:not(.kalapas-logo) img,
+    body.page-klinik .logo:not(.kalapas-logo) img {
+        width: 72px;
+        height: 72px;
+        max-width: 72px;
+    }
+}
+
 .header-info h2 {
     font-size: 16px;
     margin: 0 0 2px 0;

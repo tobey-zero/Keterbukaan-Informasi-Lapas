@@ -1348,7 +1348,7 @@ app.get('/kalapas/table/tu-umum', (req, res) => {
 
   res.render('kalapas-table', {
     pageTitle: 'Tata Usaha',
-    sectionTitle: 'LAPORAN BARANG PENGGUNA - Tata Usaha',
+    sectionTitle: 'TATA USAHA',
     subtitle: `Total data: ${rows.length}`,
     financeSummary: data.financeSummary,
     columns: ['KODE', 'URAIAN', 'SATUAN', 'SALDO AWAL QTY', 'SALDO AWAL NILAI', 'BERTAMBAH QTY', 'BERTAMBAH NILAI', 'BERKURANG QTY', 'BERKURANG NILAI', 'SALDO AKHIR QTY', 'SALDO AKHIR NILAI'],
