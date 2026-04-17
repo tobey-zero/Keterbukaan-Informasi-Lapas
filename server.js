@@ -1099,6 +1099,32 @@ app.get('/kalapas/table/tu-umum', (req, res) => {
   });
 });
 
+app.get('/kalapas/table/tu-bmn', (req, res) => {
+  const data = getTuUmumData();
+  const rows = data.tuUmumList.map(item => [
+    item.kode || '-',
+    item.uraian || '-',
+    item.satuan || '-',
+    item.saldoAwalKuantitas || '0',
+    item.saldoAwalNilai || '0',
+    item.bertambahKuantitas || '0',
+    item.bertambahNilai || '0',
+    item.berkurangKuantitas || '0',
+    item.berkurangNilai || '0',
+    item.saldoAkhirKuantitas || '0',
+    item.saldoAkhirNilai || '0',
+  ]);
+
+  res.render('kalapas-table', {
+    pageTitle: 'Laporan BMN',
+    sectionTitle: 'LAPORAN BARANG MILIK NEGARA (BMN)',
+    subtitle: `Total data: ${rows.length}`,
+    columns: ['KODE', 'URAIAN', 'SATUAN', 'SALDO AWAL QTY', 'SALDO AWAL NILAI', 'BERTAMBAH QTY', 'BERTAMBAH NILAI', 'BERKURANG QTY', 'BERKURANG NILAI', 'SALDO AKHIR QTY', 'SALDO AKHIR NILAI'],
+    rows,
+    backUrl: '/kalapas'
+  });
+});
+
 app.get('/kalapas/table/kepegawaian', (req, res) => {
   const data = getTuUmumData();
   const rows = data.pegawaiList.map((item, index) => [

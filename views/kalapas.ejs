@@ -16,9 +16,9 @@
 
         .dashboard-main {
             display: grid;
-            grid-template-columns: 2fr 1fr 1fr 1fr;
+            grid-template-columns: 2fr 1fr 1fr;
             grid-template-areas:
-                'summary bar kapasitas sebaran';
+                'summary middle sebaran';
             gap: 12px;
             width: 100%;
             margin: 8px auto;
@@ -35,15 +35,22 @@
         }
 
         .panel-barutama {
-            grid-area: bar;
+            grid-area: auto;
         }
 
         .panel-kapasitas {
-            grid-area: kapasitas;
+            grid-area: auto;
         }
 
         .panel-sebaran {
             grid-area: sebaran;
+        }
+
+        .panel-middle-stack {
+            grid-area: middle;
+            display: grid;
+            gap: 12px;
+            align-content: start;
         }
 
         .logo.kalapas-logo {
@@ -448,8 +455,7 @@
                 grid-template-columns: 1fr;
                 grid-template-areas:
                     'summary'
-                    'bar'
-                    'kapasitas'
+                    'middle'
                     'sebaran';
             }
 
@@ -555,7 +561,7 @@
         { label: 'Jadwal Razia', value: raziaSummary.totalJadwalRazia, link: '/kalapas/table/razia-jadwal' },
         { label: 'Barang Bukti Razia', value: raziaSummary.totalBarangBukti, link: '/kalapas/table/razia-barang-bukti' },
         { label: 'Data Stapsel', value: securitySummary.totalStrapsel, link: '/kalapas/table/strapsel' },
-        { label: 'Laporan BMN', value: tuUmumSummary.totalTuUmum, link: '/kalapas/table/tu-umum' },
+        { label: 'Laporan BMN', value: tuUmumSummary.totalTuUmum, link: '/kalapas/table/tu-bmn' },
         { label: 'Kepegawaian', value: tuUmumSummary.totalPegawai, link: '/kalapas/table/kepegawaian' }
     ];
     const occupied=Number(totalPenghuni) || 0;
@@ -585,6 +591,7 @@
                 </div>
             </div>
 
+            <div class="panel-middle-stack"> 
             <div class="panel panel-barutama">
                 <div class="panel-header">GRAFIK DATA KEUANGAN</div>
                 <div class="panel-content">
@@ -654,6 +661,7 @@
                         </div>
                     </div>
                 </div>
+            </div>
             </div>
 
             <div class="panel panel-sebaran">
