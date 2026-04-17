@@ -550,26 +550,23 @@
         </div>
     </header>
 
-    <% const summaryRows=[
-        { label: 'Remisi', value: besaranRemisi.length, link: '/kalapas/table/remisi' },
-        { label: 'Pentahapan Pembinaan', value: pentahapanPembinaanDetail.length, link: '/kalapas/table/pembinaan' },
-        { label: 'Jadwal Kegiatan Pembinaan', value: jadwalKegiatan.length, link: '/kalapas/table/jadwal-kegiatan' },
-        { label: 'Warga Binaan Berobat', value: wbpBerobat.length, link: '/kalapas/table/berobat' },
-        { label: 'Tenaga Medis', value: tenagaMedis.length, link: '/kalapas/table/tenaga-medis' },
-        { label: 'WBP Luar Tembok', value: luarTembokDetail.length, link: '/kalapas/table/luar-tembok' },
-        { label: 'Giat Pengawalan', value: pengawalanSummary.totalPengawalan, link: '/kalapas/table/pengawalan' },
-        { label: 'Jadwal Razia', value: raziaSummary.totalJadwalRazia, link: '/kalapas/table/razia-jadwal' },
-        { label: 'Barang Bukti Razia', value: raziaSummary.totalBarangBukti, link: '/kalapas/table/razia-barang-bukti' },
-        { label: 'Data Stapsel', value: securitySummary.totalStrapsel, link: '/kalapas/table/strapsel' },
-        { label: 'Laporan BMN', value: tuUmumSummary.totalTuUmum, link: '/kalapas/table/tu-bmn' },
-        { label: 'Kepegawaian', value: tuUmumSummary.totalPegawai, link: '/kalapas/table/kepegawaian' }
-    ];
-    const occupied=Number(totalPenghuni) || 0;
-    const capacityNum=Number(kapasitas) || 0;
-    const available=Math.max(capacityNum - occupied, 0);
-    const occupancyRate=capacityNum> 0 ? ((occupied / capacityNum) * 100) : 0;
-    const overCapacity = Math.max(occupied - capacityNum, 0);
-    %>
+    <% const summaryRows=[ { label: 'Remisi' , value: besaranRemisi.length, link: '/kalapas/table/remisi' }, {
+        label: 'Pentahapan Pembinaan' , value: pentahapanPembinaanDetail.length, link: '/kalapas/table/pembinaan' }, {
+        label: 'Jadwal Kegiatan Pembinaan' , value: jadwalKegiatan.length, link: '/kalapas/table/jadwal-kegiatan' }, {
+        label: 'Warga Binaan Berobat' , value: wbpBerobat.length, link: '/kalapas/table/berobat' }, {
+        label: 'Tenaga Medis' , value: tenagaMedis.length, link: '/kalapas/table/tenaga-medis' }, {
+        label: 'WBP Luar Tembok' , value: luarTembokDetail.length, link: '/kalapas/table/luar-tembok' }, {
+        label: 'Giat Pengawalan' , value: pengawalanSummary.totalPengawalan, link: '/kalapas/table/pengawalan' }, {
+        label: 'Jadwal Razia' , value: raziaSummary.totalJadwalRazia, link: '/kalapas/table/razia-jadwal' }, {
+        label: 'Barang Bukti Razia' , value: raziaSummary.totalBarangBukti, link: '/kalapas/table/razia-barang-bukti' },
+        { label: 'Data Stapsel' , value: securitySummary.totalStrapsel, link: '/kalapas/table/strapsel' }, {
+        label: 'Laporan BMN' , value: tuUmumSummary.totalTuUmum, link: '/kalapas/table/tu-bmn' }, { label: 'Kepegawaian'
+        , value: tuUmumSummary.totalPegawai, link: '/kalapas/table/kepegawaian' } ]; const
+        occupied=Number(totalPenghuni) || 0; const capacityNum=Number(kapasitas) || 0; const
+        available=Math.max(capacityNum - occupied, 0); const occupancyRate=capacityNum> 0 ? ((occupied / capacityNum) *
+        100) : 0;
+        const overCapacity = Math.max(occupied - capacityNum, 0);
+        %>
 
         <div class="dashboard-main">
             <div class="panel panel-summary">
@@ -591,77 +588,78 @@
                 </div>
             </div>
 
-            <div class="panel-middle-stack"> 
-            <div class="panel panel-barutama">
-                <div class="panel-header">GRAFIK DATA KEUANGAN</div>
-                <div class="panel-content">
-                    <div class="pie-card clickable-chart" tabindex="0" role="link"
-                        data-link="/kalapas/table/tu-realisasi"
-                        data-values="<%= [financeSummary.realisasiBelanja, financeSummary.sisaPagu].join(',') %>"
-                        data-labels="Realisasi Belanja|Sisa Pagu" data-center-mode="percent"
-                        data-center-value="<%= financeSummary.realisasiPercent.toFixed(1) %>">
-                        <h4 class="pie-title">Realisasi Belanja Bagian Keuangan</h4>
-                        <div class="finance-summary">
-                            <div class="pie-layout" style="grid-template-columns:1fr;">
-                                <div class="pie-chart">
-                                    <div class="pie-center">
-                                        <%= financeSummary.realisasiPercent.toFixed(0) %>%
+            <div class="panel-middle-stack">
+
+                <div class="panel panel-kapasitas">
+                    <div class="panel-header">GRAFIK KAPASITAS HUNIAN</div>
+                    <div class="panel-content">
+                        <div class="pie-card">
+                            <h4 class="pie-title">Kapasitas Hunian</h4>
+                            <div class="donut-layout">
+                                <div class="donut-chart" data-occupancy="<%= occupancyRate.toFixed(1) %>">
+                                    <div class="donut-center">
+                                        <%= occupancyRate.toFixed(1) %>%
+                                    </div>
+                                </div>
+                                <div class="donut-legend">
+                                    <div class="legend-item"><span class="legend-label"><span class="legend-dot"
+                                                style="background:#005F73;"></span>Terisi</span><strong>
+                                            <%= occupied %>
+                                        </strong></div>
+                                    <div class="legend-item"><span class="legend-label"><span class="legend-dot"
+                                                style="background:#94D2BD;"></span>Sisa Kapasitas</span><strong>
+                                            <%= available %>
+                                        </strong></div>
+                                    <div class="legend-item"><span class="legend-label"><span class="legend-dot"
+                                                style="background:#EE9B00;"></span>Over Capacity</span><strong>
+                                            <%= overCapacity %>
+                                        </strong></div>
+                                    <div class="legend-item"><span class="legend-label"><span class="legend-dot"
+                                                style="background:#CA6702;"></span>Kapasitas Total</span><strong>
+                                            <%= capacityNum %>
+                                        </strong></div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <div class="panel panel-barutama">
+                    <div class="panel-header">GRAFIK DATA KEUANGAN</div>
+                    <div class="panel-content">
+                        <div class="pie-card clickable-chart" tabindex="0" role="link"
+                            data-link="/kalapas/table/tu-realisasi"
+                            data-values="<%= [financeSummary.realisasiBelanja, financeSummary.sisaPagu].join(',') %>"
+                            data-labels="Realisasi Belanja|Sisa Pagu" data-center-mode="percent"
+                            data-center-value="<%= financeSummary.realisasiPercent.toFixed(1) %>">
+                            <h4 class="pie-title">Realisasi Belanja Bagian Keuangan</h4>
+                            <div class="finance-summary">
+                                <div class="pie-layout" style="grid-template-columns:1fr;">
+                                    <div class="pie-chart">
+                                        <div class="pie-center">
+                                            <%= financeSummary.realisasiPercent.toFixed(0) %>%
+                                        </div>
+                                    </div>
+                                </div>
+                                <div>
+                                    <div class="finance-list">
+                                        <div class="finance-row"><span>Total Pagu</span><strong>
+                                                <%= financeSummary.totalPaguLabel %>
+                                            </strong></div>
+                                        <div class="finance-row"><span>Realisasi Belanja</span><strong>
+                                                <%= financeSummary.realisasiBelanjaLabel %>
+                                            </strong></div>
+                                        <div class="finance-row"><span>Sisa Pagu</span><strong>
+                                                <%= financeSummary.sisaPaguLabel %>
+                                            </strong></div>
+                                    </div>
+                                    <div class="finance-updated">Data per <%= financeSummary.updatedAtLabel %>
                                     </div>
                                 </div>
                             </div>
-                            <div>
-                                <div class="finance-list">
-                                    <div class="finance-row"><span>Total Pagu</span><strong>
-                                            <%= financeSummary.totalPaguLabel %>
-                                        </strong></div>
-                                    <div class="finance-row"><span>Realisasi Belanja</span><strong>
-                                            <%= financeSummary.realisasiBelanjaLabel %>
-                                        </strong></div>
-                                    <div class="finance-row"><span>Sisa Pagu</span><strong>
-                                            <%= financeSummary.sisaPaguLabel %>
-                                        </strong></div>
-                                </div>
-                                <div class="finance-updated">Data per <%= financeSummary.updatedAtLabel %>
-                                </div>
-                            </div>
                         </div>
                     </div>
                 </div>
-            </div>
 
-            <div class="panel panel-kapasitas">
-                <div class="panel-header">GRAFIK KAPASITAS HUNIAN</div>
-                <div class="panel-content">
-                    <div class="pie-card">
-                        <h4 class="pie-title">Kapasitas Hunian</h4>
-                        <div class="donut-layout">
-                            <div class="donut-chart" data-occupancy="<%= occupancyRate.toFixed(1) %>">
-                                <div class="donut-center">
-                                    <%= occupancyRate.toFixed(1) %>%
-                                </div>
-                            </div>
-                            <div class="donut-legend">
-                                <div class="legend-item"><span class="legend-label"><span class="legend-dot"
-                                            style="background:#005F73;"></span>Terisi</span><strong>
-                                        <%= occupied %>
-                                    </strong></div>
-                                <div class="legend-item"><span class="legend-label"><span class="legend-dot"
-                                            style="background:#94D2BD;"></span>Sisa Kapasitas</span><strong>
-                                        <%= available %>
-                                    </strong></div>
-                                <div class="legend-item"><span class="legend-label"><span class="legend-dot"
-                                            style="background:#EE9B00;"></span>Over Capacity</span><strong>
-                                        <%= overCapacity %>
-                                    </strong></div>
-                                <div class="legend-item"><span class="legend-label"><span class="legend-dot"
-                                            style="background:#CA6702;"></span>Kapasitas Total</span><strong>
-                                        <%= capacityNum %>
-                                    </strong></div>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-            </div>
             </div>
 
             <div class="panel panel-sebaran">
@@ -711,29 +709,29 @@
                     %>
                     <div class="board-table-wrap board-three-col">
 
-                            <div class="pie-card clickable-chart" tabindex="0" role="link"
-                                data-link="/kalapas/table/pidana-khusus" data-values="<%= khususValues.join(',') %>"
-                                data-labels="<%= khususLabels.join('|') %>">
-                                <h4 class="pie-title">Pidana Khusus</h4>
-                                <div class="pie-layout">
-                                    <div class="pie-chart">
-                                        <div class="pie-center">0</div>
-                                    </div>
-                                    <ul class="pie-legend"></ul>
+                        <div class="pie-card clickable-chart" tabindex="0" role="link"
+                            data-link="/kalapas/table/pidana-khusus" data-values="<%= khususValues.join(',') %>"
+                            data-labels="<%= khususLabels.join('|') %>">
+                            <h4 class="pie-title">Pidana Khusus</h4>
+                            <div class="pie-layout">
+                                <div class="pie-chart">
+                                    <div class="pie-center">0</div>
                                 </div>
+                                <ul class="pie-legend"></ul>
                             </div>
+                        </div>
 
-                            <div class="pie-card clickable-chart" tabindex="0" role="link"
-                                data-link="/kalapas/table/pidana-umum" data-values="<%= umumValues.join(',') %>"
-                                data-labels="<%= umumLabels.join('|') %>">
-                                <h4 class="pie-title">Pidana Umum</h4>
-                                <div class="pie-layout">
-                                    <div class="pie-chart">
-                                        <div class="pie-center">0</div>
-                                    </div>
-                                    <ul class="pie-legend"></ul>
+                        <div class="pie-card clickable-chart" tabindex="0" role="link"
+                            data-link="/kalapas/table/pidana-umum" data-values="<%= umumValues.join(',') %>"
+                            data-labels="<%= umumLabels.join('|') %>">
+                            <h4 class="pie-title">Pidana Umum</h4>
+                            <div class="pie-layout">
+                                <div class="pie-chart">
+                                    <div class="pie-center">0</div>
                                 </div>
+                                <ul class="pie-legend"></ul>
                             </div>
+                        </div>
 
                         <div class="pie-card clickable-chart" tabindex="0" role="link" data-link="/kalapas/table/agama"
                             data-values="<%= agamaValues.join(',') %>" data-labels="<%= agamaLabels.join('|') %>">
