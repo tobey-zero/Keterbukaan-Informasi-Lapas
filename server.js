@@ -225,8 +225,6 @@ function getPublicData() {
   const pentahapanPembinaanDetail = db
       .prepare(`SELECT d.no_reg AS noReg,
         d.nama_wbp AS namaWbp,
-        d.tanggal3,
-        d.tanggal1,
         d.tanggal2,
         d.tanggal4,
         d.keterangan,
@@ -640,7 +638,6 @@ app.get('/kalapas/table/pembinaan', (req, res) => {
   const rows = umum.pentahapanPembinaanDetail.map(item => [
     item.noReg || '-',
     item.namaWbp || '-',
-    item.tanggal1 || '-',
     item.tanggal2 || '-',
     item.tanggal4 || '-',
     item.keterangan || '-',
@@ -651,7 +648,7 @@ app.get('/kalapas/table/pembinaan', (req, res) => {
     pageTitle: 'Pentahapan Pembinaan',
     sectionTitle: 'DETAIL PENTAHAPAN PEMBINAAN',
     subtitle: `Total data: ${rows.length}`,
-    columns: ['NO REG', 'NAMA WARGA BINAAN', 'TANGGAL 1/2', 'TANGGAL 2/3', 'TANGGAL EKSPIRASI', 'KETERANGAN PROGRAM PEMBINAAN', 'STATUS INTEGRASI'],
+    columns: ['NO REG', 'NAMA WARGA BINAAN', 'TANGGAL 2/3', 'TANGGAL EKSPIRASI', 'KETERANGAN PROGRAM PEMBINAAN', 'STATUS INTEGRASI'],
     rows,
     backUrl: '/kalapas'
   });
@@ -674,6 +671,25 @@ app.get('/kalapas/table/berobat', (req, res) => {
     sectionTitle: 'WARGA BINAAN BEROBAT',
     subtitle: `Total data: ${rows.length}`,
     columns: ['NO REG', 'NAMA WARGA BINAAN', 'LAYANAN', 'DIAGNOSA', 'BLOK', 'STATUS', 'TANGGAL'],
+    rows,
+    backUrl: '/kalapas'
+  });
+});
+
+app.get('/kalapas/table/tenaga-medis', (req, res) => {
+  const klinik = getClinicData();
+  const rows = klinik.tenagaMedis.map(item => [
+    item.nama || '-',
+    item.profesi || '-',
+    item.statusTugas || '-',
+    item.kontak || '-'
+  ]);
+
+  res.render('kalapas-table', {
+    pageTitle: 'Tenaga Medis',
+    sectionTitle: 'TENAGA MEDIS',
+    subtitle: `Total data: ${rows.length}`,
+    columns: ['NAMA', 'PROFESI', 'STATUS TUGAS', 'KONTAK'],
     rows,
     backUrl: '/kalapas'
   });
@@ -840,8 +856,8 @@ app.get('/kalapas/table/luar-tembok', (req, res) => {
     return [item.status || '-', String(wniKeluar), String(wniMasuk), String(wnaKeluar), String(wnaMasuk), String(total), item.keterangan || '-'];
   });
   res.render('kalapas-table', {
-    pageTitle: 'WBP di Luar Tembok',
-    sectionTitle: 'WBP DI LUAR TEMBOK',
+    pageTitle: 'WBP di Luar Lapas',
+    sectionTitle: 'WBP DI LUAR LAPAS',
     subtitle: `Total status: ${rows.length}`,
     columns: ['STATUS', 'WNI KELUAR', 'WNI MASUK', 'WNA KELUAR', 'WNA MASUK', 'JUMLAH', 'KETERANGAN'],
     rows,
@@ -1100,22 +1116,22 @@ app.get('/admin/pembinaan-detail', requireAccess('pembinaan-detail'), (req, res)
 });
 
 app.post('/admin/pembinaan-detail/add', requireAccess('pembinaan-detail'), (req, res) => {
-  const { no_reg, tanggal1, tanggal2, tanggal3, tanggal4, total_remisi, keterangan } = req.body;
+  const { no_reg, tanggal2, tanggal4, keterangan } = req.body;
   const statusIntegrasi = (req.body.status_integrasi || '').trim();
   const nama_wbp = (req.body.nama_wbp || '').toUpperCase();
-  db.prepare(`INSERT INTO pentahapan_pembinaan_detail (no_reg, nama_wbp, tanggal1, tanggal2, tanggal3, tanggal4, total_remisi, keterangan, status_integrasi)
-              VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)`)
-    .run(no_reg, nama_wbp, tanggal1, tanggal2, tanggal3, tanggal4, total_remisi, keterangan, statusIntegrasi);
+  db.prepare(`INSERT INTO pentahapan_pembinaan_detail (no_reg, nama_wbp, tanggal2, tanggal4, keterangan, status_integrasi)
+              VALUES (?, ?, ?, ?, ?, ?)`)
+    .run(no_reg, nama_wbp, tanggal2, tanggal4, keterangan, statusIntegrasi);
   syncPembinaanMasterByName(nama_wbp, statusIntegrasi);
   res.redirect('/admin/pembinaan-detail?success=1');
 });
 
 app.post('/admin/pembinaan-detail/:id/update', requireAccess('pembinaan-detail'), (req, res) => {
-  const { no_reg, tanggal1, tanggal2, tanggal3, tanggal4, total_remisi, keterangan } = req.body;
+  const { no_reg, tanggal2, tanggal4, keterangan } = req.body;
   const statusIntegrasi = (req.body.status_integrasi || '').trim();
   const nama_wbp = (req.body.nama_wbp || '').toUpperCase();
-  db.prepare(`UPDATE pentahapan_pembinaan_detail SET no_reg=?, nama_wbp=?, tanggal1=?, tanggal2=?, tanggal3=?, tanggal4=?, total_remisi=?, keterangan=?, status_integrasi=? WHERE id=?`)
-    .run(no_reg, nama_wbp, tanggal1, tanggal2, tanggal3, tanggal4, total_remisi, keterangan, statusIntegrasi, Number(req.params.id));
+  db.prepare(`UPDATE pentahapan_pembinaan_detail SET no_reg=?, nama_wbp=?, tanggal2=?, tanggal4=?, keterangan=?, status_integrasi=? WHERE id=?`)
+    .run(no_reg, nama_wbp, tanggal2, tanggal4, keterangan, statusIntegrasi, Number(req.params.id));
   syncPembinaanMasterByName(nama_wbp, statusIntegrasi);
   res.redirect('/admin/pembinaan-detail?success=1');
 });
