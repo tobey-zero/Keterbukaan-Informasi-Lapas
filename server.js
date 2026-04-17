@@ -714,6 +714,7 @@ function getKalapasData() {
   const klinik = getClinicData();
   const razia = getRaziaData();
   const security = getSecurityData();
+  const pengawalan = getPengawalanData();
   const tuUmum = getTuUmumData();
   const housing = getHousingData();
   const board = getBoardData();
@@ -735,7 +736,12 @@ function getKalapasData() {
     raziaSummary: razia.raziaSummary,
     strapselList: security.strapselList,
     securitySummary: security.securitySummary,
+    pengawalanList: pengawalan.list,
+    pengawalanSummary: {
+      totalPengawalan: pengawalan.list.length,
+    },
     tuUmumList: tuUmum.tuUmumList,
+    pegawaiList: tuUmum.pegawaiList,
     financeSummary: tuUmum.financeSummary,
     tuUmumSummary: tuUmum.tuUmumSummary,
     housingBlocks: housing.housingBlocks,
@@ -744,6 +750,7 @@ function getKalapasData() {
     pidanaKhusus: board.pidanaKhusus,
     pidanaUmum: board.pidanaUmum,
     luarTembok: board.luarTembok,
+    luarTembokDetail: board.luarTembokDetail,
     agama: board.agama,
     wnaNegara: board.wnaNegara,
     boardSummary: board.boardSummary,
@@ -852,6 +859,26 @@ app.get('/kalapas/table/pembinaan', (req, res) => {
     sectionTitle: 'DETAIL PENTAHAPAN PEMBINAAN',
     subtitle: `Total data: ${rows.length}`,
     columns: ['NO REG', 'NAMA WARGA BINAAN', 'TANGGAL 2/3', 'TANGGAL EKSPIRASI', 'KETERANGAN PROGRAM PEMBINAAN', 'STATUS INTEGRASI'],
+    rows,
+    backUrl: '/kalapas'
+  });
+});
+
+app.get('/kalapas/table/jadwal-kegiatan', (req, res) => {
+  const umum = getPublicData();
+  const rows = umum.jadwalKegiatan.map(item => [
+    item.hari || '-',
+    item.waktu || '-',
+    item.kegiatan || '-',
+    item.lokasi || '-',
+    item.penanggungJawab || '-'
+  ]);
+
+  res.render('kalapas-table', {
+    pageTitle: 'Jadwal Kegiatan Pembinaan',
+    sectionTitle: 'JADWAL KEGIATAN PEMBINAAN',
+    subtitle: `Total data: ${rows.length}`,
+    columns: ['HARI', 'WAKTU', 'KEGIATAN', 'LOKASI', 'PENANGGUNG JAWAB'],
     rows,
     backUrl: '/kalapas'
   });
@@ -995,6 +1022,26 @@ app.get('/kalapas/table/kamtib', (req, res) => {
   });
 });
 
+app.get('/kalapas/table/pengawalan', (req, res) => {
+  const pengawalan = getPengawalanData();
+  const rows = pengawalan.list.map(item => [
+    item.tanggal || '-',
+    item.namaWbp || '-',
+    item.petugas || '-',
+    item.keterangan || '-',
+    item.dokumentasiPath || '-'
+  ]);
+
+  res.render('kalapas-table', {
+    pageTitle: 'Giat Pengawalan',
+    sectionTitle: 'GIAT PENGAWALAN',
+    subtitle: `Total data: ${rows.length}`,
+    columns: ['TANGGAL', 'NAMA WBP', 'PETUGAS', 'KETERANGAN', 'DOKUMENTASI'],
+    rows,
+    backUrl: '/kalapas'
+  });
+});
+
 app.get('/kalapas/table/tu-realisasi', (req, res) => {
   const financeSummary = getFinanceSummary();
 
@@ -1048,6 +1095,33 @@ app.get('/kalapas/table/tu-umum', (req, res) => {
     secondarySectionTitle: `DATA KEPEGAWAIAN (${pegawaiRows.length} data)`,
     secondaryColumns: ['No', 'Nama Pegawai', 'NIP', 'Pangkat/Gol', 'Jabatan', 'Agama', 'Status', 'Pendidikan', 'Penempatan/Seksi', 'Penempatan/Bidang', 'Jenis Kelamin', 'Type Pegawai'],
     secondaryRows: pegawaiRows,
+    backUrl: '/kalapas'
+  });
+});
+
+app.get('/kalapas/table/kepegawaian', (req, res) => {
+  const data = getTuUmumData();
+  const rows = data.pegawaiList.map((item, index) => [
+    String(index + 1),
+    item.namaPegawai || '-',
+    item.nip || '-',
+    item.pangkatGol || '-',
+    item.jabatan || '-',
+    item.agama || '-',
+    item.status || '-',
+    item.pendidikan || '-',
+    item.penempatanSeksi || '-',
+    item.penempatanBidang || '-',
+    item.jenisKelamin || '-',
+    item.typePegawai || '-',
+  ]);
+
+  res.render('kalapas-table', {
+    pageTitle: 'Data Kepegawaian',
+    sectionTitle: 'DATA KEPEGAWAIAN',
+    subtitle: `Total data: ${rows.length}`,
+    columns: ['No', 'Nama Pegawai', 'NIP', 'Pangkat/Gol', 'Jabatan', 'Agama', 'Status', 'Pendidikan', 'Penempatan/Seksi', 'Penempatan/Bidang', 'Jenis Kelamin', 'Type Pegawai'],
+    rows,
     backUrl: '/kalapas'
   });
 });
