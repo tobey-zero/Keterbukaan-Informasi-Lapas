@@ -24,6 +24,53 @@
       font-size: 12px;
       font-weight: bold;
     }
+    .kalapas-date-filter {
+      display: flex;
+      align-items: end;
+      gap: 8px;
+      flex-wrap: wrap;
+    }
+    .kalapas-date-filter-wrap {
+      padding: 10px 10px 0;
+      display: flex;
+      justify-content: flex-end;
+    }
+    .kalapas-date-filter .label {
+      font-size: 11px;
+      color: #334155;
+      font-weight: bold;
+      margin-bottom: 3px;
+    }
+    .kalapas-date-filter input[type="date"] {
+      border: 1px solid #cbd5e1;
+      border-radius: 6px;
+      padding: 7px 10px;
+      font-size: 12px;
+      font-weight: 700;
+      color: #0f172a;
+      background: #fff;
+    }
+    .kalapas-date-filter button,
+    .kalapas-date-filter .reset {
+      text-decoration: none;
+      border: 1px solid rgba(255,255,255,.3);
+      border-radius: 6px;
+      padding: 7px 11px;
+      font-size: 12px;
+      font-weight: bold;
+      cursor: pointer;
+    }
+    .kalapas-date-filter button {
+      color: #fff;
+      background: #1a4bb8;
+    }
+    .kalapas-date-filter .reset {
+      color: #1e3a8a;
+      background: #eff6ff;
+      border-color: #cbd5e1;
+      display: inline-flex;
+      align-items: center;
+    }
     .kalapas-search {
       min-width: 280px;
       max-width: 420px;
@@ -232,6 +279,18 @@
         <span id="rowCount"><%= rows.length %> data</span>
       </div>
       <div class="panel-content" style="padding:0;">
+        <% if (typeof dateFilter !== 'undefined' && dateFilter) { %>
+          <div class="kalapas-date-filter-wrap">
+            <form method="GET" action="<%= dateFilter.action || '' %>" class="kalapas-date-filter">
+              <div>
+                <div class="label"><%= dateFilter.label || 'Filter tanggal' %></div>
+                <input type="date" name="tanggal" value="<%= dateFilter.value || dateFilter.todayValue || '' %>">
+              </div>
+              <button type="submit">Terapkan</button>
+              <a href="<%= dateFilter.resetUrl || (dateFilter.action || '') %>" class="reset">Hari ini</a>
+            </form>
+          </div>
+        <% } %>
         <div style="padding:10px 10px 0;">
           <div class="kalapas-search-group" style="max-width:100%;">
             <div class="kalapas-search-label" style="color:#334155;">Pencarian tabel ini</div>

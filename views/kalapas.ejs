@@ -711,7 +711,7 @@
 
                         <div class="pie-card clickable-chart" tabindex="0" role="link"
                             data-link="/kalapas/table/pidana-khusus" data-values="<%= khususValues.join(',') %>"
-                            data-labels="<%= khususLabels.join('|') %>">
+                            data-labels="<%= khususLabels.join('|') %>" data-show-zero="true">
                             <h4 class="pie-title">Pidana Khusus</h4>
                             <div class="pie-layout">
                                 <div class="pie-chart">
@@ -723,7 +723,7 @@
 
                         <div class="pie-card clickable-chart" tabindex="0" role="link"
                             data-link="/kalapas/table/pidana-umum" data-values="<%= umumValues.join(',') %>"
-                            data-labels="<%= umumLabels.join('|') %>">
+                            data-labels="<%= umumLabels.join('|') %>" data-show-zero="true">
                             <h4 class="pie-title">Pidana Umum</h4>
                             <div class="pie-layout">
                                 <div class="pie-chart">
@@ -758,7 +758,7 @@
                         </div>
 
                         <div class="pie-card clickable-chart" tabindex="0" role="link"
-                            data-link="/kalapas/table/luar-tembok" data-values="<%= luarValues.join(',') %>"
+                            data-link="/kalapas/table/wbp-luar-lapas" data-values="<%= luarValues.join(',') %>"
                             data-labels="<%= luarLabels.join('|') %>">
                             <h4 class="pie-title">WBP di Luar Lapas</h4>
                             <div class="pie-layout">
@@ -808,10 +808,11 @@
                 document.querySelectorAll('.pie-card[data-values]').forEach(function (card) {
                     var rawValues = (card.getAttribute('data-values') || '').split(',').map(function (v) { return Number(v) || 0; });
                     var rawLabels = (card.getAttribute('data-labels') || '').split('|');
+                    var showZero = (card.getAttribute('data-show-zero') || '').toLowerCase() === 'true';
                     var pairs = [];
 
                     for (var i = 0; i < rawValues.length; i++) {
-                        if (rawValues[i] > 0) {
+                        if (rawValues[i] > 0 || (showZero && rawValues[i] === 0)) {
                             pairs.push({ label: rawLabels[i] || ('Data ' + (i + 1)), value: rawValues[i] });
                         }
                     }
@@ -835,7 +836,16 @@
                     if (!pairs.length || total <= 0) {
                         chartEl.style.background = '#dbeafe';
                         if (legendEl) {
-                            legendEl.innerHTML = '<li><span class="pie-label"><span class="pie-dot" style="background:' + colorPalette[1] + ';"></span><span>Belum ada data</span></span><strong>0</strong></li>';
+                            if (showZero && pairs.length) {
+                                pairs.forEach(function (item, index) {
+                                    var color = colorPalette[index % colorPalette.length];
+                                    var li = document.createElement('li');
+                                    li.innerHTML = '<span class="pie-label"><span class="pie-dot" style="background:' + color + ';"></span><span>' + item.label + '</span></span><strong>' + item.value + '</strong>';
+                                    legendEl.appendChild(li);
+                                });
+                            } else {
+                                legendEl.innerHTML = '<li><span class="pie-label"><span class="pie-dot" style="background:' + colorPalette[1] + ';"></span><span>Belum ada data</span></span><strong>0</strong></li>';
+                            }
                         }
                         return;
                     }

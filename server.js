@@ -373,16 +373,21 @@ function getPublicData() {
   };
 }
 
-function getClinicData() {
+function getClinicData(filter = {}) {
+  const selectedTanggal = /^\d{4}-\d{2}-\d{2}$/.test(String(filter.tanggal || ''))
+    ? String(filter.tanggal)
+    : null;
+
   const tenagaMedis = db
     .prepare('SELECT nama, profesi, status_tugas AS statusTugas, kontak FROM clinic_tenaga_medis ORDER BY id')
     .all();
 
-  const wbpBerobat = db
-    .prepare(`SELECT no_reg AS noReg, nama_wbp AS namaWbp, layanan, diagnosa, blok,
+  const wbpBerobatSql = `SELECT no_reg AS noReg, nama_wbp AS namaWbp, layanan, diagnosa, blok,
                      status_perawatan AS statusPerawatan, tanggal
-              FROM clinic_wbp_berobat ORDER BY id DESC`)
-    .all();
+              FROM clinic_wbp_berobat`;
+  const wbpBerobat = selectedTanggal
+    ? db.prepare(`${wbpBerobatSql} WHERE tanggal = ? ORDER BY id DESC`).all(selectedTanggal)
+    : db.prepare(`${wbpBerobatSql} ORDER BY id DESC`).all();
 
   const jadwalOnCall = db
     .prepare('SELECT hari, shift, petugas, profesi, kontak FROM clinic_jadwal_on_call ORDER BY id')
@@ -409,6 +414,7 @@ function getClinicData() {
     wbpBerobat,
     jadwalOnCall,
     jadwalKontrol,
+    selectedTanggal,
     clinicSummary: {
       totalTenagaMedis: tenagaMedis.length,
       totalWbpBerobat: wbpBerobat.length,
@@ -711,7 +717,7 @@ function getBoardData() {
 
 function getKalapasData() {
   const umum = getPublicData();
-  const klinik = getClinicData();
+  const klinik = getClinicData({ tanggal: getTodayYmd() });
   const razia = getRaziaData();
   const security = getSecurityData();
   const pengawalan = getPengawalanData();
@@ -773,9 +779,10 @@ app.use('/admin', (req, res, next) => {
 // ═══════════════════════════════════════════════════════════════════
 
 app.get('/', (req, res) => {
+  const todayYmd = getTodayYmd();
   res.render('index', {
     ...getPublicData(),
-    clinicSummary: getClinicData().clinicSummary,
+    clinicSummary: getClinicData({ tanggal: todayYmd }).clinicSummary,
     activePage: 'umum'
   });
 });
@@ -783,7 +790,7 @@ app.get('/', (req, res) => {
 app.get('/klinik', (req, res) => {
   const kataBijak = getAppSetting('kata_bijak_text', 'KRISNA adalah sistem Keterbukaan Informasi Warga Binaan di Lapas Kelas I Medan.');
   const tanggal = new Intl.DateTimeFormat('id-ID', { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' }).format(new Date());
-  res.render('klinik', { ...getClinicData(), kataBijak, tanggal, activePage: 'klinik' });
+  res.render('klinik', { ...getClinicData({ tanggal: getTodayYmd() }), kataBijak, tanggal, activePage: 'klinik' });
 });
 
 app.get('/kalapas', (req, res) => {
@@ -885,7 +892,10 @@ app.get('/kalapas/table/jadwal-kegiatan', (req, res) => {
 });
 
 app.get('/kalapas/table/berobat', (req, res) => {
-  const klinik = getClinicData();
+  const selectedTanggal = /^\d{4}-\d{2}-\d{2}$/.test(String(req.query.tanggal || ''))
+    ? String(req.query.tanggal)
+    : getTodayYmd();
+  const klinik = getClinicData({ tanggal: selectedTanggal });
   const rows = klinik.wbpBerobat.map(item => [
     item.noReg || '-',
     item.namaWbp || '-',
@@ -899,7 +909,14 @@ app.get('/kalapas/table/berobat', (req, res) => {
   res.render('kalapas-table', {
     pageTitle: 'Warga Binaan Berobat',
     sectionTitle: 'WARGA BINAAN BEROBAT',
-    subtitle: `Total data: ${rows.length}`,
+    subtitle: `Tanggal: ${selectedTanggal} | Total data: ${rows.length}`,
+    dateFilter: {
+      action: '/kalapas/table/berobat',
+      label: 'Filter tanggal WBP berobat',
+      value: selectedTanggal,
+      todayValue: getTodayYmd(),
+      resetUrl: '/kalapas/table/berobat'
+    },
     columns: ['NO REG', 'NAMA WARGA BINAAN', 'LAYANAN', 'DIAGNOSA', 'BLOK', 'STATUS', 'TANGGAL'],
     rows,
     backUrl: '/kalapas'
@@ -1218,6 +1235,34 @@ app.get('/kalapas/table/luar-tembok', (req, res) => {
     sectionTitle: 'WBP DI LUAR TEMBOK',
     subtitle: `Total data: ${rows.length}`,
     columns: ['NO REGISTRASI', 'NAMA', 'TANGGAL', 'PENDAMPING', 'KETERANGAN'],
+    rows,
+    backUrl: '/kalapas'
+  });
+});
+
+app.get('/kalapas/table/wbp-luar-lapas', (req, res) => {
+  const board = getBoardData();
+  const rows = board.luarTembok.map(item => {
+    const wniKeluar = Number(item.wniKeluar) || 0;
+    const wniMasuk = Number(item.wniMasuk) || 0;
+    const wnaKeluar = Number(item.wnaKeluar) || 0;
+    const wnaMasuk = Number(item.wnaMasuk) || 0;
+    return [
+      item.status || '-',
+      String(wniKeluar),
+      String(wniMasuk),
+      String(wnaKeluar),
+      String(wnaMasuk),
+      String(wniKeluar + wniMasuk + wnaKeluar + wnaMasuk),
+      item.keterangan || '-',
+    ];
+  });
+
+  res.render('kalapas-table', {
+    pageTitle: 'WBP di Luar Lapas',
+    sectionTitle: 'WBP DI LUAR LAPAS',
+    subtitle: `Total kategori: ${rows.length}`,
+    columns: ['STATUS', 'WNI KELUAR', 'WNI MASUK', 'WNA KELUAR', 'WNA MASUK', 'JUMLAH', 'KETERANGAN'],
     rows,
     backUrl: '/kalapas'
   });
@@ -2319,26 +2364,50 @@ app.post('/admin/klinik-medis/:id/delete', requireAccess('klinik-medis'), (req, 
 
 // ── Klinik: WBP Berobat ───────────────────────────────────────────
 app.get('/admin/klinik-berobat', requireAccess('klinik-berobat'), (req, res) => {
-  const list = db.prepare('SELECT * FROM clinic_wbp_berobat ORDER BY id DESC').all();
+  const selectedTanggal = /^\d{4}-\d{2}-\d{2}$/.test(String(req.query.tanggal || ''))
+    ? String(req.query.tanggal)
+    : getTodayYmd();
+  const list = db.prepare('SELECT * FROM clinic_wbp_berobat WHERE tanggal = ? ORDER BY id DESC').all(selectedTanggal);
+  const totalHistory = db.prepare('SELECT COUNT(*) AS c FROM clinic_wbp_berobat').get().c;
   const edit = req.query.edit ? db.prepare('SELECT * FROM clinic_wbp_berobat WHERE id=?').get(Number(req.query.edit)) : null;
-  res.render('admin/klinik-berobat', { user: req.session.user, list, edit, active: 'klinik-berobat', success: req.query.success });
+  res.render('admin/klinik-berobat', {
+    user: req.session.user,
+    list,
+    edit,
+    todayYmd: getTodayYmd(),
+    selectedTanggal,
+    totalHistory,
+    filterQuery: `?tanggal=${selectedTanggal}`,
+    filterQueryWithAmp: `&tanggal=${selectedTanggal}`,
+    active: 'klinik-berobat',
+    success: req.query.success
+  });
 });
 
 app.post('/admin/klinik-berobat/add', requireAccess('klinik-berobat'), (req, res) => {
+  const selectedTanggal = /^\d{4}-\d{2}-\d{2}$/.test(String(req.query.tanggal || ''))
+    ? String(req.query.tanggal)
+    : getTodayYmd();
   const { no_reg, nama_wbp, layanan, diagnosa, blok, status_perawatan, tanggal } = req.body;
-  db.prepare('INSERT INTO clinic_wbp_berobat (no_reg, nama_wbp, layanan, diagnosa, blok, status_perawatan, tanggal) VALUES (?, ?, ?, ?, ?, ?, ?)').run(no_reg, nama_wbp, layanan, diagnosa, blok, status_perawatan, tanggal);
-  res.redirect('/admin/klinik-berobat?success=1');
+  db.prepare('INSERT INTO clinic_wbp_berobat (no_reg, nama_wbp, layanan, diagnosa, blok, status_perawatan, tanggal) VALUES (?, ?, ?, ?, ?, ?, ?)').run(no_reg, nama_wbp, layanan, diagnosa, blok, status_perawatan, tanggal || getTodayYmd());
+  res.redirect(`/admin/klinik-berobat?tanggal=${selectedTanggal}&success=1`);
 });
 
 app.post('/admin/klinik-berobat/:id/update', requireAccess('klinik-berobat'), (req, res) => {
+  const selectedTanggal = /^\d{4}-\d{2}-\d{2}$/.test(String(req.query.tanggal || ''))
+    ? String(req.query.tanggal)
+    : getTodayYmd();
   const { no_reg, nama_wbp, layanan, diagnosa, blok, status_perawatan, tanggal } = req.body;
-  db.prepare('UPDATE clinic_wbp_berobat SET no_reg=?, nama_wbp=?, layanan=?, diagnosa=?, blok=?, status_perawatan=?, tanggal=? WHERE id=?').run(no_reg, nama_wbp, layanan, diagnosa, blok, status_perawatan, tanggal, Number(req.params.id));
-  res.redirect('/admin/klinik-berobat?success=1');
+  db.prepare('UPDATE clinic_wbp_berobat SET no_reg=?, nama_wbp=?, layanan=?, diagnosa=?, blok=?, status_perawatan=?, tanggal=? WHERE id=?').run(no_reg, nama_wbp, layanan, diagnosa, blok, status_perawatan, tanggal || getTodayYmd(), Number(req.params.id));
+  res.redirect(`/admin/klinik-berobat?tanggal=${selectedTanggal}&success=1`);
 });
 
 app.post('/admin/klinik-berobat/:id/delete', requireAccess('klinik-berobat'), (req, res) => {
+  const selectedTanggal = /^\d{4}-\d{2}-\d{2}$/.test(String(req.query.tanggal || ''))
+    ? String(req.query.tanggal)
+    : getTodayYmd();
   db.prepare('DELETE FROM clinic_wbp_berobat WHERE id=?').run(Number(req.params.id));
-  res.redirect('/admin/klinik-berobat');
+  res.redirect(`/admin/klinik-berobat?tanggal=${selectedTanggal}`);
 });
 
 // ── Klinik: Jadwal On Call ────────────────────────────────────────

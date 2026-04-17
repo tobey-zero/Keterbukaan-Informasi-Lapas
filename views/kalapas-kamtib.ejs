@@ -14,8 +14,7 @@
       align-items: center;
       margin-bottom: 10px;
     }
-    .kamtib-toolbar a,
-    .kamtib-filter button {
+    .kamtib-toolbar a {
       text-decoration: none;
       color: #fff;
       background: #1a4bb8;
@@ -26,30 +25,36 @@
       font-weight: bold;
       cursor: pointer;
     }
-    .kamtib-filter {
+    .kamtib-panel-filter {
       display: flex;
-      gap: 8px;
+      gap: 6px;
       align-items: center;
       flex-wrap: wrap;
-      margin-left: auto;
     }
-    .kamtib-filter-label {
+    .kamtib-panel-filter-label {
+      font-size: 10px;
+      font-weight: 700;
+      color: #dbeafe;
+      letter-spacing: .2px;
+    }
+    .kamtib-panel-filter select {
+      border: 1px solid rgba(255,255,255,.4);
+      border-radius: 4px;
+      padding: 4px 8px;
       font-size: 11px;
-      font-weight: bold;
-      color: #334155;
-      background: #f8fafc;
-      border: 1px solid #cbd5e1;
-      border-radius: 6px;
-      padding: 7px 10px;
-    }
-    .kamtib-filter select {
-      border: 1px solid #cbd5e1;
-      border-radius: 6px;
-      padding: 7px 10px;
-      font-size: 12px;
       font-weight: 700;
       color: #0f172a;
       background: #fff;
+    }
+    .kamtib-panel-filter button {
+      border: 1px solid rgba(255,255,255,.4);
+      border-radius: 4px;
+      padding: 4px 9px;
+      font-size: 11px;
+      font-weight: 700;
+      color: #1e3a8a;
+      background: #eff6ff;
+      cursor: pointer;
     }
     .kamtib-grid {
       display: grid;
@@ -138,6 +143,9 @@
       .kamtib-panel .panel-content {
         max-height: 45vh;
       }
+      .kamtib-panel-filter {
+        width: 100%;
+      }
     }
   </style>
 </head>
@@ -162,20 +170,6 @@
   <div class="kamtib-wrap">
     <div class="kamtib-toolbar">
       <a href="<%= backUrl %>">⬅ Kembali ke Kalapas</a>
-      <form method="GET" action="/kalapas/table/kamtib" class="kamtib-filter">
-        <span class="kamtib-filter-label">Filter Giat Pengawalan</span>
-        <select name="month" aria-label="Filter bulan">
-          <% monthOptions.forEach(opt => { %>
-            <option value="<%= opt.value %>" <%= opt.value === selectedMonth ? 'selected' : '' %>><%= opt.label %></option>
-          <% }) %>
-        </select>
-        <select name="year" aria-label="Filter tahun">
-          <% yearOptions.forEach(year => { %>
-            <option value="<%= year %>" <%= String(year) === String(selectedYear) ? 'selected' : '' %>><%= year %></option>
-          <% }) %>
-        </select>
-        <button type="submit">Terapkan Filter</button>
-      </form>
     </div>
 
     <div class="kamtib-grid">
@@ -250,7 +244,21 @@
       <div class="panel kamtib-panel kamtib-panel-pengawalan">
         <div class="panel-header red">
           <span>GIAT PENGAWALAN</span>
-          <span><%= pengawalanList.length %> data</span>
+          <form method="GET" action="/kalapas/table/kamtib" class="kamtib-panel-filter">
+            <span class="kamtib-panel-filter-label">Filter Giat Pengawalan</span>
+            <select name="month" aria-label="Filter bulan pengawalan">
+              <% monthOptions.forEach(opt => { %>
+                <option value="<%= opt.value %>" <%= opt.value === selectedMonth ? 'selected' : '' %>><%= opt.label %></option>
+              <% }) %>
+            </select>
+            <select name="year" aria-label="Filter tahun pengawalan">
+              <% yearOptions.forEach(year => { %>
+                <option value="<%= year %>" <%= String(year) === String(selectedYear) ? 'selected' : '' %>><%= year %></option>
+              <% }) %>
+            </select>
+            <button type="submit">Terapkan</button>
+            <span><%= pengawalanList.length %> data</span>
+          </form>
         </div>
         <div class="panel-content">
           <div class="table-wrap table-auto-scroll kamtib-table-scroll">
