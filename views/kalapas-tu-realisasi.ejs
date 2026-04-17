@@ -1,0 +1,212 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title><%= pageTitle %> - Kalapas</title>
+  <link rel="stylesheet" href="/css/style.css?v=<%= Date.now() %>">
+  <style>
+    .kalapas-table-wrap { padding: 14px 15px; }
+    .kalapas-table-toolbar {
+      display: flex;
+      gap: 8px;
+      flex-wrap: wrap;
+      align-items: center;
+      margin-bottom: 10px;
+    }
+    .kalapas-table-toolbar a {
+      text-decoration: none;
+      color: #fff;
+      background: #1a4bb8;
+      border: 1px solid rgba(255,255,255,.3);
+      border-radius: 6px;
+      padding: 7px 11px;
+      font-size: 12px;
+      font-weight: bold;
+    }
+
+    .finance-hero {
+      border: 1px solid #1e40af;
+      border-radius: 10px;
+      background: linear-gradient(180deg, #0ea5e9 0%, #38bdf8 100%);
+      color: #fff;
+      padding: 12px;
+      margin-bottom: 10px;
+    }
+
+    .finance-hero-top {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 10px;
+      margin-bottom: 8px;
+    }
+
+    .finance-hero-box {
+      border-radius: 8px;
+      border: 1px solid rgba(255, 255, 255, .35);
+      background: rgba(15, 23, 42, .22);
+      padding: 8px 10px;
+    }
+
+    .finance-hero-box .label {
+      font-size: 11px;
+      opacity: .95;
+      font-weight: bold;
+      margin-bottom: 3px;
+    }
+
+    .finance-hero-box .value {
+      font-size: 22px;
+      font-weight: bold;
+      line-height: 1.1;
+    }
+
+    .finance-hero-mid {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      gap: 8px;
+      font-weight: bold;
+      font-size: 12px;
+      margin-bottom: 5px;
+    }
+
+    .finance-hero-track {
+      width: 100%;
+      height: 16px;
+      border-radius: 99px;
+      background: rgba(15, 23, 42, .25);
+      overflow: hidden;
+      border: 1px solid rgba(255, 255, 255, .35);
+    }
+
+    .finance-hero-fill {
+      height: 100%;
+      background: #1d4ed8;
+      color: #fff;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 11px;
+      font-weight: bold;
+      white-space: nowrap;
+      min-width: 44px;
+    }
+
+    .finance-hero-bottom {
+      display: flex;
+      justify-content: space-between;
+      gap: 8px;
+      margin-top: 8px;
+      font-size: 12px;
+      font-weight: bold;
+      opacity: .95;
+    }
+
+    .finance-summary-table {
+      width: 100%;
+      border-collapse: collapse;
+      margin-top: 10px;
+      background: rgba(255, 255, 255, .1);
+    }
+
+    .finance-summary-table th,
+    .finance-summary-table td {
+      border: 1px solid rgba(255, 255, 255, .35);
+      padding: 8px 9px;
+      font-size: 12px;
+      text-align: center;
+      font-weight: bold;
+      color: #fff;
+    }
+
+    @media (max-width: 880px) {
+      .finance-hero-top { grid-template-columns: 1fr; }
+      .finance-hero-box .value { font-size: 18px; }
+      .finance-hero-bottom { flex-direction: column; }
+    }
+  </style>
+</head>
+<body class="page-umum">
+  <header class="header">
+    <div class="header-content">
+      <div class="logo-section">
+        <div class="logo">
+          <p>&nbsp;</p>
+          <h1>KRISNA</h1>
+          <p>&nbsp;</p>
+        </div>
+        <div class="header-info">
+          <h2><%= sectionTitle %></h2>
+          <h3>Data Realisasi Keuangan</h3>
+          <p class="address"><%= subtitle %></p>
+        </div>
+      </div>
+    </div>
+  </header>
+
+  <div class="kalapas-table-wrap">
+    <div class="kalapas-table-toolbar">
+      <a href="<%= backUrl %>">⬅ Kembali ke Kalapas</a>
+    </div>
+
+    <div class="finance-hero">
+      <div class="finance-hero-top">
+        <div class="finance-hero-box">
+          <div class="label">Total Pagu</div>
+          <div class="value"><%= financeSummary.totalPaguLabel %></div>
+        </div>
+        <div class="finance-hero-box">
+          <div class="label">Realisasi Belanja</div>
+          <div class="value"><%= financeSummary.realisasiBelanjaLabel %></div>
+        </div>
+        <div class="finance-hero-box" style="background: rgba(245, 158, 11, .55);">
+          <div class="label">Sisa Pagu</div>
+          <div class="value"><%= financeSummary.sisaPaguLabel %></div>
+        </div>
+      </div>
+
+      <div class="finance-hero-mid">
+        <span>Total Realisasi Belanja <%= financeSummary.realisasiPercent.toFixed(0) %>%</span>
+        <span>Sisa Pagu <%= financeSummary.sisaPercent.toFixed(0) %>%</span>
+      </div>
+      <div class="finance-hero-track">
+        <div class="finance-hero-fill" data-percent="<%= financeSummary.realisasiPercent.toFixed(1) %>"><%= financeSummary.realisasiPercent.toFixed(0) %>%</div>
+      </div>
+      <div class="finance-hero-bottom">
+        <span>Realisasi: <%= financeSummary.realisasiBelanjaLabel %></span>
+        <span>Data per <%= financeSummary.updatedAtLabel %></span>
+      </div>
+
+      <table class="finance-summary-table">
+        <thead>
+          <tr>
+            <th>TOTAL PAGU</th>
+            <th>REALISASI BELANJA</th>
+            <th>SISA PAGU</th>
+            <th>DATA PER TANGGAL & JAM</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td><%= financeSummary.totalPaguLabel %></td>
+            <td><%= financeSummary.realisasiBelanjaLabel %></td>
+            <td><%= financeSummary.sisaPaguLabel %></td>
+            <td><%= financeSummary.updatedAtLabel %></td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+
+  <script>
+    (function () {
+      var fill = document.querySelector('.finance-hero-fill[data-percent]');
+      if (!fill) return;
+      var value = Number(fill.getAttribute('data-percent')) || 0;
+      var safeValue = Math.max(0, Math.min(100, value));
+      fill.style.width = safeValue + '%';
+    })();
+  </script>
+</body>
+</html>

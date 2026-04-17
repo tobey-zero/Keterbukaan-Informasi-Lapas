@@ -995,6 +995,18 @@ app.get('/kalapas/table/kamtib', (req, res) => {
   });
 });
 
+app.get('/kalapas/table/tu-realisasi', (req, res) => {
+  const financeSummary = getFinanceSummary();
+
+  res.render('kalapas-tu-realisasi', {
+    pageTitle: 'Realisasi Keuangan Tata Usaha',
+    sectionTitle: 'REALISASI KEUANGAN - TATA USAHA',
+    subtitle: 'Ringkasan data realisasi belanja',
+    financeSummary,
+    backUrl: '/kalapas'
+  });
+});
+
 app.get('/kalapas/table/tu-umum', (req, res) => {
   const data = getTuUmumData();
   const rows = data.tuUmumList.map(item => [

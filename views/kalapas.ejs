@@ -399,10 +399,10 @@
         </div>
 
         <div class="panel panel-barutama">
-            <div class="panel-header">PIE CHART DATA KEUANGAN</div>
+            <div class="panel-header">GRAFIK DATA KEUANGAN</div>
             <div class="panel-content">
                 <div class="finance-summary">
-                    <div class="pie-card clickable-chart" tabindex="0" role="link" data-link="/kalapas/table/tu-umum" data-values="<%= [financeSummary.realisasiBelanja, financeSummary.sisaPagu].join(',') %>" data-labels="Realisasi Belanja|Sisa Pagu" data-center-mode="percent" data-center-value="<%= financeSummary.realisasiPercent.toFixed(1) %>">
+                    <div class="pie-card clickable-chart" tabindex="0" role="link" data-link="/kalapas/table/tu-realisasi" data-values="<%= [financeSummary.realisasiBelanja, financeSummary.sisaPagu].join(',') %>" data-labels="Realisasi Belanja|Sisa Pagu" data-center-mode="percent" data-center-value="<%= financeSummary.realisasiPercent.toFixed(1) %>">
                         <div class="pie-layout" style="grid-template-columns:1fr;">
                             <div class="pie-chart"><div class="pie-center"><%= financeSummary.realisasiPercent.toFixed(0) %>%</div></div>
                         </div>

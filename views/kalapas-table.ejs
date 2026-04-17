@@ -34,6 +34,19 @@
       font-size: 13px;
       font-weight: bold;
     }
+    .kalapas-search-group {
+      display: grid;
+      gap: 4px;
+      min-width: 280px;
+      width: 100%;
+      max-width: 420px;
+    }
+    .kalapas-search-label {
+      font-size: 11px;
+      color: #cbd5e1;
+      font-weight: bold;
+      letter-spacing: .2px;
+    }
     .kalapas-table-panel .panel-header {
       display: flex;
       justify-content: space-between;
@@ -173,7 +186,6 @@
   <div class="kalapas-table-wrap">
     <div class="kalapas-table-toolbar">
       <a href="<%= backUrl %>">⬅ Kembali ke Kalapas</a>
-      <input id="tableSearch" class="kalapas-search" type="text" placeholder="Cari data (nama, no reg, diagnosa, dll)...">
     </div>
 
     <% if (financeSummary) { %>
@@ -213,6 +225,12 @@
         <span id="rowCount"><%= rows.length %> data</span>
       </div>
       <div class="panel-content" style="padding:0;">
+        <div style="padding:10px 10px 0;">
+          <div class="kalapas-search-group" style="max-width:100%;">
+            <div class="kalapas-search-label" style="color:#334155;">Pencarian tabel ini</div>
+            <input id="tableSearchPrimary" class="kalapas-search" type="text" placeholder="Cari data laporan barang pengguna..." style="max-width:100%;">
+          </div>
+        </div>
         <div class="table-wrap">
           <table class="admin-table" id="dataTable">
             <thead>
@@ -250,6 +268,12 @@
           <span id="rowCountSecondary"><%= secondaryRows.length %> data</span>
         </div>
         <div class="panel-content" style="padding:0;">
+          <div style="padding:10px 10px 0;">
+            <div class="kalapas-search-group" style="max-width:100%;">
+              <div class="kalapas-search-label" style="color:#334155;">Pencarian tabel ini</div>
+              <input id="tableSearchSecondary" class="kalapas-search" type="text" placeholder="Cari data kepegawaian..." style="max-width:100%;">
+            </div>
+          </div>
           <div class="table-wrap">
             <table class="admin-table" id="dataTableSecondary">
               <thead>
@@ -284,7 +308,8 @@
 
   <script>
     (function () {
-      const searchInput = document.getElementById('tableSearch');
+      const searchPrimary = document.getElementById('tableSearchPrimary');
+      const searchSecondary = document.getElementById('tableSearchSecondary');
       const table = document.getElementById('dataTable');
       const bodyRows = Array.from(table.querySelectorAll('tbody tr'));
       const rowCount = document.getElementById('rowCount');
@@ -292,10 +317,9 @@
       const secondaryRows = secondaryTable ? Array.from(secondaryTable.querySelectorAll('tbody tr')) : [];
       const rowCountSecondary = document.getElementById('rowCountSecondary');
 
-      function applyFilter() {
-        const keyword = (searchInput.value || '').toLowerCase().trim();
+      function applyPrimaryFilter() {
+        const keyword = ((searchPrimary && searchPrimary.value) || '').toLowerCase().trim();
         let visiblePrimary = 0;
-        let visibleSecondary = 0;
 
         bodyRows.forEach((row) => {
           const text = row.textContent.toLowerCase();
@@ -305,6 +329,11 @@
         });
 
         if (rowCount) rowCount.textContent = visiblePrimary + ' data';
+      }
+
+      function applySecondaryFilter() {
+        const keyword = ((searchSecondary && searchSecondary.value) || '').toLowerCase().trim();
+        let visibleSecondary = 0;
 
         secondaryRows.forEach((row) => {
           const text = row.textContent.toLowerCase();
@@ -316,8 +345,10 @@
         if (rowCountSecondary) rowCountSecondary.textContent = visibleSecondary + ' data';
       }
 
-      searchInput.addEventListener('input', applyFilter);
-      applyFilter();
+      if (searchPrimary) searchPrimary.addEventListener('input', applyPrimaryFilter);
+      if (searchSecondary) searchSecondary.addEventListener('input', applySecondaryFilter);
+      applyPrimaryFilter();
+      applySecondaryFilter();
     })();
   </script>
 </body>
