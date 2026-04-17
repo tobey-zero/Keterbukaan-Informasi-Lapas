@@ -80,24 +80,6 @@
         </div>
       </div>
 
-      <div class="card">
-        <div class="card-header"><h3><%= editLuarDetail ? '✏️ Edit Detail WBP di Luar Tembok' : '➕ Tambah Detail WBP di Luar Tembok' %></h3></div>
-        <div class="card-body">
-          <form method="POST" action="<%= editLuarDetail ? '/admin/papan-isi/luar-detail/' + editLuarDetail.id + '/update' : '/admin/papan-isi/luar-detail/add' %>">
-            <div class="form-grid col-4" style="margin-bottom:12px;">
-              <div class="form-group"><label>No Registrasi</label><input type="text" name="no_registrasi" required value="<%= editLuarDetail ? editLuarDetail.no_registrasi : '' %>" placeholder="BI.001-LT/2026"></div>
-              <div class="form-group"><label>Nama</label><input type="text" name="nama" required value="<%= editLuarDetail ? editLuarDetail.nama : '' %>" placeholder="Nama WBP"></div>
-              <div class="form-group"><label>Tanggal</label><input type="text" name="tanggal" required value="<%= editLuarDetail ? editLuarDetail.tanggal : '' %>" placeholder="17 April 2026"></div>
-              <div class="form-group"><label>Pendamping</label><input type="text" name="pendamping" required value="<%= editLuarDetail ? editLuarDetail.pendamping : '' %>" placeholder="Petugas Regu A"></div>
-              <div class="form-group" style="grid-column: span 4;"><label>Keterangan</label><input type="text" name="keterangan" value="<%= editLuarDetail ? (editLuarDetail.keterangan || '') : '' %>" placeholder="Opsional"></div>
-            </div>
-            <div style="display:flex;gap:8px;">
-              <button type="submit" class="btn <%= editLuarDetail ? 'btn-success' : 'btn-primary' %> btn-sm"><%= editLuarDetail ? '💾 Simpan' : '➕ Tambah' %></button>
-              <% if (editLuarDetail) { %><a href="/admin/papan-isi" class="btn btn-secondary btn-sm">✕ Batal</a><% } %>
-            </div>
-          </form>
-        </div>
-      </div>
 
       <div class="card">
         <div class="card-header"><h3><%= editLuar ? '✏️ Edit WBP di Luar Lapas' : '➕ Tambah WBP di Luar Lapas' %></h3></div>
@@ -234,38 +216,6 @@
                 </tr>
                 <% }) %>
                 <% if (![...pidanaKhusus, ...pidanaUmum].length) { %><tr><td colspan="5" style="text-align:center;color:#aaa;padding:20px;">Belum ada data</td></tr><% } %>
-              </tbody>
-            </table>
-          </div>
-        </div>
-      </div>
-
-      <div class="card">
-        <div class="card-header"><h3>Detail WBP di Luar Tembok</h3></div>
-        <div class="card-body" style="padding:0;">
-          <div class="table-wrap">
-            <table class="admin-table">
-              <thead><tr><th>#</th><th>No Registrasi</th><th>Nama</th><th>Tanggal</th><th>Pendamping</th><th>Keterangan</th><th>Aksi</th></tr></thead>
-              <tbody>
-                <% luarTembokDetail.forEach((item, i) => { %>
-                <tr>
-                  <td><%= i+1 %></td>
-                  <td><%= item.noRegistrasi %></td>
-                  <td><%= item.nama %></td>
-                  <td><%= item.tanggal %></td>
-                  <td><%= item.pendamping %></td>
-                  <td><%= item.keterangan || '-' %></td>
-                  <td>
-                    <div class="actions">
-                      <a href="/admin/papan-isi?editLuarDetail=<%= item.id %>" class="btn btn-warning btn-xs">✏️ Edit</a>
-                      <form method="POST" action="/admin/papan-isi/luar-detail/<%= item.id %>/delete" style="display:inline" onsubmit="return confirm('Hapus data ini?')">
-                        <button class="btn btn-danger btn-xs">🗑 Hapus</button>
-                      </form>
-                    </div>
-                  </td>
-                </tr>
-                <% }) %>
-                <% if (!luarTembokDetail.length) { %><tr><td colspan="7" style="text-align:center;color:#aaa;padding:20px;">Belum ada data</td></tr><% } %>
               </tbody>
             </table>
           </div>

@@ -19,7 +19,7 @@
       <span class="icon">🌐</span><span>Lihat Publik</span>
     </a>
 
-    <% if (['statistik','remisi','kata-bijak','menu','video','jadwal','pembinaan-detail','razia','strapsel','tu-umum','kamar-blok','papan-isi'].some(p => allowed.includes(p))) { %>
+    <% if (['statistik','remisi','kata-bijak','menu','video','jadwal','pembinaan-detail','razia','strapsel','tu-umum','kamar-blok','papan-isi','luar-tembok'].some(p => allowed.includes(p))) { %>
     <div class="nav-label">Kelola Data</div>
     <% } %>
 
@@ -92,6 +92,12 @@
     <% if (allowed.includes('papan-isi')) { %>
     <a href="/admin/papan-isi" class="nav-item <%= active==='papan-isi'?'active':'' %>">
       <span class="icon">📌</span><span>Papan Keadaan Isi</span>
+    </a>
+    <% } %>
+
+    <% if (allowed.includes('luar-tembok')) { %>
+    <a href="/admin/luar-tembok" class="nav-item <%= active==='luar-tembok'?'active':'' %>">
+      <span class="icon">🧾</span><span>WBP Luar Tembok</span>
     </a>
     <% } %>
 
