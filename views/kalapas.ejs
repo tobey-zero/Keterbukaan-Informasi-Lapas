@@ -663,12 +663,19 @@
             </div>
 
             <div class="panel panel-sebaran">
-                <div class="panel-header">SEBARAN PENGHUNI PER BLOK</div>
+                <div class="panel-header">SEBARAN PENGHUNI PER GEDUNG</div>
                 <div class="panel-content">
+                    <% const gedungTotalsMap = {};
+                    (housingBlocks || []).forEach(item => {
+                    const gedungName = (item.gedung || '-').trim() || '-';
+                    gedungTotalsMap[gedungName] = (gedungTotalsMap[gedungName] || 0) + (Number(item.totalPenghuni) || 0);
+                    });
+                    const gedungLabels = Object.keys(gedungTotalsMap);
+                    const gedungValues = gedungLabels.map(label => gedungTotalsMap[label]); %>
                     <div class="pie-card clickable-chart" tabindex="0" role="link" data-link="/kalapas/table/kamar-blok"
-                        data-values="<%= (housingBlocks || []).map(item => Number(item.totalPenghuni) || 0).join(',') %>"
-                        data-labels="<%= (housingBlocks || []).map(item => item.namaBlock).join('|') %>">
-                        <h4 class="pie-title">Sebaran Penghuni per Blok</h4>
+                        data-values="<%= gedungValues.join(',') %>"
+                        data-labels="<%= gedungLabels.join('|') %>">
+                        <h4 class="pie-title">Sebaran Penghuni per Gedung</h4>
                         <div class="pie-layout">
                             <div class="pie-chart">
                                 <div class="pie-center">0</div>
