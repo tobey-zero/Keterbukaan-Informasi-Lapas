@@ -1539,12 +1539,53 @@ app.post('/admin/razia/bukti/:id/delete', requireAccess('razia'), (req, res) => 
 
 // ── Giat Pengawalan ──────────────────────────────────────────────
 app.get('/admin/pengawalan', requireAccess('pengawalan'), (req, res) => {
-  const list = db.prepare('SELECT * FROM giat_pengawalan ORDER BY tanggal DESC, id DESC').all();
+  const [defaultYear, defaultMonth] = getTodayYmd().split('-');
+  const selectedYear = /^\d{4}$/.test(String(req.query.year || '')) ? String(req.query.year) : defaultYear;
+  const selectedMonth = /^(0[1-9]|1[0-2])$/.test(String(req.query.month || '')) ? String(req.query.month) : defaultMonth;
+
+  const list = db.prepare(`
+    SELECT *
+    FROM giat_pengawalan
+    WHERE substr(tanggal, 1, 4) = ?
+      AND substr(tanggal, 6, 2) = ?
+    ORDER BY tanggal DESC, id DESC
+  `).all(selectedYear, selectedMonth);
+
+  const yearOptions = db.prepare(`
+    SELECT DISTINCT substr(tanggal, 1, 4) AS year
+    FROM giat_pengawalan
+    WHERE length(tanggal) >= 7
+    ORDER BY year DESC
+  `).all().map(row => row.year).filter(Boolean);
+
+  const monthOptions = [
+    { value: '01', label: 'Januari' },
+    { value: '02', label: 'Februari' },
+    { value: '03', label: 'Maret' },
+    { value: '04', label: 'April' },
+    { value: '05', label: 'Mei' },
+    { value: '06', label: 'Juni' },
+    { value: '07', label: 'Juli' },
+    { value: '08', label: 'Agustus' },
+    { value: '09', label: 'September' },
+    { value: '10', label: 'Oktober' },
+    { value: '11', label: 'November' },
+    { value: '12', label: 'Desember' },
+  ];
+
+  const filterQuery = `?month=${selectedMonth}&year=${selectedYear}`;
+  const filterQueryWithAmp = `&month=${selectedMonth}&year=${selectedYear}`;
   const edit = req.query.edit ? db.prepare('SELECT * FROM giat_pengawalan WHERE id=?').get(Number(req.query.edit)) : null;
   res.render('admin/pengawalan', {
     user: req.session.user,
     list,
     edit,
+    selectedMonth,
+    selectedYear,
+    monthOptions,
+    yearOptions: yearOptions.length ? yearOptions : [defaultYear],
+    filterQuery,
+    filterQueryWithAmp,
     active: 'pengawalan',
     success: req.query.success,
     error: req.query.error
@@ -1552,11 +1593,15 @@ app.get('/admin/pengawalan', requireAccess('pengawalan'), (req, res) => {
 });
 
 app.post('/admin/pengawalan/add', requireAccess('pengawalan'), raziaUpload.single('dokumentasi'), (req, res) => {
+  const [defaultYear, defaultMonth] = getTodayYmd().split('-');
+  const selectedYear = /^\d{4}$/.test(String(req.query.year || '')) ? String(req.query.year) : defaultYear;
+  const selectedMonth = /^(0[1-9]|1[0-2])$/.test(String(req.query.month || '')) ? String(req.query.month) : defaultMonth;
+  const redirectBase = `/admin/pengawalan?month=${selectedMonth}&year=${selectedYear}`;
   const tanggal = (req.body.tanggal || '').trim();
   const namaWbp = (req.body.nama_wbp || '').trim().toUpperCase();
   const petugas = (req.body.petugas || '').trim();
   const keterangan = (req.body.keterangan || '').trim();
-  if (!tanggal || !namaWbp || !petugas) return res.redirect('/admin/pengawalan?error=Data+wajib+belum+lengkap');
+  if (!tanggal || !namaWbp || !petugas) return res.redirect(`${redirectBase}&error=Data+wajib+belum+lengkap`);
 
   const dokumentasiPath = req.file ? `/uploads/razia/${req.file.filename}` : null;
   db.prepare(`
@@ -1564,16 +1609,20 @@ app.post('/admin/pengawalan/add', requireAccess('pengawalan'), raziaUpload.singl
     VALUES (?, ?, ?, ?, ?)
   `).run(tanggal, namaWbp, petugas, keterangan, dokumentasiPath);
 
-  res.redirect('/admin/pengawalan?success=1');
+  res.redirect(`${redirectBase}&success=1`);
 });
 
 app.post('/admin/pengawalan/:id/update', requireAccess('pengawalan'), raziaUpload.single('dokumentasi'), (req, res) => {
+  const [defaultYear, defaultMonth] = getTodayYmd().split('-');
+  const selectedYear = /^\d{4}$/.test(String(req.query.year || '')) ? String(req.query.year) : defaultYear;
+  const selectedMonth = /^(0[1-9]|1[0-2])$/.test(String(req.query.month || '')) ? String(req.query.month) : defaultMonth;
+  const redirectBase = `/admin/pengawalan?month=${selectedMonth}&year=${selectedYear}`;
   const id = Number(req.params.id);
   const tanggal = (req.body.tanggal || '').trim();
   const namaWbp = (req.body.nama_wbp || '').trim().toUpperCase();
   const petugas = (req.body.petugas || '').trim();
   const keterangan = (req.body.keterangan || '').trim();
-  if (!tanggal || !namaWbp || !petugas) return res.redirect('/admin/pengawalan?error=Data+wajib+belum+lengkap');
+  if (!tanggal || !namaWbp || !petugas) return res.redirect(`${redirectBase}&error=Data+wajib+belum+lengkap`);
 
   const existing = db.prepare('SELECT dokumentasi_path FROM giat_pengawalan WHERE id=?').get(id);
   let nextDokumentasiPath = existing?.dokumentasi_path || null;
@@ -1588,15 +1637,19 @@ app.post('/admin/pengawalan/:id/update', requireAccess('pengawalan'), raziaUploa
     WHERE id=?
   `).run(tanggal, namaWbp, petugas, keterangan, nextDokumentasiPath, id);
 
-  res.redirect('/admin/pengawalan?success=1');
+  res.redirect(`${redirectBase}&success=1`);
 });
 
 app.post('/admin/pengawalan/:id/delete', requireAccess('pengawalan'), (req, res) => {
+  const [defaultYear, defaultMonth] = getTodayYmd().split('-');
+  const selectedYear = /^\d{4}$/.test(String(req.query.year || '')) ? String(req.query.year) : defaultYear;
+  const selectedMonth = /^(0[1-9]|1[0-2])$/.test(String(req.query.month || '')) ? String(req.query.month) : defaultMonth;
+  const redirectBase = `/admin/pengawalan?month=${selectedMonth}&year=${selectedYear}`;
   const id = Number(req.params.id);
   const existing = db.prepare('SELECT dokumentasi_path FROM giat_pengawalan WHERE id=?').get(id);
   if (existing?.dokumentasi_path) removeUploadedFile(existing.dokumentasi_path);
   db.prepare('DELETE FROM giat_pengawalan WHERE id=?').run(id);
-  res.redirect('/admin/pengawalan?success=1');
+  res.redirect(`${redirectBase}&success=1`);
 });
 
 // ── Strapsel ──────────────────────────────────────────────────────

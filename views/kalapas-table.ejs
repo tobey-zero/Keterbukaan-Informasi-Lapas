@@ -188,33 +188,40 @@
       <a href="<%= backUrl %>">⬅ Kembali ke Kalapas</a>
     </div>
 
-    <% if (financeSummary) { %>
-      <div class="finance-hero">
-        <div class="finance-hero-top">
-          <div class="finance-hero-box">
-            <div class="label">Total Pagu</div>
-            <div class="value"><%= financeSummary.totalPaguLabel %></div>
-          </div>
-          <div class="finance-hero-box">
-            <div class="label">Realisasi Belanja</div>
-            <div class="value"><%= financeSummary.realisasiBelanjaLabel %></div>
-          </div>
-          <div class="finance-hero-box" style="background: rgba(245, 158, 11, .55);">
-            <div class="label">Sisa Pagu</div>
-            <div class="value"><%= financeSummary.sisaPaguLabel %></div>
-          </div>
+    <% if (typeof financeSummary !== 'undefined' && financeSummary) { %>
+      <div class="panel kalapas-table-panel">
+        <div class="panel-header red">
+          <span>Realisasi Belanja Bagian Keuangan</span>
         </div>
+        <div class="panel-content" style="padding:10px;">
+          <div class="finance-hero" style="margin-bottom:0;">
+            <div class="finance-hero-top">
+              <div class="finance-hero-box">
+                <div class="label">Total Pagu</div>
+                <div class="value"><%= financeSummary.totalPaguLabel %></div>
+              </div>
+              <div class="finance-hero-box">
+                <div class="label">Realisasi Belanja</div>
+                <div class="value"><%= financeSummary.realisasiBelanjaLabel %></div>
+              </div>
+              <div class="finance-hero-box" style="background: rgba(245, 158, 11, .55);">
+                <div class="label">Sisa Pagu</div>
+                <div class="value"><%= financeSummary.sisaPaguLabel %></div>
+              </div>
+            </div>
 
-        <div class="finance-hero-mid">
-          <span>Total Realisasi Belanja <%= financeSummary.realisasiPercent.toFixed(0) %>%</span>
-          <span>Sisa Pagu <%= financeSummary.sisaPercent.toFixed(0) %>%</span>
-        </div>
-        <div class="finance-hero-track">
-          <div class="finance-hero-fill" style="width:<%= Math.max(0, Math.min(100, financeSummary.realisasiPercent)) %>%;"><%= financeSummary.realisasiPercent.toFixed(0) %>%</div>
-        </div>
-        <div class="finance-hero-bottom">
-          <span>Realisasi: <%= financeSummary.realisasiBelanjaLabel %></span>
-          <span>Data per <%= financeSummary.updatedAtLabel %></span>
+            <div class="finance-hero-mid">
+              <span>Total Realisasi Belanja <%= financeSummary.realisasiPercent.toFixed(0) %>%</span>
+              <span>Sisa Pagu <%= financeSummary.sisaPercent.toFixed(0) %>%</span>
+            </div>
+            <div class="finance-hero-track">
+              <div class="finance-hero-fill" style="width:<%= Math.max(0, Math.min(100, financeSummary.realisasiPercent)) %>%;"><%= financeSummary.realisasiPercent.toFixed(0) %>%</div>
+            </div>
+            <div class="finance-hero-bottom">
+              <span>Realisasi: <%= financeSummary.realisasiBelanjaLabel %></span>
+              <span>Data per <%= financeSummary.updatedAtLabel %></span>
+            </div>
+          </div>
         </div>
       </div>
     <% } %>
@@ -261,7 +268,7 @@
       </div>
     </div>
 
-    <% if (Array.isArray(secondaryRows) && Array.isArray(secondaryColumns)) { %>
+    <% if (typeof secondaryRows !== 'undefined' && typeof secondaryColumns !== 'undefined' && Array.isArray(secondaryRows) && Array.isArray(secondaryColumns)) { %>
       <div class="panel kalapas-table-panel">
         <div class="panel-header red">
           <span><%= secondarySectionTitle || 'DATA TAMBAHAN' %></span>

@@ -6,6 +6,16 @@
   <link rel="stylesheet" href="/css/admin.css">
   <style>
     .list-text { white-space: pre-line; line-height: 1.35; }
+    .pengawalan-filter {
+      display: flex;
+      gap: 8px;
+      align-items: center;
+      flex-wrap: wrap;
+      margin-top: 10px;
+    }
+    .pengawalan-filter select {
+      min-width: 140px;
+    }
   </style>
 </head>
 <body>
@@ -17,6 +27,21 @@
       <div class="topbar-actions"><a href="/kalapas/table/kamtib" target="_blank" class="btn-public">🧭 Lihat Halaman Kamtib</a></div>
     </div>
 
+    <form method="GET" action="/admin/pengawalan" class="pengawalan-filter">
+      <label for="filterMonth"><strong>Filter Bulan/Tahun:</strong></label>
+      <select id="filterMonth" name="month" aria-label="Filter bulan pengawalan">
+        <% monthOptions.forEach(opt => { %>
+          <option value="<%= opt.value %>" <%= opt.value === selectedMonth ? 'selected' : '' %>><%= opt.label %></option>
+        <% }) %>
+      </select>
+      <select id="filterYear" name="year" aria-label="Filter tahun pengawalan">
+        <% yearOptions.forEach(year => { %>
+          <option value="<%= year %>" <%= String(year) === String(selectedYear) ? 'selected' : '' %>><%= year %></option>
+        <% }) %>
+      </select>
+      <button type="submit" class="btn btn-primary btn-sm">Terapkan</button>
+    </form>
+
     <div class="content-area">
       <% if (success) { %><div class="alert alert-success">✅ Data giat pengawalan berhasil disimpan.</div><% } %>
       <% if (error) { %><div class="alert alert-danger">❌ <%= error %></div><% } %>
@@ -24,7 +49,7 @@
       <div class="card">
         <div class="card-header"><h3><%= edit ? '✏️ Edit Giat Pengawalan' : '➕ Tambah Giat Pengawalan' %></h3></div>
         <div class="card-body">
-          <form method="POST" action="<%= edit ? '/admin/pengawalan/' + edit.id + '/update' : '/admin/pengawalan/add' %>" enctype="multipart/form-data">
+          <form method="POST" action="<%= edit ? '/admin/pengawalan/' + edit.id + '/update' + filterQuery : '/admin/pengawalan/add' + filterQuery %>" enctype="multipart/form-data">
             <div class="form-grid col-2" style="margin-bottom:12px;">
               <div class="form-group">
                 <label>Tanggal</label>
@@ -57,14 +82,14 @@ Petugas B"><%= edit ? edit.petugas : '' %></textarea>
 
             <div style="display:flex;gap:8px;">
               <button type="submit" class="btn <%= edit ? 'btn-success' : 'btn-primary' %> btn-sm"><%= edit ? '💾 Simpan' : '➕ Tambah' %></button>
-              <% if (edit) { %><a href="/admin/pengawalan" class="btn btn-secondary btn-sm">✕ Batal</a><% } %>
+              <% if (edit) { %><a href="/admin/pengawalan<%= filterQuery %>" class="btn btn-secondary btn-sm">✕ Batal</a><% } %>
             </div>
           </form>
         </div>
       </div>
 
       <div class="card">
-        <div class="card-header"><h3>Daftar Giat Pengawalan (<%= list.length %> data)</h3></div>
+        <div class="card-header"><h3>Daftar Giat Pengawalan (<%= list.length %> data) - <%= monthOptions.find(opt => opt.value === selectedMonth)?.label || '-' %> <%= selectedYear %></h3></div>
         <div class="card-body" style="padding:0;">
           <div class="table-wrap">
             <table class="admin-table">
@@ -96,8 +121,8 @@ Petugas B"><%= edit ? edit.petugas : '' %></textarea>
                   </td>
                   <td>
                     <div class="actions">
-                      <a href="/admin/pengawalan?edit=<%= item.id %>" class="btn btn-warning btn-xs">✏️ Edit</a>
-                      <form method="POST" action="/admin/pengawalan/<%= item.id %>/delete" style="display:inline" onsubmit="return confirm('Hapus data giat pengawalan ini?')">
+                      <a href="/admin/pengawalan?edit=<%= item.id %><%= filterQueryWithAmp %>" class="btn btn-warning btn-xs">✏️ Edit</a>
+                      <form method="POST" action="/admin/pengawalan/<%= item.id %>/delete<%= filterQuery %>" style="display:inline" onsubmit="return confirm('Hapus data giat pengawalan ini?')">
                         <button class="btn btn-danger btn-xs">🗑 Hapus</button>
                       </form>
                     </div>

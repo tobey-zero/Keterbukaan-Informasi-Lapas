@@ -107,7 +107,7 @@
                         <% if (dokumentasiMedia && dokumentasiMedia.length) { %>
                             <% const firstMedia = dokumentasiMedia[0]; %>
                             <% if (firstMedia.mediaType === 'video') { %>
-                                <video id="doc-media-player" src="<%= firstMedia.mediaPath %>" autoplay muted playsinline controls
+                                <video id="doc-media-player" src="<%= firstMedia.mediaPath %>" autoplay muted playsinline controls <%= dokumentasiMedia.length === 1 ? 'loop' : '' %>
                                     style="width: 100%; height: 100%; object-fit: cover; border-bottom-left-radius: 8px; border-bottom-right-radius: 8px; display: block;"></video>
                             <% } else { %>
                                 <img id="doc-media-player" src="<%= firstMedia.mediaPath %>" alt="Dokumentasi kegiatan"
@@ -286,7 +286,23 @@
                 playlist = [];
             }
 
-            if (!Array.isArray(playlist) || playlist.length <= 1) return;
+            if (!Array.isArray(playlist) || playlist.length === 0) return;
+
+            if (playlist.length === 1) {
+                const onlyItem = playlist[0];
+                if (onlyItem && onlyItem.mediaType === 'video') {
+                    const existingPlayer = document.getElementById('doc-media-player');
+                    if (existingPlayer && existingPlayer.tagName && existingPlayer.tagName.toLowerCase() === 'video') {
+                        existingPlayer.loop = true;
+                        existingPlayer.muted = true;
+                        const playPromise = existingPlayer.play();
+                        if (playPromise && typeof playPromise.catch === 'function') {
+                            playPromise.catch(function () {});
+                        }
+                    }
+                }
+                return;
+            }
 
             let currentIndex = 0;
             let imageTimer = null;

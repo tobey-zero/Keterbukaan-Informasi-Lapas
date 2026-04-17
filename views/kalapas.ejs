@@ -177,7 +177,7 @@
         .board-table-wrap { padding: 10px; }
         .board-three-col {
             display: grid;
-            grid-template-columns: 1fr 1fr 1fr;
+            grid-template-columns: 1.5fr 1.5fr 1fr 1fr 1fr;
             gap: 12px;
         }
         .board-col { min-width: 0; display: grid; gap: 10px; align-content: start; }
@@ -497,6 +497,15 @@
                         </div>
                     </div>
                 </div>
+                
+                    <div class="pie-card clickable-chart" tabindex="0" role="link" data-link="/kalapas/table/agama" data-values="<%= agamaValues.join(',') %>" data-labels="<%= agamaLabels.join('|') %>">
+                        <h4 class="pie-title">Jumlah Berdasarkan Agama</h4>
+                        <div class="pie-layout">
+                            <div class="pie-chart"><div class="pie-center">0</div></div>
+                            <ul class="pie-legend"></ul>
+                        </div>
+                    </div>
+
 
                 <div class="board-col">
                     <div class="pie-card clickable-chart" tabindex="0" role="link" data-link="/kalapas/table/wna" data-values="<%= wnaNegaraValues.join(',') %>" data-labels="<%= wnaNegaraLabels.join('|') %>">
@@ -507,7 +516,8 @@
                         </div>
                     </div>
 
-                    <div class="pie-card clickable-chart" tabindex="0" role="link" data-link="/kalapas/table/luar-tembok" data-values="<%= luarValues.join(',') %>" data-labels="<%= luarLabels.join('|') %>">
+                </div>
+                                    <div class="pie-card clickable-chart" tabindex="0" role="link" data-link="/kalapas/table/luar-tembok" data-values="<%= luarValues.join(',') %>" data-labels="<%= luarLabels.join('|') %>">
                         <h4 class="pie-title">WBP di Luar Lapas</h4>
                         <div class="pie-layout">
                             <div class="pie-chart"><div class="pie-center">0</div></div>
@@ -515,14 +525,6 @@
                         </div>
                     </div>
 
-                    <div class="pie-card clickable-chart" tabindex="0" role="link" data-link="/kalapas/table/agama" data-values="<%= agamaValues.join(',') %>" data-labels="<%= agamaLabels.join('|') %>">
-                        <h4 class="pie-title">Jumlah Berdasarkan Agama</h4>
-                        <div class="pie-layout">
-                            <div class="pie-chart"><div class="pie-center">0</div></div>
-                            <ul class="pie-legend"></ul>
-                        </div>
-                    </div>
-                </div>
             </div>
         </div>
     </section>

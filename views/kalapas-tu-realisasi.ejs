@@ -150,52 +150,59 @@
       <a href="<%= backUrl %>">⬅ Kembali ke Kalapas</a>
     </div>
 
-    <div class="finance-hero">
-      <div class="finance-hero-top">
-        <div class="finance-hero-box">
-          <div class="label">Total Pagu</div>
-          <div class="value"><%= financeSummary.totalPaguLabel %></div>
-        </div>
-        <div class="finance-hero-box">
-          <div class="label">Realisasi Belanja</div>
-          <div class="value"><%= financeSummary.realisasiBelanjaLabel %></div>
-        </div>
-        <div class="finance-hero-box" style="background: rgba(245, 158, 11, .55);">
-          <div class="label">Sisa Pagu</div>
-          <div class="value"><%= financeSummary.sisaPaguLabel %></div>
-        </div>
+    <div class="panel kalapas-table-panel">
+      <div class="panel-header red">
+        <span>Realisasi Belanja Bagian Keuangan</span>
       </div>
+      <div class="panel-content" style="padding:10px;">
+        <div class="finance-hero" style="margin-bottom:0;">
+          <div class="finance-hero-top">
+            <div class="finance-hero-box">
+              <div class="label">Total Pagu</div>
+              <div class="value"><%= financeSummary.totalPaguLabel %></div>
+            </div>
+            <div class="finance-hero-box">
+              <div class="label">Realisasi Belanja</div>
+              <div class="value"><%= financeSummary.realisasiBelanjaLabel %></div>
+            </div>
+            <div class="finance-hero-box" style="background: rgba(245, 158, 11, .55);">
+              <div class="label">Sisa Pagu</div>
+              <div class="value"><%= financeSummary.sisaPaguLabel %></div>
+            </div>
+          </div>
 
-      <div class="finance-hero-mid">
-        <span>Total Realisasi Belanja <%= financeSummary.realisasiPercent.toFixed(0) %>%</span>
-        <span>Sisa Pagu <%= financeSummary.sisaPercent.toFixed(0) %>%</span>
-      </div>
-      <div class="finance-hero-track">
-        <div class="finance-hero-fill" data-percent="<%= financeSummary.realisasiPercent.toFixed(1) %>"><%= financeSummary.realisasiPercent.toFixed(0) %>%</div>
-      </div>
-      <div class="finance-hero-bottom">
-        <span>Realisasi: <%= financeSummary.realisasiBelanjaLabel %></span>
-        <span>Data per <%= financeSummary.updatedAtLabel %></span>
-      </div>
+          <div class="finance-hero-mid">
+            <span>Total Realisasi Belanja <%= financeSummary.realisasiPercent.toFixed(0) %>%</span>
+            <span>Sisa Pagu <%= financeSummary.sisaPercent.toFixed(0) %>%</span>
+          </div>
+          <div class="finance-hero-track">
+            <div class="finance-hero-fill" data-percent="<%= financeSummary.realisasiPercent.toFixed(1) %>"><%= financeSummary.realisasiPercent.toFixed(0) %>%</div>
+          </div>
+          <div class="finance-hero-bottom">
+            <span>Realisasi: <%= financeSummary.realisasiBelanjaLabel %></span>
+            <span>Data per <%= financeSummary.updatedAtLabel %></span>
+          </div>
 
-      <table class="finance-summary-table">
-        <thead>
-          <tr>
-            <th>TOTAL PAGU</th>
-            <th>REALISASI BELANJA</th>
-            <th>SISA PAGU</th>
-            <th>DATA PER TANGGAL & JAM</th>
-          </tr>
-        </thead>
-        <tbody>
-          <tr>
-            <td><%= financeSummary.totalPaguLabel %></td>
-            <td><%= financeSummary.realisasiBelanjaLabel %></td>
-            <td><%= financeSummary.sisaPaguLabel %></td>
-            <td><%= financeSummary.updatedAtLabel %></td>
-          </tr>
-        </tbody>
-      </table>
+          <table class="finance-summary-table">
+            <thead>
+              <tr>
+                <th>TOTAL PAGU</th>
+                <th>REALISASI BELANJA</th>
+                <th>SISA PAGU</th>
+                <th>DATA PER TANGGAL & JAM</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr>
+                <td><%= financeSummary.totalPaguLabel %></td>
+                <td><%= financeSummary.realisasiBelanjaLabel %></td>
+                <td><%= financeSummary.sisaPaguLabel %></td>
+                <td><%= financeSummary.updatedAtLabel %></td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
     </div>
   </div>
 
