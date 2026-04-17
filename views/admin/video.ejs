@@ -31,15 +31,15 @@
             <div class="form-grid col-3" style="margin-bottom:12px;">
               <div class="form-group">
                 <label>File Media (Foto / Video)</label>
-                <input type="file" name="media" accept="image/*,video/*" required>
+                <input id="add-media-input" type="file" name="media" accept="image/*,video/*" required>
               </div>
               <div class="form-group">
                 <label>Urutan Tampil</label>
                 <input type="number" min="1" name="sort_order" value="<%= nextOrder %>" required>
               </div>
-              <div class="form-group">
+              <div id="add-duration-group" class="form-group" style="display:none;">
                 <label>Durasi Foto (detik)</label>
-                <input type="number" min="1" name="display_duration_sec" value="8" required>
+                <input id="add-duration-input" type="number" min="1" name="display_duration_sec" value="8" disabled>
               </div>
             </div>
             <button type="submit" class="btn btn-primary">📤 Upload Media</button>
@@ -61,10 +61,18 @@
                 <label>Urutan Tampil</label>
                 <input type="number" min="1" name="sort_order" value="<%= edit.sortOrder %>" required>
               </div>
-              <div class="form-group">
-                <label>Durasi Foto (detik)</label>
-                <input type="number" min="1" name="display_duration_sec" value="<%= edit.displayDurationSec %>" required>
-              </div>
+              <% if (edit.mediaType === 'image') { %>
+                <div class="form-group">
+                  <label>Durasi Foto (detik)</label>
+                  <input type="number" min="1" name="display_duration_sec" value="<%= edit.displayDurationSec %>" required>
+                </div>
+              <% } else { %>
+                <div class="form-group">
+                  <label>Durasi Video</label>
+                  <input type="text" value="Tidak digunakan (video diputar sampai selesai)" disabled>
+                  <input type="hidden" name="display_duration_sec" value="<%= edit.displayDurationSec %>">
+                </div>
+              <% } %>
             </div>
             <div style="display:flex;gap:8px;">
               <button type="submit" class="btn btn-success">💾 Simpan</button>
@@ -109,7 +117,7 @@
                   </td>
                   <td><%= item.mediaType === 'video' ? 'Video' : 'Foto' %></td>
                   <td><%= item.sortOrder %></td>
-                  <td><%= item.displayDurationSec %> detik</td>
+                  <td><%= item.mediaType === 'image' ? (item.displayDurationSec + ' detik') : '-' %></td>
                   <td>
                     <div class="actions">
                       <a href="/admin/video?edit=<%= item.id %>" class="btn btn-warning btn-xs">✏️ Edit</a>
@@ -131,5 +139,26 @@
     </div>
   </div>
 </div>
+<script>
+  (function () {
+    const mediaInput = document.getElementById('add-media-input');
+    const durationGroup = document.getElementById('add-duration-group');
+    const durationInput = document.getElementById('add-duration-input');
+
+    if (!mediaInput || !durationGroup || !durationInput) return;
+
+    function updateDurationVisibility() {
+      const file = mediaInput.files && mediaInput.files[0] ? mediaInput.files[0] : null;
+      const isImage = !!file && (file.type || '').startsWith('image/');
+
+      durationGroup.style.display = isImage ? '' : 'none';
+      durationInput.disabled = !isImage;
+      durationInput.required = isImage;
+    }
+
+    mediaInput.addEventListener('change', updateDurationVisibility);
+    updateDurationVisibility();
+  })();
+</script>
 </body>
 </html>
