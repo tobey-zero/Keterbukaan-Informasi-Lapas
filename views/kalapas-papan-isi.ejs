@@ -355,6 +355,7 @@
         </table>
       </div>
 
+
       <div class="board-panel">
         <h4>Jumlah WBP Berdasarkan Agama</h4>
         <table class="board-table">
@@ -377,46 +378,35 @@
           </tbody>
         </table>
       </div>
-
-      <div class="board-panel full-span">
-        <h4>Pie Chart Warga Negara Asing</h4>
-        <% const chartColors = ['#1d4ed8', '#0ea5e9', '#0f766e', '#f59e0b', '#ef4444', '#7c3aed', '#14b8a6', '#f97316', '#ec4899', '#334155']; %>
-        <% const pieRows = []; %>
-        <% let totalPie = 0; %>
-        <% for (const row of wnaNegara) { %>
-        <% const jumlahNum = Number(row.jumlah) || 0; %>
-        <% if (jumlahNum > 0) { pieRows.push({ namaNegara: row.namaNegara, jumlah: jumlahNum, color: chartColors[pieRows.length % chartColors.length] }); totalPie += jumlahNum; } %>
-        <% } %>
-        <% const gradientParts = []; %>
-        <% let acc = 0; %>
-        <% for (const row of pieRows) { %>
-        <% const startDeg = totalPie > 0 ? (acc / totalPie) * 360 : 0; %>
-        <% acc += row.jumlah; %>
-        <% const endDeg = totalPie > 0 ? (acc / totalPie) * 360 : 0; %>
-        <% gradientParts.push(row.color + ' ' + startDeg + 'deg ' + endDeg + 'deg'); %>
-        <% } %>
-        <% const pieBackground = gradientParts.length ? ('conic-gradient(' + gradientParts.join(', ') + ')') : '#e2e8f0'; %>
-
-        <% if (pieRows.length) { %>
-        <div class="wna-pie-wrap">
-          <div class="wna-pie-chart" data-bg="<%= pieBackground %>"></div>
-          <ul class="wna-pie-legend">
-            <% for (const row of pieRows) { %>
-            <li>
-              <span class="wna-label"><span class="wna-dot" data-color="<%= row.color %>"></span><%= row.namaNegara %></span>
-              <strong><%= row.jumlah %></strong>
-            </li>
+      <div class="board-panel">
+        <h4>Detail WBP di Luar Tembok</h4>
+        <table class="board-table">
+          <thead>
+            <tr>
+              <th>No Registrasi</th>
+              <th>Nama</th>
+              <th>Tanggal</th>
+              <th>Pendamping</th>
+              <th>Keterangan</th>
+            </tr>
+          </thead>
+          <tbody>
+            <% for (const item of luarTembokDetail) { %>
+            <tr>
+              <td><%= item.noRegistrasi || '-' %></td>
+              <td class="left"><%= item.nama || '-' %></td>
+              <td><%= item.tanggal || '-' %></td>
+              <td class="left"><%= item.pendamping || '-' %></td>
+              <td class="left"><%= item.keterangan || '-' %></td>
+            </tr>
             <% } %>
-            <li>
-              <span class="wna-label"><strong>Jumlah</strong></span>
-              <strong><%= totalPie %></strong>
-            </li>
-          </ul>
-        </div>
-        <% } else { %>
-        <div class="wna-empty">Belum ada data WNA untuk dibuat pie chart.</div>
-        <% } %>
+            <% if (!luarTembokDetail.length) { %>
+            <tr><td colspan="5">Belum ada data WBP di luar tembok</td></tr>
+            <% } %>
+          </tbody>
+        </table>
       </div>
+
     </div>
 
     <div class="mini-note">Data pada halaman ini bersifat fleksibel dan dapat disesuaikan lagi agar semakin mirip papan manual.</div>

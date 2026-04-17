@@ -200,6 +200,15 @@ db.exec(`
     keterangan TEXT DEFAULT ''
   );
 
+  CREATE TABLE IF NOT EXISTS board_luar_tembok_detail (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    no_registrasi TEXT NOT NULL,
+    nama TEXT NOT NULL,
+    tanggal TEXT NOT NULL,
+    pendamping TEXT NOT NULL,
+    keterangan TEXT DEFAULT ''
+  );
+
   CREATE TABLE IF NOT EXISTS board_agama (
     id INTEGER PRIMARY KEY AUTOINCREMENT,
     agama TEXT NOT NULL,
@@ -611,6 +620,15 @@ seedIfEmpty('board_luar_tembok', () => {
     ['KEJAKSAAN', 0, 0, 0, 0, '-'],
     ['PPN', 1, 0, 0, 0, 'Pengawalan sidang'],
     ['RUMAH SAKIT', 2, 0, 0, 0, 'Kontrol kesehatan'],
+  ];
+  rows.forEach(r => insert.run(...r));
+});
+
+seedIfEmpty('board_luar_tembok_detail', () => {
+  const insert = db.prepare('INSERT INTO board_luar_tembok_detail (no_registrasi, nama, tanggal, pendamping, keterangan) VALUES (?, ?, ?, ?, ?)');
+  const rows = [
+    ['BI.001-LT/2026', 'WBP A.N. E', '17 April 2026', 'Petugas Regu A', 'Kontrol rumah sakit'],
+    ['BI.002-LT/2026', 'WBP A.N. F', '17 April 2026', 'Petugas Regu B', 'Sidang lanjutan'],
   ];
   rows.forEach(r => insert.run(...r));
 });

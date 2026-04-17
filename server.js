@@ -157,14 +157,14 @@ const ROLES = ['superadmin', 'registrasi', 'pembinaan', 'klinik', 'dapur', 'huma
 
 const roleAccess = {
   superadmin: ['dashboard', 'statistik', 'remisi', 'kata-bijak', 'menu', 'jadwal', 'pembinaan-detail', 'razia', 'strapsel', 'tu-umum', 'kamar-blok', 'papan-isi', 'users', 'video', 'klinik-medis', 'klinik-berobat', 'klinik-oncall', 'klinik-kontrol', 'klinik-statistik'],
-  registrasi: ['dashboard', 'statistik', 'remisi'],
+  registrasi: ['dashboard', 'statistik', 'remisi', 'papan-isi'],
   pembinaan: ['dashboard', 'jadwal', 'pembinaan-detail'],
   klinik: ['dashboard', 'klinik-medis', 'klinik-berobat', 'klinik-oncall', 'klinik-kontrol', 'klinik-statistik'],
   dapur: ['dashboard', 'menu'],
   humas: ['dashboard', 'video', 'kata-bijak'],
-  kamtib: ['dashboard',  'razia', 'strapsel', 'kamar-blok', 'papan-isi'],
+  kamtib: ['dashboard',  'razia', 'strapsel', 'kamar-blok'],
   tata_usaha: ['dashboard', 'tu-umum'],
-  pengamanan: ['dashboard', 'kamar-blok', 'papan-isi'],
+  pengamanan: ['dashboard', 'kamar-blok'],
 };
 
 // ─── Auth Middleware ──────────────────────────────────────────────────────────
@@ -442,6 +442,18 @@ function getBoardData() {
       FROM board_luar_tembok ORDER BY id`)
     .all();
 
+  const luarTembokDetail = db
+    .prepare(`SELECT
+      id,
+      no_registrasi AS noRegistrasi,
+      nama,
+      tanggal,
+      pendamping,
+      keterangan
+      FROM board_luar_tembok_detail
+      ORDER BY id DESC`)
+    .all();
+
   const agama = db
     .prepare('SELECT id, agama, wni, wna FROM board_agama ORDER BY id')
     .all();
@@ -487,6 +499,7 @@ function getBoardData() {
     pidanaKhusus,
     pidanaUmum,
     luarTembok,
+    luarTembokDetail,
     agama,
     registrasiHunian,
     wnaNegara,
@@ -847,19 +860,18 @@ app.get('/kalapas/table/pidana-umum', (req, res) => {
 
 app.get('/kalapas/table/luar-tembok', (req, res) => {
   const board = getBoardData();
-  const rows = board.luarTembok.map(item => {
-    const wniKeluar = Number(item.wniKeluar) || 0;
-    const wniMasuk = Number(item.wniMasuk) || 0;
-    const wnaKeluar = Number(item.wnaKeluar) || 0;
-    const wnaMasuk = Number(item.wnaMasuk) || 0;
-    const total = wniKeluar + wniMasuk + wnaKeluar + wnaMasuk;
-    return [item.status || '-', String(wniKeluar), String(wniMasuk), String(wnaKeluar), String(wnaMasuk), String(total), item.keterangan || '-'];
-  });
+  const rows = board.luarTembokDetail.map(item => [
+    item.noRegistrasi || '-',
+    item.nama || '-',
+    item.tanggal || '-',
+    item.pendamping || '-',
+    item.keterangan || '-'
+  ]);
   res.render('kalapas-table', {
-    pageTitle: 'WBP di Luar Lapas',
-    sectionTitle: 'WBP DI LUAR LAPAS',
-    subtitle: `Total status: ${rows.length}`,
-    columns: ['STATUS', 'WNI KELUAR', 'WNI MASUK', 'WNA KELUAR', 'WNA MASUK', 'JUMLAH', 'KETERANGAN'],
+    pageTitle: 'WBP di Luar Tembok',
+    sectionTitle: 'WBP DI LUAR TEMBOK',
+    subtitle: `Total data: ${rows.length}`,
+    columns: ['NO REGISTRASI', 'NAMA', 'TANGGAL', 'PENDAMPING', 'KETERANGAN'],
     rows,
     backUrl: '/kalapas'
   });
@@ -1441,6 +1453,7 @@ app.get('/admin/papan-isi', requireAccess('papan-isi'), (req, res) => {
   const data = getBoardData();
   const editPidana = req.query.editPidana ? db.prepare('SELECT * FROM board_pidana WHERE id=?').get(Number(req.query.editPidana)) : null;
   const editLuar = req.query.editLuar ? db.prepare('SELECT * FROM board_luar_tembok WHERE id=?').get(Number(req.query.editLuar)) : null;
+  const editLuarDetail = req.query.editLuarDetail ? db.prepare('SELECT * FROM board_luar_tembok_detail WHERE id=?').get(Number(req.query.editLuarDetail)) : null;
   const editAgama = req.query.editAgama ? db.prepare('SELECT * FROM board_agama WHERE id=?').get(Number(req.query.editAgama)) : null;
   const editRegistrasi = req.query.editRegistrasi ? db.prepare('SELECT * FROM board_registrasi_hunian WHERE id=?').get(Number(req.query.editRegistrasi)) : null;
   const editWnaNegara = req.query.editWnaNegara ? db.prepare('SELECT * FROM board_wna_negara WHERE id=?').get(Number(req.query.editWnaNegara)) : null;
@@ -1451,6 +1464,7 @@ app.get('/admin/papan-isi', requireAccess('papan-isi'), (req, res) => {
     ...data,
     editPidana,
     editLuar,
+    editLuarDetail,
     editAgama,
     editRegistrasi,
     editWnaNegara,
@@ -1518,6 +1532,44 @@ app.post('/admin/papan-isi/luar/:id/update', requireAccess('papan-isi'), (req, r
 
 app.post('/admin/papan-isi/luar/:id/delete', requireAccess('papan-isi'), (req, res) => {
   db.prepare('DELETE FROM board_luar_tembok WHERE id=?').run(Number(req.params.id));
+  res.redirect('/admin/papan-isi?success=1');
+});
+
+app.post('/admin/papan-isi/luar-detail/add', requireAccess('papan-isi'), (req, res) => {
+  const noRegistrasi = (req.body.no_registrasi || '').trim().toUpperCase();
+  const nama = (req.body.nama || '').trim().toUpperCase();
+  const tanggal = (req.body.tanggal || '').trim();
+  const pendamping = (req.body.pendamping || '').trim();
+  const keterangan = (req.body.keterangan || '').trim();
+  if (!noRegistrasi || !nama || !tanggal || !pendamping) return res.redirect('/admin/papan-isi');
+
+  db.prepare(`
+    INSERT INTO board_luar_tembok_detail (no_registrasi, nama, tanggal, pendamping, keterangan)
+    VALUES (?, ?, ?, ?, ?)
+  `).run(noRegistrasi, nama, tanggal, pendamping, keterangan);
+
+  res.redirect('/admin/papan-isi?success=1');
+});
+
+app.post('/admin/papan-isi/luar-detail/:id/update', requireAccess('papan-isi'), (req, res) => {
+  const noRegistrasi = (req.body.no_registrasi || '').trim().toUpperCase();
+  const nama = (req.body.nama || '').trim().toUpperCase();
+  const tanggal = (req.body.tanggal || '').trim();
+  const pendamping = (req.body.pendamping || '').trim();
+  const keterangan = (req.body.keterangan || '').trim();
+  if (!noRegistrasi || !nama || !tanggal || !pendamping) return res.redirect('/admin/papan-isi');
+
+  db.prepare(`
+    UPDATE board_luar_tembok_detail
+    SET no_registrasi=?, nama=?, tanggal=?, pendamping=?, keterangan=?
+    WHERE id=?
+  `).run(noRegistrasi, nama, tanggal, pendamping, keterangan, Number(req.params.id));
+
+  res.redirect('/admin/papan-isi?success=1');
+});
+
+app.post('/admin/papan-isi/luar-detail/:id/delete', requireAccess('papan-isi'), (req, res) => {
+  db.prepare('DELETE FROM board_luar_tembok_detail WHERE id=?').run(Number(req.params.id));
   res.redirect('/admin/papan-isi?success=1');
 });
 
