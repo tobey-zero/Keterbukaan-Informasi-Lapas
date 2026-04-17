@@ -4,6 +4,53 @@
   <meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>WBP Berobat – Admin Klinik</title>
   <link rel="stylesheet" href="/css/admin.css">
+  <style>
+    .berobat-filter-split {
+      display: flex;
+      gap: 40px;
+      align-items: end;
+      justify-content: space-between;
+      flex-wrap: nowrap;
+    }
+    .berobat-filter-search {
+      display: flex;
+      gap: 8px;
+      align-items: end;
+      flex: 0 1 58%;
+      max-width: 760px;
+      min-width: 360px;
+      flex-wrap: nowrap;
+    }
+    .berobat-filter-search .form-group {
+      flex: 1;
+      max-width: 520px;
+      min-width: 280px;
+    }
+    .berobat-filter-date {
+      display: flex;
+      gap: 8px;
+      align-items: end;
+      flex: 0 0 auto;
+      justify-content: flex-end;
+      flex-wrap: nowrap;
+    }
+    @media (max-width: 1180px) {
+      .berobat-filter-split { gap: 18px; }
+      .berobat-filter-search { flex-basis: 52%; min-width: 320px; }
+      .berobat-filter-search .form-group { max-width: 450px; }
+    }
+    @media (max-width: 980px) {
+      .berobat-filter-split { flex-wrap: wrap; }
+      .berobat-filter-search,
+      .berobat-filter-date {
+        flex: 1 1 100%;
+        min-width: 0;
+        max-width: 100%;
+        justify-content: flex-start;
+      }
+      .berobat-filter-search .form-group { max-width: 100%; }
+    }
+  </style>
 </head>
 <body>
 <div class="admin-wrapper">
@@ -117,20 +164,25 @@
         </div>
         <div class="card-body" style="padding:0;">
           <div style="padding:12px 12px 0;">
-            <form method="GET" action="/admin/klinik-berobat" style="display:flex; gap:10px; flex-wrap:wrap; align-items:end;">
-              <div class="form-group" style="min-width: 220px; margin:0;">
-                <label>Filter Tanggal WBP Berobat</label>
-                <input type="date" name="tanggal" value="<%= selectedTanggal || todayYmd %>">
-              </div>
-              <div class="form-group" style="min-width: 280px; margin:0;">
-                <label>Pencarian Riwayat (Lintas Tanggal)</label>
-                <input type="text" name="search" value="<%= searchKeyword || '' %>" placeholder="Cari nama, no reg, diagnosa, blok, status, tanggal">
-              </div>
-              <div style="display:flex; gap:8px; align-items:center;">
-                <button type="submit" class="btn btn-primary btn-sm">🔎 Tampilkan</button>
-                <a href="/admin/klinik-berobat" class="btn btn-secondary btn-sm">↺ Hari ini</a>
-              </div>
-            </form>
+            <div class="berobat-filter-split">
+              <form method="GET" action="/admin/klinik-berobat" class="berobat-filter-search">
+                <input type="hidden" name="tanggal" value="<%= selectedTanggal || todayYmd %>">
+                <div class="form-group" style="margin:0;">
+                  <label>Pencarian Riwayat (Lintas Tanggal)</label>
+                  <input type="text" name="search" value="<%= searchKeyword || '' %>" placeholder="Cari nama, no reg, diagnosa, blok, status, tanggal">
+                </div>
+                <button type="submit" class="btn btn-primary btn-sm">Terapkan</button>
+              </form>
+              <form method="GET" action="/admin/klinik-berobat" class="berobat-filter-date">
+                <input type="hidden" name="search" value="<%= searchKeyword || '' %>">
+                <div class="form-group" style="min-width: 220px; margin:0;">
+                  <label>Filter Tanggal WBP Berobat</label>
+                  <input type="date" name="tanggal" value="<%= selectedTanggal || todayYmd %>">
+                </div>
+                <button type="submit" class="btn btn-primary btn-sm">Terapkan</button>
+                <a href="/admin/klinik-berobat<%= searchKeyword ? ('?search=' + encodeURIComponent(searchKeyword)) : '' %>" class="btn btn-secondary btn-sm">↺ Hari ini</a>
+              </form>
+            </div>
             <div style="margin-top:8px; font-size:12px; color:#64748b; font-weight:700;">
               Tanggal aktif: <%= selectedTanggal || todayYmd %> | Total history tersimpan: <%= totalHistory %>
               <% if (searchKeyword) { %>

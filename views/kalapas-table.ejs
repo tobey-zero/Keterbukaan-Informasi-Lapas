@@ -35,6 +35,43 @@
       display: flex;
       justify-content: flex-end;
     }
+    .kalapas-filter-split {
+      padding: 10px 10px 0;
+      display: flex;
+      justify-content: space-between;
+      gap: 40px;
+      flex-wrap: nowrap;
+      align-items: end;
+    }
+    .kalapas-search-server-form {
+      display: flex;
+      align-items: end;
+      gap: 8px;
+      flex-wrap: nowrap;
+      flex: 0 1 58%;
+      max-width: 760px;
+      min-width: 360px;
+    }
+    .kalapas-search-server-form .search-box {
+      flex: 1;
+      min-width: 280px;
+      max-width: 560px;
+    }
+    .kalapas-filter-split .kalapas-date-filter {
+      flex: 0 0 auto;
+      justify-content: flex-end;
+    }
+    .kalapas-search-server-form button {
+      text-decoration: none;
+      border: 1px solid rgba(255,255,255,.3);
+      border-radius: 6px;
+      padding: 7px 11px;
+      font-size: 12px;
+      font-weight: bold;
+      cursor: pointer;
+      color: #fff;
+      background: #1a4bb8;
+    }
     .kalapas-date-filter .label {
       font-size: 11px;
       color: #334155;
@@ -80,6 +117,35 @@
       border-radius: 6px;
       font-size: 13px;
       font-weight: bold;
+    }
+    @media (max-width: 1180px) {
+      .kalapas-filter-split {
+        gap: 18px;
+      }
+      .kalapas-search-server-form {
+        flex-basis: 52%;
+        min-width: 320px;
+      }
+      .kalapas-search-server-form .search-box {
+        max-width: 460px;
+      }
+    }
+    @media (max-width: 980px) {
+      .kalapas-filter-split {
+        flex-wrap: wrap;
+      }
+      .kalapas-search-server-form {
+        flex: 1 1 100%;
+        max-width: 100%;
+        min-width: 0;
+      }
+      .kalapas-search-server-form .search-box {
+        max-width: 100%;
+      }
+      .kalapas-filter-split .kalapas-date-filter {
+        width: 100%;
+        justify-content: flex-start;
+      }
     }
     .kalapas-search-group {
       display: grid;
@@ -280,31 +346,49 @@
       </div>
       <div class="panel-content" style="padding:0;">
         <% if (typeof dateFilter !== 'undefined' && dateFilter) { %>
-          <div class="kalapas-date-filter-wrap">
-            <form method="GET" action="<%= dateFilter.action || '' %>" class="kalapas-date-filter">
-              <div>
-                <div class="label"><%= dateFilter.label || 'Filter tanggal' %></div>
-                <input type="date" name="tanggal" value="<%= dateFilter.value || dateFilter.todayValue || '' %>">
-              </div>
-              <% if (dateFilter.searchEnabled) { %>
-                <div style="min-width:260px;">
-                  <div class="label"><%= dateFilter.searchLabel || 'Pencarian' %></div>
-                  <input type="text" name="search" value="<%= dateFilter.searchValue || '' %>" placeholder="<%= dateFilter.searchPlaceholder || 'Cari data...' %>">
+          <% if (dateFilter.searchEnabled) { %>
+            <div class="kalapas-filter-split">
+              <form method="GET" action="<%= dateFilter.action || '' %>" class="kalapas-search-server-form">
+                <input type="hidden" name="tanggal" value="<%= dateFilter.value || dateFilter.todayValue || '' %>">
+                <div class="search-box">
+                  <div class="kalapas-search-label" style="color:#334155;"><%= dateFilter.searchLabel || 'Pencarian tabel ini' %></div>
+                  <input id="tableSearchServer" name="search" class="kalapas-search" type="text" value="<%= dateFilter.searchValue || '' %>" placeholder="<%= dateFilter.searchPlaceholder || 'Cari data...' %>" style="max-width:100%; width:100%;">
                 </div>
-              <% } %>
-              <button type="submit">Terapkan</button>
-              <a href="<%= dateFilter.resetUrl || (dateFilter.action || '') %>" class="reset">Hari ini</a>
-            </form>
-          </div>
+                <button type="submit">Terapkan</button>
+              </form>
+              <form method="GET" action="<%= dateFilter.action || '' %>" class="kalapas-date-filter">
+                <input type="hidden" name="search" value="<%= dateFilter.searchValue || '' %>">
+                <div>
+                  <div class="label"><%= dateFilter.label || 'Filter tanggal' %></div>
+                  <input type="date" name="tanggal" value="<%= dateFilter.value || dateFilter.todayValue || '' %>">
+                </div>
+                <button type="submit">Terapkan</button>
+                <a href="<%= (dateFilter.resetUrl || (dateFilter.action || '')) + ((dateFilter.searchValue || '').trim() ? ('?search=' + encodeURIComponent(dateFilter.searchValue)) : '') %>" class="reset">Hari ini</a>
+              </form>
+            </div>
+          <% } else { %>
+            <div class="kalapas-date-filter-wrap">
+              <form method="GET" action="<%= dateFilter.action || '' %>" class="kalapas-date-filter">
+                <div>
+                  <div class="label"><%= dateFilter.label || 'Filter tanggal' %></div>
+                  <input type="date" name="tanggal" value="<%= dateFilter.value || dateFilter.todayValue || '' %>">
+                </div>
+                <button type="submit">Terapkan</button>
+                <a href="<%= dateFilter.resetUrl || (dateFilter.action || '') %>" class="reset">Hari ini</a>
+              </form>
+            </div>
+          <% } %>
           <% if (dateFilter.searchEnabled && dateFilter.searchValue) { %>
             <div style="padding:0 10px 8px; font-size:12px; font-weight:700; color:#1e3a8a;">Mode pencarian aktif: menampilkan seluruh riwayat (tidak dibatasi tanggal).</div>
           <% } %>
         <% } %>
         <div style="padding:10px 10px 0;">
-          <div class="kalapas-search-group" style="max-width:100%;">
-            <div class="kalapas-search-label" style="color:#334155;">Pencarian tabel ini</div>
-            <input id="tableSearchPrimary" class="kalapas-search" type="text" placeholder="Cari data laporan barang pengguna..." style="max-width:100%;">
-          </div>
+          <% if (!(typeof dateFilter !== 'undefined' && dateFilter && dateFilter.searchEnabled)) { %>
+            <div class="kalapas-search-group" style="max-width:100%;">
+              <div class="kalapas-search-label" style="color:#334155;">Pencarian tabel ini</div>
+              <input id="tableSearchPrimary" class="kalapas-search" type="text" placeholder="Cari data laporan barang pengguna..." style="max-width:100%;">
+            </div>
+          <% } %>
         </div>
         <div class="table-wrap">
           <table class="admin-table" id="dataTable">
