@@ -14,7 +14,8 @@
       align-items: center;
       margin-bottom: 10px;
     }
-    .kamtib-toolbar a {
+    .kamtib-toolbar a,
+    .kamtib-filter button {
       text-decoration: none;
       color: #fff;
       background: #1a4bb8;
@@ -23,14 +24,32 @@
       padding: 7px 11px;
       font-size: 12px;
       font-weight: bold;
+      cursor: pointer;
+    }
+    .kamtib-filter {
+      display: flex;
+      gap: 8px;
+      align-items: center;
+      flex-wrap: wrap;
+      margin-left: auto;
+    }
+    .kamtib-filter select {
+      border: 1px solid #cbd5e1;
+      border-radius: 6px;
+      padding: 7px 10px;
+      font-size: 12px;
+      font-weight: 700;
+      color: #0f172a;
+      background: #fff;
     }
     .kamtib-grid {
       display: grid;
       gap: 12px;
       grid-template-columns: 1fr 1fr;
-      grid-template-rows: 1fr 1fr;
+      grid-template-rows: 1fr 1fr 1fr;
       grid-template-areas:
         'jadwal bukti'
+        'pengawalan pengawalan'
         'strapsel strapsel';
       min-height: calc(100vh - 190px);
     }
@@ -41,6 +60,7 @@
     }
     .kamtib-panel-jadwal { grid-area: jadwal; }
     .kamtib-panel-bukti { grid-area: bukti; }
+    .kamtib-panel-pengawalan { grid-area: pengawalan; }
     .kamtib-panel-strapsel { grid-area: strapsel; }
     .kamtib-panel .panel-header {
       display: flex;
@@ -91,6 +111,10 @@
       font-weight: bold;
       background: #eff6ff;
     }
+    .kamtib-list-cell {
+      white-space: pre-line;
+      line-height: 1.35;
+    }
     @media (max-width: 1100px) {
       .kamtib-grid {
         grid-template-columns: 1fr;
@@ -98,6 +122,7 @@
         grid-template-areas:
           'jadwal'
           'bukti'
+          'pengawalan'
           'strapsel';
         min-height: 0;
       }
@@ -128,6 +153,19 @@
   <div class="kamtib-wrap">
     <div class="kamtib-toolbar">
       <a href="<%= backUrl %>">⬅ Kembali ke Kalapas</a>
+      <form method="GET" action="/kalapas/table/kamtib" class="kamtib-filter">
+        <select name="month" aria-label="Filter bulan">
+          <% monthOptions.forEach(opt => { %>
+            <option value="<%= opt.value %>" <%= opt.value === selectedMonth ? 'selected' : '' %>><%= opt.label %></option>
+          <% }) %>
+        </select>
+        <select name="year" aria-label="Filter tahun">
+          <% yearOptions.forEach(year => { %>
+            <option value="<%= year %>" <%= String(year) === String(selectedYear) ? 'selected' : '' %>><%= year %></option>
+          <% }) %>
+        </select>
+        <button type="submit">Terapkan Filter</button>
+      </form>
     </div>
 
     <div class="kamtib-grid">
@@ -192,6 +230,42 @@
                 <% }) %>
                 <% if (!barangBuktiRazia.length) { %>
                 <tr><td colspan="3" class="kamtib-empty">Belum ada data</td></tr>
+                <% } %>
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+
+      <div class="panel kamtib-panel kamtib-panel-pengawalan">
+        <div class="panel-header red">
+          <span>GIAT PENGAWALAN</span>
+          <span><%= pengawalanList.length %> data</span>
+        </div>
+        <div class="panel-content">
+          <div class="table-wrap table-auto-scroll kamtib-table-scroll">
+            <table class="admin-table">
+              <thead>
+                <tr><th>TANGGAL</th><th>NAMA WBP</th><th>PETUGAS</th><th>KETERANGAN</th><th>DOKUMENTASI</th></tr>
+              </thead>
+              <tbody>
+                <% pengawalanList.forEach(item => { %>
+                <tr>
+                  <td><%= item.tanggal || '-' %></td>
+                  <td class="kamtib-list-cell"><%= item.namaWbp || '-' %></td>
+                  <td class="kamtib-list-cell"><%= item.petugas || '-' %></td>
+                  <td><%= item.keterangan || '-' %></td>
+                  <td>
+                    <% if (item.dokumentasiPath) { %>
+                    <a href="<%= item.dokumentasiPath %>" target="_blank" rel="noopener noreferrer" class="kamtib-preview-btn">🔍 View</a>
+                    <% } else { %>
+                    -
+                    <% } %>
+                  </td>
+                </tr>
+                <% }) %>
+                <% if (!pengawalanList.length) { %>
+                <tr><td colspan="5" class="kamtib-empty">Belum ada data pada filter ini</td></tr>
                 <% } %>
               </tbody>
             </table>

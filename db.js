@@ -162,6 +162,16 @@ db.exec(`
     dokumentasi_path TEXT
   );
 
+  CREATE TABLE IF NOT EXISTS giat_pengawalan (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    tanggal TEXT NOT NULL,
+    nama_wbp TEXT NOT NULL,
+    petugas TEXT NOT NULL,
+    keterangan TEXT DEFAULT '',
+    dokumentasi_path TEXT,
+    created_at TEXT NOT NULL DEFAULT (datetime('now','localtime'))
+  );
+
   CREATE TABLE IF NOT EXISTS tu_umum_barang (
     id INTEGER PRIMARY KEY AUTOINCREMENT,
     kode TEXT NOT NULL,
@@ -602,6 +612,19 @@ seedIfEmpty('strapsel_data', () => {
   const rows = [
     ['WBP A.N. C', 'Blok B-02', '13 April 2026', '13 Mei 2026', 'Membawa alat terlarang', 'Pisau rakitan', null],
     ['WBP A.N. D', 'Blok C-04', '14 April 2026', '14 Mei 2026', 'Menyimpan barang terlarang', 'Handphone', null],
+  ];
+  rows.forEach(r => insert.run(...r));
+});
+
+seedIfEmpty('giat_pengawalan', () => {
+  const insert = db.prepare(`
+    INSERT INTO giat_pengawalan
+      (tanggal, nama_wbp, petugas, keterangan, dokumentasi_path)
+    VALUES (?, ?, ?, ?, ?)
+  `);
+  const rows = [
+    ['2026-04-12', 'WBP A.N. E\nWBP A.N. F', 'Tim Pengawalan Regu A\nStaf B', 'Pengawalan sidang lanjutan', null],
+    ['2026-04-15', 'WBP A.N. G', 'Tim Pengawalan Regu B', 'Kontrol rumah sakit', null],
   ];
   rows.forEach(r => insert.run(...r));
 });

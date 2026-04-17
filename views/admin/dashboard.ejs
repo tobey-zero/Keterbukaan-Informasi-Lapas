@@ -42,6 +42,11 @@
           <div class="stat-card-value"><%= stats.raziaBarangBukti %></div>
           <div class="stat-card-sub">entri barang bukti</div>
         </div>
+        <div class="stat-card orange">
+          <div class="stat-card-label">Giat Pengawalan</div>
+          <div class="stat-card-value"><%= stats.pengawalan %></div>
+          <div class="stat-card-sub">entri pengawalan</div>
+        </div>
         <div class="stat-card teal">
           <div class="stat-card-label">Strapsel</div>
           <div class="stat-card-value"><%= stats.strapsel %></div>
@@ -79,6 +84,7 @@
           <% if(allowed.includes('jadwal'))           { %><a href="/admin/jadwal"    class="btn btn-secondary">📅 Jadwal Kegiatan</a><% } %>
           <% if(allowed.includes('pembinaan-detail')) { %><a href="/admin/pembinaan-detail" class="btn btn-secondary">🧭 Detail Pembinaan</a><% } %>
           <% if(allowed.includes('razia'))            { %><a href="/admin/razia"    class="btn btn-danger">🚨 Razia</a><% } %>
+          <% if(allowed.includes('pengawalan'))       { %><a href="/admin/pengawalan" class="btn btn-danger">🛡️ Giat Pengawalan</a><% } %>
           <% if(allowed.includes('strapsel'))         { %><a href="/admin/strapsel" class="btn btn-secondary">🛡️ Strapsel</a><% } %>
           <% if(allowed.includes('tu-umum'))          { %><a href="/admin/tu-umum" class="btn btn-primary">📑 TU Bagian Umum</a><% } %>
           <% if(allowed.includes('kamar-blok'))       { %><a href="/admin/kamar-blok" class="btn btn-success">🛏️ Kamar/Blok</a><% } %>

@@ -1,0 +1,120 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+  <meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Giat Pengawalan – Admin Lapas</title>
+  <link rel="stylesheet" href="/css/admin.css">
+  <style>
+    .list-text { white-space: pre-line; line-height: 1.35; }
+  </style>
+</head>
+<body>
+<div class="admin-wrapper">
+  <%- include('_sidebar') %>
+  <div class="main-content">
+    <div class="topbar">
+      <div class="topbar-title"><h2>🛡️ Giat Pengawalan</h2><p>Kelola data kegiatan pengawalan oleh tim Kamtib</p></div>
+      <div class="topbar-actions"><a href="/kalapas/table/kamtib" target="_blank" class="btn-public">🧭 Lihat Halaman Kamtib</a></div>
+    </div>
+
+    <div class="content-area">
+      <% if (success) { %><div class="alert alert-success">✅ Data giat pengawalan berhasil disimpan.</div><% } %>
+      <% if (error) { %><div class="alert alert-danger">❌ <%= error %></div><% } %>
+
+      <div class="card">
+        <div class="card-header"><h3><%= edit ? '✏️ Edit Giat Pengawalan' : '➕ Tambah Giat Pengawalan' %></h3></div>
+        <div class="card-body">
+          <form method="POST" action="<%= edit ? '/admin/pengawalan/' + edit.id + '/update' : '/admin/pengawalan/add' %>" enctype="multipart/form-data">
+            <div class="form-grid col-2" style="margin-bottom:12px;">
+              <div class="form-group">
+                <label>Tanggal</label>
+                <input type="date" name="tanggal" required value="<%= edit ? edit.tanggal : '' %>">
+              </div>
+              <div class="form-group">
+                <label>Keterangan</label>
+                <input type="text" name="keterangan" value="<%= edit ? (edit.keterangan || '') : '' %>" placeholder="Opsional">
+              </div>
+              <div class="form-group">
+                <label>Nama WBP (list, pisahkan baris)</label>
+                <textarea name="nama_wbp" rows="4" required placeholder="Contoh:
+WBP A
+WBP B"><%= edit ? edit.nama_wbp : '' %></textarea>
+              </div>
+              <div class="form-group">
+                <label>Petugas (list, pisahkan baris)</label>
+                <textarea name="petugas" rows="4" required placeholder="Contoh:
+Petugas A
+Petugas B"><%= edit ? edit.petugas : '' %></textarea>
+              </div>
+              <div class="form-group full">
+                <label>Dokumentasi (opsional)</label>
+                <input type="file" name="dokumentasi" accept="image/*">
+                <% if (edit && edit.dokumentasi_path) { %>
+                  <div style="margin-top:8px;"><a href="<%= edit.dokumentasi_path %>" target="_blank" rel="noopener noreferrer" class="btn btn-secondary btn-xs">🔍 View Dokumentasi Saat Ini</a></div>
+                <% } %>
+              </div>
+            </div>
+
+            <div style="display:flex;gap:8px;">
+              <button type="submit" class="btn <%= edit ? 'btn-success' : 'btn-primary' %> btn-sm"><%= edit ? '💾 Simpan' : '➕ Tambah' %></button>
+              <% if (edit) { %><a href="/admin/pengawalan" class="btn btn-secondary btn-sm">✕ Batal</a><% } %>
+            </div>
+          </form>
+        </div>
+      </div>
+
+      <div class="card">
+        <div class="card-header"><h3>Daftar Giat Pengawalan (<%= list.length %> data)</h3></div>
+        <div class="card-body" style="padding:0;">
+          <div class="table-wrap">
+            <table class="admin-table">
+              <thead>
+                <tr>
+                  <th>#</th>
+                  <th>Tanggal</th>
+                  <th>Nama WBP</th>
+                  <th>Petugas</th>
+                  <th>Keterangan</th>
+                  <th>Dokumentasi</th>
+                  <th>Aksi</th>
+                </tr>
+              </thead>
+              <tbody>
+                <% list.forEach((item, i) => { %>
+                <tr>
+                  <td><%= i + 1 %></td>
+                  <td><%= item.tanggal || '-' %></td>
+                  <td class="list-text"><%= item.nama_wbp || '-' %></td>
+                  <td class="list-text"><%= item.petugas || '-' %></td>
+                  <td><%= item.keterangan || '-' %></td>
+                  <td>
+                    <% if (item.dokumentasi_path) { %>
+                      <a href="<%= item.dokumentasi_path %>" target="_blank" rel="noopener noreferrer" class="btn btn-secondary btn-xs">🔍 View</a>
+                    <% } else { %>
+                      -
+                    <% } %>
+                  </td>
+                  <td>
+                    <div class="actions">
+                      <a href="/admin/pengawalan?edit=<%= item.id %>" class="btn btn-warning btn-xs">✏️ Edit</a>
+                      <form method="POST" action="/admin/pengawalan/<%= item.id %>/delete" style="display:inline" onsubmit="return confirm('Hapus data giat pengawalan ini?')">
+                        <button class="btn btn-danger btn-xs">🗑 Hapus</button>
+                      </form>
+                    </div>
+                  </td>
+                </tr>
+                <% }) %>
+                <% if (!list.length) { %>
+                <tr><td colspan="7" style="text-align:center;color:#aaa;padding:20px;">Belum ada data</td></tr>
+                <% } %>
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+
+    </div>
+  </div>
+</div>
+</body>
+</html>

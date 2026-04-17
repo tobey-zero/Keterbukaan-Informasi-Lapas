@@ -182,13 +182,13 @@ app.use(session({
 const ROLES = ['superadmin', 'registrasi', 'pembinaan', 'klinik', 'dapur', 'humas', 'kamtib', 'tata_usaha', 'pengamanan'];
 
 const roleAccess = {
-  superadmin: ['dashboard', 'statistik', 'remisi', 'kata-bijak', 'menu', 'jadwal', 'pembinaan-detail', 'razia', 'strapsel', 'tu-umum', 'kamar-blok', 'papan-isi', 'luar-tembok', 'users', 'video', 'klinik-medis', 'klinik-berobat', 'klinik-oncall', 'klinik-kontrol', 'klinik-statistik'],
+  superadmin: ['dashboard', 'statistik', 'remisi', 'kata-bijak', 'menu', 'jadwal', 'pembinaan-detail', 'razia', 'pengawalan', 'strapsel', 'tu-umum', 'kamar-blok', 'papan-isi', 'luar-tembok', 'users', 'video', 'klinik-medis', 'klinik-berobat', 'klinik-oncall', 'klinik-kontrol', 'klinik-statistik'],
   registrasi: ['dashboard', 'statistik', 'remisi', 'papan-isi'],
   pembinaan: ['dashboard', 'jadwal', 'pembinaan-detail'],
   klinik: ['dashboard', 'klinik-medis', 'klinik-berobat', 'klinik-oncall', 'klinik-kontrol', 'klinik-statistik'],
   dapur: ['dashboard', 'menu'],
   humas: ['dashboard', 'video', 'kata-bijak'],
-  kamtib: ['dashboard',  'razia', 'strapsel', 'kamar-blok'],
+  kamtib: ['dashboard',  'razia', 'pengawalan', 'strapsel', 'kamar-blok'],
   tata_usaha: ['dashboard', 'tu-umum'],
   pengamanan: ['dashboard', 'kamar-blok', 'luar-tembok'],
   pengamana: ['dashboard', 'kamar-blok', 'luar-tembok'],
@@ -401,6 +401,45 @@ function getSecurityData() {
       totalStrapsel: strapselList.length,
     }
   };
+}
+
+function getPengawalanData(filter = {}) {
+  const { month, year } = filter;
+  const where = [];
+  const params = [];
+
+  if (year) {
+    where.push('substr(tanggal, 1, 4) = ?');
+    params.push(String(year));
+  }
+  if (month) {
+    where.push('substr(tanggal, 6, 2) = ?');
+    params.push(String(month));
+  }
+
+  const whereSql = where.length ? `WHERE ${where.join(' AND ')}` : '';
+
+  const list = db.prepare(`
+    SELECT
+      id,
+      tanggal,
+      nama_wbp AS namaWbp,
+      petugas,
+      keterangan,
+      dokumentasi_path AS dokumentasiPath
+    FROM giat_pengawalan
+    ${whereSql}
+    ORDER BY tanggal DESC, id DESC
+  `).all(...params);
+
+  const years = db.prepare(`
+    SELECT DISTINCT substr(tanggal, 1, 4) AS year
+    FROM giat_pengawalan
+    WHERE length(tanggal) >= 7
+    ORDER BY year DESC
+  `).all().map(row => row.year).filter(Boolean);
+
+  return { list, years };
 }
 
 function getTuUmumData() {
@@ -836,12 +875,37 @@ app.get('/kalapas/table/strapsel', (req, res) => {
 app.get('/kalapas/table/kamtib', (req, res) => {
   const razia = getRaziaData();
   const security = getSecurityData();
+  const [defaultYear, defaultMonth] = getTodayYmd().split('-');
+  const selectedYear = /^\d{4}$/.test(String(req.query.year || '')) ? String(req.query.year) : defaultYear;
+  const selectedMonth = /^(0[1-9]|1[0-2])$/.test(String(req.query.month || '')) ? String(req.query.month) : defaultMonth;
+  const pengawalan = getPengawalanData({ month: selectedMonth, year: selectedYear });
+
+  const monthOptions = [
+    { value: '01', label: 'Januari' },
+    { value: '02', label: 'Februari' },
+    { value: '03', label: 'Maret' },
+    { value: '04', label: 'April' },
+    { value: '05', label: 'Mei' },
+    { value: '06', label: 'Juni' },
+    { value: '07', label: 'Juli' },
+    { value: '08', label: 'Agustus' },
+    { value: '09', label: 'September' },
+    { value: '10', label: 'Oktober' },
+    { value: '11', label: 'November' },
+    { value: '12', label: 'Desember' },
+  ];
+  const activeMonthLabel = monthOptions.find(item => item.value === selectedMonth)?.label || '-';
 
   res.render('kalapas-kamtib', {
     pageTitle: 'Kamtib',
-    subtitle: `Jadwal Razia: ${razia.jadwalRazia.length} | Barang Bukti: ${razia.barangBuktiRazia.length} | Strapsel: ${security.strapselList.length}`,
+    subtitle: `Jadwal Razia: ${razia.jadwalRazia.length} | Barang Bukti: ${razia.barangBuktiRazia.length} | Giat Pengawalan: ${pengawalan.list.length} (${activeMonthLabel} ${selectedYear}) | Strapsel: ${security.strapselList.length}`,
     jadwalRazia: razia.jadwalRazia,
     barangBuktiRazia: razia.barangBuktiRazia,
+    pengawalanList: pengawalan.list,
+    selectedMonth,
+    selectedYear,
+    monthOptions,
+    yearOptions: pengawalan.years.length ? pengawalan.years : [defaultYear],
     strapselList: security.strapselList,
     backUrl: '/kalapas'
   });
@@ -1024,6 +1088,7 @@ app.get('/admin/dashboard', requireAccess('dashboard'), (req, res) => {
     jadwal: db.prepare('SELECT COUNT(*) AS c FROM jadwal_kegiatan').get().c,
     raziaJadwal: db.prepare('SELECT COUNT(*) AS c FROM razia_jadwal').get().c,
     raziaBarangBukti: db.prepare('SELECT COUNT(*) AS c FROM razia_barang_bukti').get().c,
+    pengawalan: db.prepare('SELECT COUNT(*) AS c FROM giat_pengawalan').get().c,
     strapsel: db.prepare('SELECT COUNT(*) AS c FROM strapsel_data').get().c,
     tuUmum: db.prepare('SELECT COUNT(*) AS c FROM tu_umum_barang').get().c,
     kamarBlok: db.prepare('SELECT COUNT(*) AS c FROM housing_blocks').get().c,
@@ -1355,6 +1420,68 @@ app.post('/admin/razia/bukti/:id/delete', requireAccess('razia'), (req, res) => 
   if (existing?.foto_path) removeUploadedFile(existing.foto_path);
   db.prepare('DELETE FROM razia_barang_bukti WHERE id=?').run(id);
   res.redirect('/admin/razia?success=1');
+});
+
+// ── Giat Pengawalan ──────────────────────────────────────────────
+app.get('/admin/pengawalan', requireAccess('pengawalan'), (req, res) => {
+  const list = db.prepare('SELECT * FROM giat_pengawalan ORDER BY tanggal DESC, id DESC').all();
+  const edit = req.query.edit ? db.prepare('SELECT * FROM giat_pengawalan WHERE id=?').get(Number(req.query.edit)) : null;
+  res.render('admin/pengawalan', {
+    user: req.session.user,
+    list,
+    edit,
+    active: 'pengawalan',
+    success: req.query.success,
+    error: req.query.error
+  });
+});
+
+app.post('/admin/pengawalan/add', requireAccess('pengawalan'), raziaUpload.single('dokumentasi'), (req, res) => {
+  const tanggal = (req.body.tanggal || '').trim();
+  const namaWbp = (req.body.nama_wbp || '').trim().toUpperCase();
+  const petugas = (req.body.petugas || '').trim();
+  const keterangan = (req.body.keterangan || '').trim();
+  if (!tanggal || !namaWbp || !petugas) return res.redirect('/admin/pengawalan?error=Data+wajib+belum+lengkap');
+
+  const dokumentasiPath = req.file ? `/uploads/razia/${req.file.filename}` : null;
+  db.prepare(`
+    INSERT INTO giat_pengawalan (tanggal, nama_wbp, petugas, keterangan, dokumentasi_path)
+    VALUES (?, ?, ?, ?, ?)
+  `).run(tanggal, namaWbp, petugas, keterangan, dokumentasiPath);
+
+  res.redirect('/admin/pengawalan?success=1');
+});
+
+app.post('/admin/pengawalan/:id/update', requireAccess('pengawalan'), raziaUpload.single('dokumentasi'), (req, res) => {
+  const id = Number(req.params.id);
+  const tanggal = (req.body.tanggal || '').trim();
+  const namaWbp = (req.body.nama_wbp || '').trim().toUpperCase();
+  const petugas = (req.body.petugas || '').trim();
+  const keterangan = (req.body.keterangan || '').trim();
+  if (!tanggal || !namaWbp || !petugas) return res.redirect('/admin/pengawalan?error=Data+wajib+belum+lengkap');
+
+  const existing = db.prepare('SELECT dokumentasi_path FROM giat_pengawalan WHERE id=?').get(id);
+  let nextDokumentasiPath = existing?.dokumentasi_path || null;
+  if (req.file) {
+    if (nextDokumentasiPath) removeUploadedFile(nextDokumentasiPath);
+    nextDokumentasiPath = `/uploads/razia/${req.file.filename}`;
+  }
+
+  db.prepare(`
+    UPDATE giat_pengawalan
+    SET tanggal=?, nama_wbp=?, petugas=?, keterangan=?, dokumentasi_path=?
+    WHERE id=?
+  `).run(tanggal, namaWbp, petugas, keterangan, nextDokumentasiPath, id);
+
+  res.redirect('/admin/pengawalan?success=1');
+});
+
+app.post('/admin/pengawalan/:id/delete', requireAccess('pengawalan'), (req, res) => {
+  const id = Number(req.params.id);
+  const existing = db.prepare('SELECT dokumentasi_path FROM giat_pengawalan WHERE id=?').get(id);
+  if (existing?.dokumentasi_path) removeUploadedFile(existing.dokumentasi_path);
+  db.prepare('DELETE FROM giat_pengawalan WHERE id=?').run(id);
+  res.redirect('/admin/pengawalan?success=1');
 });
 
 // ── Strapsel ──────────────────────────────────────────────────────
@@ -2028,6 +2155,16 @@ app.use((err, req, res, next) => {
       return res.redirect('/admin/razia?error=File+harus+berupa+gambar');
     }
     return res.redirect('/admin/razia?error=Gagal+upload+foto');
+  }
+
+  if (req.path.startsWith('/admin/pengawalan')) {
+    if (err instanceof multer.MulterError && err.code === 'LIMIT_FILE_SIZE') {
+      return res.redirect('/admin/pengawalan?error=Ukuran+dokumentasi+maksimal+5MB');
+    }
+    if (err.message && err.message.includes('File harus berupa gambar')) {
+      return res.redirect('/admin/pengawalan?error=File+dokumentasi+harus+berupa+gambar');
+    }
+    return res.redirect('/admin/pengawalan?error=Gagal+upload+dokumentasi');
   }
 
   if (req.path.startsWith('/admin/strapsel')) {
