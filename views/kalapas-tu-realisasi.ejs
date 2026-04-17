@@ -28,7 +28,7 @@
     .finance-hero {
       border: 1px solid #1e40af;
       border-radius: 10px;
-      background: linear-gradient(180deg, #0ea5e9 0%, #38bdf8 100%);
+      background: linear-gradient(180deg, #1e3a8a 0%, #2563eb 100%);
       color: #fff;
       padding: 12px;
       margin-bottom: 10px;
@@ -44,8 +44,13 @@
     .finance-hero-box {
       border-radius: 8px;
       border: 1px solid rgba(255, 255, 255, .35);
-      background: rgba(15, 23, 42, .22);
+      background: rgba(15, 23, 42, .3);
       padding: 8px 10px;
+    }
+
+    .finance-hero-box.sisa {
+      background: linear-gradient(135deg, #166534 0%, #15803d 100%);
+      border-color: rgba(187, 247, 208, .55);
     }
 
     .finance-hero-box .label {
@@ -69,25 +74,26 @@
       font-weight: bold;
       font-size: 12px;
       margin-bottom: 5px;
+      color: #dbeafe;
     }
 
     .finance-hero-track {
       width: 100%;
-      height: 16px;
+      height: 26px;
       border-radius: 99px;
-      background: rgba(15, 23, 42, .25);
+      background: rgba(15, 23, 42, .55);
       overflow: hidden;
-      border: 1px solid rgba(255, 255, 255, .35);
+      border: 1px solid rgba(191, 219, 254, .5);
     }
 
     .finance-hero-fill {
       height: 100%;
-      background: #1d4ed8;
-      color: #fff;
+      background: linear-gradient(90deg, #f59e0b 0%, #f97316 100%);
+      color: #111827;
       display: flex;
       align-items: center;
       justify-content: center;
-      font-size: 11px;
+      font-size: 13px;
       font-weight: bold;
       white-space: nowrap;
       min-width: 44px;
@@ -107,17 +113,25 @@
       width: 100%;
       border-collapse: collapse;
       margin-top: 10px;
-      background: rgba(255, 255, 255, .1);
+      background: rgba(15, 23, 42, .2);
     }
 
     .finance-summary-table th,
     .finance-summary-table td {
-      border: 1px solid rgba(255, 255, 255, .35);
+      border: 1px solid rgba(191, 219, 254, .4);
       padding: 8px 9px;
       font-size: 12px;
       text-align: center;
       font-weight: bold;
       color: #fff;
+    }
+
+    .finance-summary-table th {
+      background: rgba(15, 23, 42, .45);
+    }
+
+    .finance-summary-table td {
+      background: rgba(30, 64, 175, .25);
     }
 
     @media (max-width: 880px) {
@@ -163,7 +177,7 @@
               <div class="label">Realisasi Belanja</div>
               <div class="value"><%= financeSummary.realisasiBelanjaLabel %></div>
             </div>
-            <div class="finance-hero-box" style="background: rgba(245, 158, 11, .55);">
+            <div class="finance-hero-box sisa">
               <div class="label">Sisa Pagu</div>
               <div class="value"><%= financeSummary.sisaPaguLabel %></div>
             </div>
