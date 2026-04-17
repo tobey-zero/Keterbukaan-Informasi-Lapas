@@ -286,10 +286,19 @@
                 <div class="label"><%= dateFilter.label || 'Filter tanggal' %></div>
                 <input type="date" name="tanggal" value="<%= dateFilter.value || dateFilter.todayValue || '' %>">
               </div>
+              <% if (dateFilter.searchEnabled) { %>
+                <div style="min-width:260px;">
+                  <div class="label"><%= dateFilter.searchLabel || 'Pencarian' %></div>
+                  <input type="text" name="search" value="<%= dateFilter.searchValue || '' %>" placeholder="<%= dateFilter.searchPlaceholder || 'Cari data...' %>">
+                </div>
+              <% } %>
               <button type="submit">Terapkan</button>
               <a href="<%= dateFilter.resetUrl || (dateFilter.action || '') %>" class="reset">Hari ini</a>
             </form>
           </div>
+          <% if (dateFilter.searchEnabled && dateFilter.searchValue) { %>
+            <div style="padding:0 10px 8px; font-size:12px; font-weight:700; color:#1e3a8a;">Mode pencarian aktif: menampilkan seluruh riwayat (tidak dibatasi tanggal).</div>
+          <% } %>
         <% } %>
         <div style="padding:10px 10px 0;">
           <div class="kalapas-search-group" style="max-width:100%;">

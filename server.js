@@ -895,8 +895,24 @@ app.get('/kalapas/table/berobat', (req, res) => {
   const selectedTanggal = /^\d{4}-\d{2}-\d{2}$/.test(String(req.query.tanggal || ''))
     ? String(req.query.tanggal)
     : getTodayYmd();
-  const klinik = getClinicData({ tanggal: selectedTanggal });
-  const rows = klinik.wbpBerobat.map(item => [
+  const searchKeyword = String(req.query.search || '').trim();
+
+  const wbpBerobat = searchKeyword
+    ? db.prepare(`SELECT no_reg AS noReg, nama_wbp AS namaWbp, layanan, diagnosa, blok,
+                         status_perawatan AS statusPerawatan, tanggal
+                  FROM clinic_wbp_berobat
+                  WHERE no_reg LIKE ?
+                     OR nama_wbp LIKE ?
+                     OR layanan LIKE ?
+                     OR diagnosa LIKE ?
+                     OR blok LIKE ?
+                     OR status_perawatan LIKE ?
+                     OR tanggal LIKE ?
+                  ORDER BY tanggal DESC, id DESC`)
+        .all(...Array(7).fill(`%${searchKeyword}%`))
+    : getClinicData({ tanggal: selectedTanggal }).wbpBerobat;
+
+  const rows = wbpBerobat.map(item => [
     item.noReg || '-',
     item.namaWbp || '-',
     item.layanan || '-',
@@ -909,13 +925,19 @@ app.get('/kalapas/table/berobat', (req, res) => {
   res.render('kalapas-table', {
     pageTitle: 'Warga Binaan Berobat',
     sectionTitle: 'WARGA BINAAN BEROBAT',
-    subtitle: `Tanggal: ${selectedTanggal} | Total data: ${rows.length}`,
+    subtitle: searchKeyword
+      ? `Pencarian: "${searchKeyword}" | Total riwayat ditemukan: ${rows.length}`
+      : `Tanggal: ${selectedTanggal} | Total data: ${rows.length}`,
     dateFilter: {
       action: '/kalapas/table/berobat',
       label: 'Filter tanggal WBP berobat',
       value: selectedTanggal,
       todayValue: getTodayYmd(),
-      resetUrl: '/kalapas/table/berobat'
+      resetUrl: '/kalapas/table/berobat',
+      searchEnabled: true,
+      searchLabel: 'Pencarian riwayat WBP berobat',
+      searchPlaceholder: 'Cari nama, no reg, diagnosa, blok, status, tanggal...',
+      searchValue: searchKeyword
     },
     columns: ['NO REG', 'NAMA WARGA BINAAN', 'LAYANAN', 'DIAGNOSA', 'BLOK', 'STATUS', 'TANGGAL'],
     rows,
@@ -1103,8 +1125,8 @@ app.get('/kalapas/table/tu-umum', (req, res) => {
   ]);
 
   res.render('kalapas-table', {
-    pageTitle: 'TU Bagian Umum',
-    sectionTitle: 'LAPORAN BARANG PENGGUNA - TU BAGIAN UMUM',
+    pageTitle: 'Tata Usaha',
+    sectionTitle: 'LAPORAN BARANG PENGGUNA - Tata Usaha',
     subtitle: `Total data: ${rows.length}`,
     financeSummary: data.financeSummary,
     columns: ['KODE', 'URAIAN', 'SATUAN', 'SALDO AWAL QTY', 'SALDO AWAL NILAI', 'BERTAMBAH QTY', 'BERTAMBAH NILAI', 'BERKURANG QTY', 'BERKURANG NILAI', 'SALDO AKHIR QTY', 'SALDO AKHIR NILAI'],
@@ -2367,18 +2389,34 @@ app.get('/admin/klinik-berobat', requireAccess('klinik-berobat'), (req, res) => 
   const selectedTanggal = /^\d{4}-\d{2}-\d{2}$/.test(String(req.query.tanggal || ''))
     ? String(req.query.tanggal)
     : getTodayYmd();
-  const list = db.prepare('SELECT * FROM clinic_wbp_berobat WHERE tanggal = ? ORDER BY id DESC').all(selectedTanggal);
+  const searchKeyword = String(req.query.search || '').trim();
+  const list = searchKeyword
+    ? db.prepare(`SELECT * FROM clinic_wbp_berobat
+                  WHERE no_reg LIKE ?
+                     OR nama_wbp LIKE ?
+                     OR layanan LIKE ?
+                     OR diagnosa LIKE ?
+                     OR blok LIKE ?
+                     OR status_perawatan LIKE ?
+                     OR tanggal LIKE ?
+                  ORDER BY tanggal DESC, id DESC`)
+        .all(...Array(7).fill(`%${searchKeyword}%`))
+    : db.prepare('SELECT * FROM clinic_wbp_berobat WHERE tanggal = ? ORDER BY id DESC').all(selectedTanggal);
   const totalHistory = db.prepare('SELECT COUNT(*) AS c FROM clinic_wbp_berobat').get().c;
   const edit = req.query.edit ? db.prepare('SELECT * FROM clinic_wbp_berobat WHERE id=?').get(Number(req.query.edit)) : null;
+  const filterParams = new URLSearchParams({ tanggal: selectedTanggal });
+  if (searchKeyword) filterParams.set('search', searchKeyword);
+
   res.render('admin/klinik-berobat', {
     user: req.session.user,
     list,
     edit,
     todayYmd: getTodayYmd(),
     selectedTanggal,
+    searchKeyword,
     totalHistory,
-    filterQuery: `?tanggal=${selectedTanggal}`,
-    filterQueryWithAmp: `&tanggal=${selectedTanggal}`,
+    filterQuery: `?${filterParams.toString()}`,
+    filterQueryWithAmp: `&${filterParams.toString()}`,
     active: 'klinik-berobat',
     success: req.query.success
   });
@@ -2388,26 +2426,35 @@ app.post('/admin/klinik-berobat/add', requireAccess('klinik-berobat'), (req, res
   const selectedTanggal = /^\d{4}-\d{2}-\d{2}$/.test(String(req.query.tanggal || ''))
     ? String(req.query.tanggal)
     : getTodayYmd();
+  const searchKeyword = String(req.query.search || '').trim();
   const { no_reg, nama_wbp, layanan, diagnosa, blok, status_perawatan, tanggal } = req.body;
   db.prepare('INSERT INTO clinic_wbp_berobat (no_reg, nama_wbp, layanan, diagnosa, blok, status_perawatan, tanggal) VALUES (?, ?, ?, ?, ?, ?, ?)').run(no_reg, nama_wbp, layanan, diagnosa, blok, status_perawatan, tanggal || getTodayYmd());
-  res.redirect(`/admin/klinik-berobat?tanggal=${selectedTanggal}&success=1`);
+  const redirectParams = new URLSearchParams({ tanggal: selectedTanggal, success: '1' });
+  if (searchKeyword) redirectParams.set('search', searchKeyword);
+  res.redirect(`/admin/klinik-berobat?${redirectParams.toString()}`);
 });
 
 app.post('/admin/klinik-berobat/:id/update', requireAccess('klinik-berobat'), (req, res) => {
   const selectedTanggal = /^\d{4}-\d{2}-\d{2}$/.test(String(req.query.tanggal || ''))
     ? String(req.query.tanggal)
     : getTodayYmd();
+  const searchKeyword = String(req.query.search || '').trim();
   const { no_reg, nama_wbp, layanan, diagnosa, blok, status_perawatan, tanggal } = req.body;
   db.prepare('UPDATE clinic_wbp_berobat SET no_reg=?, nama_wbp=?, layanan=?, diagnosa=?, blok=?, status_perawatan=?, tanggal=? WHERE id=?').run(no_reg, nama_wbp, layanan, diagnosa, blok, status_perawatan, tanggal || getTodayYmd(), Number(req.params.id));
-  res.redirect(`/admin/klinik-berobat?tanggal=${selectedTanggal}&success=1`);
+  const redirectParams = new URLSearchParams({ tanggal: selectedTanggal, success: '1' });
+  if (searchKeyword) redirectParams.set('search', searchKeyword);
+  res.redirect(`/admin/klinik-berobat?${redirectParams.toString()}`);
 });
 
 app.post('/admin/klinik-berobat/:id/delete', requireAccess('klinik-berobat'), (req, res) => {
   const selectedTanggal = /^\d{4}-\d{2}-\d{2}$/.test(String(req.query.tanggal || ''))
     ? String(req.query.tanggal)
     : getTodayYmd();
+  const searchKeyword = String(req.query.search || '').trim();
   db.prepare('DELETE FROM clinic_wbp_berobat WHERE id=?').run(Number(req.params.id));
-  res.redirect(`/admin/klinik-berobat?tanggal=${selectedTanggal}`);
+  const redirectParams = new URLSearchParams({ tanggal: selectedTanggal });
+  if (searchKeyword) redirectParams.set('search', searchKeyword);
+  res.redirect(`/admin/klinik-berobat?${redirectParams.toString()}`);
 });
 
 // ── Klinik: Jadwal On Call ────────────────────────────────────────
