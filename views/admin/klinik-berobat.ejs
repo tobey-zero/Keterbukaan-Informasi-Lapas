@@ -158,7 +158,7 @@
             <% if (searchKeyword) { %>
               Hasil Pencarian WBP Berobat (<%= list.length %> data) - Seluruh Riwayat
             <% } else { %>
-              Daftar WBP Berobat (<%= list.length %> data) - <%= selectedTanggal || todayYmd %>
+              Daftar WBP Berobat (<%= list.length %> data) - <%= formatDateIndo(selectedTanggal || todayYmd) %>
             <% } %>
           </h3>
         </div>
@@ -183,7 +183,7 @@
               </form>
             </div>
             <div style="margin-top:8px; font-size:12px; color:#64748b; font-weight:700;">
-              Tanggal aktif: <%= selectedTanggal || todayYmd %> | Total history tersimpan: <%= totalHistory %>
+              Tanggal aktif: <%= formatDateIndo(selectedTanggal || todayYmd) %> | Total history tersimpan: <%= totalHistory %>
               <% if (searchKeyword) { %>
                 <span style="color:#1e3a8a;">| Mode pencarian aktif: hasil tidak dibatasi tanggal</span>
               <% } %>
@@ -204,7 +204,7 @@
                   <td><%= item.diagnosa %></td>
                   <td><%= item.blok %></td>
                   <td><%= item.status_perawatan %></td>
-                  <td><%= item.tanggal %></td>
+                  <td><%= formatDateIndo(item.tanggal) %></td>
                   <td>
                     <div class="actions">
                       <a href="/admin/klinik-berobat?edit=<%= item.id %><%= filterQueryWithAmp %>" class="btn btn-warning btn-xs">✏️ Edit</a>

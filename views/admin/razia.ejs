@@ -82,7 +82,7 @@
                 <% jadwalList.forEach((item, i) => { %>
                 <tr>
                   <td><%= i+1 %></td>
-                  <td><%= item.tanggal %></td>
+                  <td><%= formatDateIndo(item.tanggal) %></td>
                   <td><%= item.petugas %></td>
                   <td>
                     <% if (item.dokumentasi_path) { %>

@@ -143,8 +143,8 @@
                   <td><%= i+1 %></td>
                   <td><%= item.nama_wbp %></td>
                   <td><%= item.blok_hunian %></td>
-                  <td><%= item.tanggal_masuk_strapsel %></td>
-                  <td><%= item.ekspirasi || '-' %></td>
+                  <td><%= formatDateIndo(item.tanggal_masuk_strapsel) %></td>
+                  <td><%= formatDateIndo(item.ekspirasi || '-') %></td>
                   <td><%= item.permasalahan || '-' %></td>
                   <td><%= item.barang_bukti || '-' %></td>
                   <td>

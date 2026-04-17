@@ -127,8 +127,8 @@
                   <td><%= i+1 %></td>
                   <td><%= item.no_reg %></td>
                   <td><%= item.nama_wbp %></td>
-                  <td><%= item.tanggal2||'-' %></td>
-                  <td><%= item.tanggal4||'-' %></td>
+                  <td><%= formatDateIndo(item.tanggal2||'-') %></td>
+                  <td><%= formatDateIndo(item.tanggal4||'-') %></td>
                   <td><%= item.keterangan||'-' %></td>
                   <td><%= item.status_integrasi||'-' %></td>
                   <td>

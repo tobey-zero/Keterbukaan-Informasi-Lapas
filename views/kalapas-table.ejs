@@ -433,7 +433,7 @@
                       <% if (typeof cell === 'string' && cell.startsWith('/uploads/') && /\.(png|jpg|jpeg|webp|gif)$/i.test(cell)) { %>
                         <a href="<%= cell %>" target="_blank" rel="noopener noreferrer" class="kalapas-preview-btn">🔍 Preview</a>
                       <% } else { %>
-                        <%= cell %>
+                        <%= formatDateIndo(cell) %>
                       <% } %>
                     </td>
                   <% }) %>
@@ -481,7 +481,7 @@
                         <% if (typeof cell === 'string' && cell.startsWith('/uploads/') && /\.(png|jpg|jpeg|webp|gif)$/i.test(cell)) { %>
                           <a href="<%= cell %>" target="_blank" rel="noopener noreferrer" class="kalapas-preview-btn">🔍 Preview</a>
                         <% } else { %>
-                          <%= cell %>
+                          <%= formatDateIndo(cell) %>
                         <% } %>
                       </td>
                     <% }) %>

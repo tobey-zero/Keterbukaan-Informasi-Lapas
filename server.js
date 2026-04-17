@@ -204,6 +204,39 @@ function normalizeDateToYmd(value) {
   return null;
 }
 
+function formatDateIndo(value) {
+  const raw = String(value || '').trim();
+  if (!raw) return '-';
+  if (raw === '-') return '-';
+
+  const dateTimeMatch = raw.match(/^(\d{4}-\d{2}-\d{2})[T\s](\d{2}:\d{2})(?::\d{2})?$/);
+  if (dateTimeMatch) {
+    const normalized = normalizeDateToYmd(dateTimeMatch[1]);
+    if (!normalized) return raw;
+    const dateObj = new Date(`${normalized}T00:00:00`);
+    if (Number.isNaN(dateObj.getTime())) return raw;
+    const label = new Intl.DateTimeFormat('id-ID', {
+      timeZone: 'Asia/Jakarta',
+      day: 'numeric',
+      month: 'long',
+      year: 'numeric'
+    }).format(dateObj);
+    return `${label} pukul ${dateTimeMatch[2]} WIB`;
+  }
+
+  const normalized = normalizeDateToYmd(raw);
+  if (!normalized) return raw;
+  const dateObj = new Date(`${normalized}T00:00:00`);
+  if (Number.isNaN(dateObj.getTime())) return raw;
+
+  return new Intl.DateTimeFormat('id-ID', {
+    timeZone: 'Asia/Jakarta',
+    day: 'numeric',
+    month: 'long',
+    year: 'numeric'
+  }).format(dateObj);
+}
+
 function isOnGoingPunishment(selectedYmd, startDateValue, endDateValue) {
   const selected = normalizeDateToYmd(selectedYmd);
   const start = normalizeDateToYmd(startDateValue);
@@ -301,6 +334,11 @@ app.use(session({
   cookie: { maxAge: 8 * 60 * 60 * 1000 } // 8 jam
 }));
 
+app.use((req, res, next) => {
+  res.locals.formatDateIndo = formatDateIndo;
+  next();
+});
+
 // ─── Role Access Map ─────────────────────────────────────────────────────────
 const ROLES = ['superadmin', 'registrasi', 'pembinaan', 'klinik', 'dapur', 'humas', 'kamtib', 'tata_usaha', 'pengamanan'];
 
@@ -311,10 +349,9 @@ const roleAccess = {
   klinik: ['dashboard', 'klinik-medis', 'klinik-berobat', 'klinik-oncall', 'klinik-kontrol', 'klinik-statistik'],
   dapur: ['dashboard', 'menu'],
   humas: ['dashboard', 'video', 'kata-bijak'],
-  kamtib: ['dashboard',  'razia', 'pengawalan', 'register-f', 'strapsel', 'kamar-blok'],
+  kamtib: ['dashboard',  'razia', 'pengawalan', 'register-f', 'strapsel'],
   tata_usaha: ['dashboard', 'tu-umum'],
   pengamanan: ['dashboard', 'kamar-blok', 'luar-tembok'],
-  pengamana: ['dashboard', 'kamar-blok', 'luar-tembok'],
 };
 
 // ─── Auth Middleware ──────────────────────────────────────────────────────────
@@ -1044,7 +1081,7 @@ app.get('/kalapas/table/berobat', (req, res) => {
     sectionTitle: 'WARGA BINAAN BEROBAT',
     subtitle: searchKeyword
       ? `Pencarian: "${searchKeyword}" | Total riwayat ditemukan: ${rows.length}`
-      : `Tanggal: ${selectedTanggal} | Total data: ${rows.length}`,
+      : `Tanggal: ${formatDateIndo(selectedTanggal)} | Total data: ${rows.length}`,
     dateFilter: {
       action: '/kalapas/table/berobat',
       label: 'Filter tanggal WBP berobat',

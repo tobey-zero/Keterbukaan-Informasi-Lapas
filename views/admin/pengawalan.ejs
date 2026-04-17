@@ -108,7 +108,7 @@ Petugas B"><%= edit ? edit.petugas : '' %></textarea>
                 <% list.forEach((item, i) => { %>
                 <tr>
                   <td><%= i + 1 %></td>
-                  <td><%= item.tanggal || '-' %></td>
+                  <td><%= formatDateIndo(item.tanggal || '-') %></td>
                   <td class="list-text"><%= item.nama_wbp || '-' %></td>
                   <td class="list-text"><%= item.petugas || '-' %></td>
                   <td><%= item.keterangan || '-' %></td>

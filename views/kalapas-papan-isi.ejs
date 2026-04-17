@@ -393,7 +393,7 @@
             <tr>
               <td><%= item.noRegistrasi || '-' %></td>
               <td class="left"><%= item.nama || '-' %></td>
-              <td><%= item.tanggal || '-' %></td>
+              <td><%= formatDateIndo(item.tanggal || '-') %></td>
               <td class="left"><%= item.pendamping || '-' %></td>
               <td class="left"><%= item.keterangan || '-' %></td>
             </tr>

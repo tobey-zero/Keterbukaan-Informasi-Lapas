@@ -210,7 +210,7 @@
               <tbody>
                 <% jadwalRazia.forEach(item => { %>
                 <tr>
-                  <td><%= item.tanggal || '-' %></td>
+                  <td><%= formatDateIndo(item.tanggal || '-') %></td>
                   <td><%= item.petugas || '-' %></td>
                   <td>
                     <% if (item.dokumentasiPath) { %>
@@ -294,7 +294,7 @@
               <tbody>
                 <% pengawalanList.forEach(item => { %>
                 <tr>
-                  <td><%= item.tanggal || '-' %></td>
+                  <td><%= formatDateIndo(item.tanggal || '-') %></td>
                   <td class="kamtib-list-cell"><%= item.namaWbp || '-' %></td>
                   <td class="kamtib-list-cell"><%= item.petugas || '-' %></td>
                   <td><%= item.keterangan || '-' %></td>
@@ -343,8 +343,8 @@
                 <tr>
                   <td><%= item.namaWbp || '-' %></td>
                   <td><%= item.blokHunian || '-' %></td>
-                  <td><%= item.tanggalMasukStrapsel || '-' %></td>
-                  <td><%= item.ekspirasi || '-' %></td>
+                  <td><%= formatDateIndo(item.tanggalMasukStrapsel || '-') %></td>
+                  <td><%= formatDateIndo(item.ekspirasi || '-') %></td>
                   <td><%= item.permasalahan || '-' %></td>
                   <td><%= item.barangBukti || '-' %></td>
                   <td>
@@ -403,10 +403,10 @@
                   <td><%= item.noRegister || '-' %></td>
                   <td><%= item.namaWbp || '-' %></td>
                   <td><%= item.jenisPelanggaran || '-' %></td>
-                  <td><%= item.tanggalPelanggaran || '-' %></td>
+                  <td><%= formatDateIndo(item.tanggalPelanggaran || '-') %></td>
                   <td><%= item.lamaHukuman || '-' %></td>
-                  <td><%= item.hukumanMulai || '-' %></td>
-                  <td><%= item.hukumanSelesai || '-' %></td>
+                  <td><%= formatDateIndo(item.hukumanMulai || '-') %></td>
+                  <td><%= formatDateIndo(item.hukumanSelesai || '-') %></td>
                   <td><%= item.keterangan || '-' %></td>
                 </tr>
                 <% }) %>

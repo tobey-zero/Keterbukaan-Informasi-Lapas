@@ -161,10 +161,10 @@
                   <td><%= item.no_register %></td>
                   <td><%= item.nama_wbp %></td>
                   <td><%= item.jenis_pelanggaran %></td>
-                  <td><%= item.tanggal_pelanggaran %></td>
+                  <td><%= formatDateIndo(item.tanggal_pelanggaran) %></td>
                   <td><%= item.lama_hukuman || '-' %></td>
-                  <td><%= item.hukuman_mulai || '-' %></td>
-                  <td><%= item.hukuman_selesai || '-' %></td>
+                  <td><%= formatDateIndo(item.hukuman_mulai || '-') %></td>
+                  <td><%= formatDateIndo(item.hukuman_selesai || '-') %></td>
                   <td><%= item.keterangan || '-' %></td>
                   <td>
                     <div class="actions">
