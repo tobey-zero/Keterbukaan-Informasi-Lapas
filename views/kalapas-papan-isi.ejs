@@ -376,35 +376,6 @@
           </tbody>
         </table>
       </div>
-      <div class="board-panel">
-        <h4>WBP di Luar Tembok</h4>
-        <table class="board-table">
-          <thead>
-            <tr>
-              <th>No Registrasi</th>
-              <th>Nama</th>
-              <th>Tanggal</th>
-              <th>Pendamping</th>
-              <th>Keterangan</th>
-            </tr>
-          </thead>
-          <tbody>
-            <% for (const item of luarTembokDetail) { %>
-            <tr>
-              <td><%= item.noRegistrasi || '-' %></td>
-              <td class="left"><%= item.nama || '-' %></td>
-              <td><%= formatDateIndo(item.tanggal || '-') %></td>
-              <td class="left"><%= item.pendamping || '-' %></td>
-              <td class="left"><%= item.keterangan || '-' %></td>
-            </tr>
-            <% } %>
-            <% if (!luarTembokDetail.length) { %>
-            <tr><td colspan="5">Belum ada data WBP di luar tembok</td></tr>
-            <% } %>
-          </tbody>
-        </table>
-      </div>
-
     </div>
 
     <div class="mini-note">Data pada halaman ini bersifat fleksibel dan dapat disesuaikan lagi agar semakin mirip papan manual.</div>
