@@ -40,11 +40,14 @@
               </div>
               <div class="form-group">
                 <label>Keterangan</label>
-                <select name="keterangan">
+                <input type="hidden" name="keterangan" id="keterangan_add_final">
+                <select id="keterangan_add_select" data-keterangan-select="add">
                   <option value="Aktif Tempat Ibadah">Aktif Tempat Ibadah</option>
                   <option value="Pramuka">Pramuka</option>
                   <option value="Pekerja/Tamping">Pekerja/Tamping</option>
+                  <option value="__custom__">Custom (isi manual)</option>
                 </select>
+                <input type="text" id="keterangan_add_custom" data-keterangan-custom="add" placeholder="Isi keterangan manual" style="margin-top:8px; display:none;">
               </div>
               <div class="form-group">
                 <label>Status Integrasi</label>
@@ -67,6 +70,8 @@
       <div class="edit-panel">
         <h4>✏️ Edit Detail (ID: <%= edit.id %>)</h4>
         <form method="POST" action="/admin/pembinaan-detail/<%= edit.id %>/update">
+          <% const keteranganPresets = ['Aktif Tempat Ibadah','Pramuka','Pekerja/Tamping']; %>
+          <% const isCustomKeterangan = edit.keterangan && !keteranganPresets.includes(edit.keterangan); %>
           <div class="form-grid col-4" style="margin-bottom:12px;">
             <div class="form-group">
               <label>No. Registrasi</label>
@@ -86,11 +91,14 @@
             </div>
             <div class="form-group">
               <label>Keterangan</label>
-              <select name="keterangan">
-                <% ['Aktif Tempat Ibadah','Pramuka','Pekerja/Tamping'].forEach(k => { %>
+              <input type="hidden" name="keterangan" id="keterangan_edit_final" value="<%= edit.keterangan || '' %>">
+              <select id="keterangan_edit_select" data-keterangan-select="edit">
+                <% keteranganPresets.forEach(k => { %>
                 <option value="<%= k %>" <%= edit.keterangan===k?'selected':'' %>><%= k %></option>
                 <% }) %>
+                <option value="__custom__" <%= isCustomKeterangan ? 'selected' : '' %>>Custom (isi manual)</option>
               </select>
+              <input type="text" id="keterangan_edit_custom" data-keterangan-custom="edit" placeholder="Isi keterangan manual" value="<%= isCustomKeterangan ? edit.keterangan : '' %>" style="margin-top:8px; display:none;">
             </div>
             <div class="form-group">
               <label>Status Integrasi</label>
@@ -151,5 +159,40 @@
     </div>
   </div>
 </div>
+<script>
+  (function () {
+    function bindKeterangan(mode) {
+      var select = document.querySelector('[data-keterangan-select="' + mode + '"]');
+      var customInput = document.querySelector('[data-keterangan-custom="' + mode + '"]');
+      var hiddenInput = document.getElementById('keterangan_' + mode + '_final');
+      if (!select || !hiddenInput) return;
+
+      function syncValue() {
+        var isCustom = select.value === '__custom__';
+        if (customInput) {
+          customInput.style.display = isCustom ? 'block' : 'none';
+          customInput.required = isCustom;
+        }
+        hiddenInput.value = isCustom
+          ? ((customInput && customInput.value) ? customInput.value.trim() : '')
+          : select.value;
+      }
+
+      select.addEventListener('change', syncValue);
+      if (customInput) customInput.addEventListener('input', syncValue);
+      syncValue();
+
+      var form = select.closest('form');
+      if (form) {
+        form.addEventListener('submit', function () {
+          syncValue();
+        });
+      }
+    }
+
+    bindKeterangan('add');
+    bindKeterangan('edit');
+  })();
+</script>
 </body>
 </html>
