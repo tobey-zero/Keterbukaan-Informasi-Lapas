@@ -41,8 +41,9 @@
               <div class="form-group">
                 <label>Keterangan</label>
                 <select name="keterangan">
-                  <option value="DITJEN">DITJEN</option>
-                  <option value="UPT">UPT</option>
+                  <option value="Aktif Tempat Ibadah">Aktif Tempat Ibadah</option>
+                  <option value="Pramuka">Pramuka</option>
+                  <option value="Pekerja/Tamping">Pekerja/Tamping</option>
                 </select>
               </div>
               <div class="form-group">
@@ -86,7 +87,7 @@
             <div class="form-group">
               <label>Keterangan</label>
               <select name="keterangan">
-                <% ['DITJEN','UPT'].forEach(k => { %>
+                <% ['Aktif Tempat Ibadah','Pramuka','Pekerja/Tamping'].forEach(k => { %>
                 <option value="<%= k %>" <%= edit.keterangan===k?'selected':'' %>><%= k %></option>
                 <% }) %>
               </select>
