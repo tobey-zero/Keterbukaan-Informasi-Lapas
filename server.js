@@ -1029,12 +1029,54 @@ function getTuUmumData() {
   };
 }
 
-function getGiiatjaData() {
+function getGiiatjaData(options = {}) {
+  const pelatihanSearch = String(options.pelatihanSearch || '').trim();
+
   const parseNominal = (value) => {
     const digits = String(value ?? '').replace(/\D/g, '');
     const parsed = Number(digits);
     if (!Number.isFinite(parsed)) return 0;
     return Math.max(0, parsed);
+  };
+
+  const normalizeSearchText = (value) => String(value || '')
+    .toLowerCase()
+    .replace(/[^a-z0-9\s]/g, ' ')
+    .replace(/\s+/g, ' ')
+    .trim();
+
+  const buildPelatihanSearchBlob = (item) => {
+    const rawTanggal = String(item.tanggalPelaksanaan || '').trim();
+    const normalizedTanggal = normalizeDateToYmd(rawTanggal) || '';
+    const monthLabel = normalizedTanggal
+      ? new Intl.DateTimeFormat('id-ID', {
+        timeZone: 'Asia/Jakarta',
+        month: 'long',
+        year: 'numeric'
+      }).format(new Date(`${normalizedTanggal}T00:00:00`))
+      : '';
+
+    const dateTokens = [];
+    if (normalizedTanggal) {
+      const [year, month, day] = normalizedTanggal.split('-');
+      dateTokens.push(
+        normalizedTanggal,
+        `${day}/${month}/${year}`,
+        `${day}-${month}-${year}`,
+        formatDateIndo(normalizedTanggal),
+        monthLabel
+      );
+    }
+
+    return normalizeSearchText([
+      item.noRegistrasi,
+      item.namaWbp,
+      item.jenisPelatihan,
+      item.instruktur,
+      item.keterangan,
+      rawTanggal,
+      ...dateTokens
+    ].join(' '));
   };
 
   const kegiatanCategories = db
@@ -1069,7 +1111,7 @@ function getGiiatjaData() {
     };
   });
 
-  const pelatihanList = db
+  const pelatihanRawList = db
     .prepare(`SELECT
       id,
       no_registrasi AS noRegistrasi,
@@ -1082,6 +1124,48 @@ function getGiiatjaData() {
     FROM giiatja_pelatihan_sertifikat
     ORDER BY id ASC`)
     .all();
+
+  const normalizedSearchKeyword = normalizeSearchText(pelatihanSearch);
+  const normalizedSearchDate = normalizeDateToYmd(pelatihanSearch) || '';
+
+  const pelatihanList = !normalizedSearchKeyword
+    ? pelatihanRawList
+    : pelatihanRawList.filter((item) => {
+      const blob = buildPelatihanSearchBlob(item);
+      if (blob.includes(normalizedSearchKeyword)) return true;
+      if (!normalizedSearchDate) return false;
+      const itemDate = normalizeDateToYmd(item.tanggalPelaksanaan || '');
+      return Boolean(itemDate && itemDate === normalizedSearchDate);
+    });
+
+  const groupedPelatihanMap = new Map();
+  pelatihanList.forEach((item) => {
+    const normalizedTanggal = normalizeDateToYmd(item.tanggalPelaksanaan || '');
+    const monthKey = normalizedTanggal ? normalizedTanggal.slice(0, 7) : 'unknown';
+    const monthLabel = normalizedTanggal
+      ? new Intl.DateTimeFormat('id-ID', {
+        timeZone: 'Asia/Jakarta',
+        month: 'long',
+        year: 'numeric'
+      }).format(new Date(`${normalizedTanggal}T00:00:00`))
+      : 'Tanggal tidak valid / belum diisi';
+
+    if (!groupedPelatihanMap.has(monthKey)) {
+      groupedPelatihanMap.set(monthKey, {
+        monthKey,
+        monthLabel,
+        items: [],
+      });
+    }
+    groupedPelatihanMap.get(monthKey).items.push(item);
+  });
+
+  const pelatihanGroupedByMonth = Array.from(groupedPelatihanMap.values())
+    .sort((a, b) => {
+      if (a.monthKey === 'unknown') return 1;
+      if (b.monthKey === 'unknown') return -1;
+      return b.monthKey.localeCompare(a.monthKey);
+    });
 
   const pnbpList = db
     .prepare(`SELECT
@@ -1125,6 +1209,8 @@ function getGiiatjaData() {
     kegiatanDetails,
     kegiatanGrouped,
     pelatihanList,
+    pelatihanGroupedByMonth,
+    pelatihanSearch,
     pnbpList,
     premiList,
     pnbpTahun,
@@ -1751,11 +1837,13 @@ app.get('/kalapas/table/pengawalan', (req, res) => {
 });
 
 app.get('/kalapas/table/giiatja', (req, res) => {
-  const data = getGiiatjaData();
+  const searchKeyword = String(req.query.search || '').trim();
+  const data = getGiiatjaData({ pelatihanSearch: searchKeyword });
   res.render('kalapas-giiatja', {
     pageTitle: 'GIIATJA',
     subtitle: `Kegiatan: ${data.kegiatanList.length} | Pelatihan Bersertifikat: ${data.pelatihanList.length} | PNBP: ${data.pnbpList.length} | Premi: ${data.premiList.length}`,
     backUrl: '/kalapas',
+    searchKeyword,
     ...data,
   });
 });
@@ -3121,7 +3209,13 @@ app.post('/admin/giiatja/kegiatan/add', requireAccess('giiatja'), raziaUpload.si
     .filter(Boolean)
     .join('\n')
     .toUpperCase();
-  const pengawas = String(req.body.pengawas || '').trim();
+  const pengawas = String(req.body.pengawas || '')
+    .replace(/\r\n/g, '\n')
+    .split('\n')
+    .map(line => line.trim())
+    .filter(Boolean)
+    .join('\n')
+    .toUpperCase();
   const sortOrder = Number(req.body.sort_order || 0) || 1;
   if (!kegiatanId || !jenisKegiatan || !pesertaKegiatan) return res.redirect('/admin/giiatja');
   const dokumentasiPath = req.file ? `/uploads/razia/${req.file.filename}` : null;
@@ -3146,7 +3240,13 @@ app.post('/admin/giiatja/kegiatan/:id/update', requireAccess('giiatja'), raziaUp
     .filter(Boolean)
     .join('\n')
     .toUpperCase();
-  const pengawas = String(req.body.pengawas || '').trim();
+  const pengawas = String(req.body.pengawas || '')
+    .replace(/\r\n/g, '\n')
+    .split('\n')
+    .map(line => line.trim())
+    .filter(Boolean)
+    .join('\n')
+    .toUpperCase();
   const sortOrder = Number(req.body.sort_order || 0) || 1;
   if (!kegiatanId || !jenisKegiatan || !pesertaKegiatan) return res.redirect('/admin/giiatja');
 

@@ -113,7 +113,9 @@
               <div class="form-group"><label>Nama Peserta</label><textarea name="peserta_kegiatan" rows="3" required placeholder="cth:
 WBP A.N. A
 WBP B.N. B"></textarea></div>
-              <div class="form-group"><label>Pengawas</label><input type="text" name="pengawas" placeholder="cth: Petugas A"></div>
+              <div class="form-group"><label>Pengawas</label><textarea name="pengawas" rows="3" placeholder="cth:
+PETUGAS A
+PETUGAS B"></textarea></div>
               <div class="form-group"><label>Dokumentasi (opsional)</label><input type="file" name="dokumentasi" accept="image/*"></div>
             </div>
             <button type="submit" class="btn btn-primary btn-sm">➕ Tambah Detail</button>
@@ -137,7 +139,7 @@ WBP B.N. B"></textarea></div>
             <div class="form-group"><label>Urutan</label><input type="number" min="1" name="sort_order" value="<%= editKegiatan.sort_order || 1 %>"></div>
             <div class="form-group"><label>Jenis Kegiatan</label><input type="text" name="jenis_kegiatan" value="<%= editKegiatan.jenis_kegiatan || '' %>" required></div>
             <div class="form-group"><label>Nama Peserta</label><textarea name="peserta_kegiatan" rows="3" required><%= editKegiatan.peserta_kegiatan || '' %></textarea></div>
-            <div class="form-group"><label>Pengawas</label><input type="text" name="pengawas" value="<%= editKegiatan.pengawas || '' %>"></div>
+            <div class="form-group"><label>Pengawas</label><textarea name="pengawas" rows="3"><%= editKegiatan.pengawas || '' %></textarea></div>
             <div class="form-group"><label>Dokumentasi Baru (opsional)</label><input type="file" name="dokumentasi" accept="image/*"></div>
           </div>
           <div style="display:flex;gap:8px;">
@@ -172,7 +174,18 @@ WBP B.N. B"></textarea></div>
                       -
                     <% } %>
                   </td>
-                  <td><%= item.pengawas || '-' %></td>
+                  <td>
+                    <% const pengawasLines = String(item.pengawas || '').split(/\r?\n/).map(line => line.trim()).filter(Boolean); %>
+                    <% if (pengawasLines.length) { %>
+                      <ol style="margin:0; padding-left:18px; white-space:normal;">
+                        <% pengawasLines.forEach((line) => { %>
+                          <li><%= line %></li>
+                        <% }) %>
+                      </ol>
+                    <% } else { %>
+                      -
+                    <% } %>
+                  </td>
                   <td>
                     <% if (item.dokumentasi_path) { %>
                       <a href="<%= item.dokumentasi_path %>" target="_blank" class="btn btn-secondary btn-xs">🔍 Lihat</a>

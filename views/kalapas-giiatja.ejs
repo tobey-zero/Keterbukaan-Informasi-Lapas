@@ -24,6 +24,50 @@
       font-size: 12px;
       font-weight: bold;
     }
+    .giiatja-search-form {
+      display: flex;
+      gap: 8px;
+      flex-wrap: wrap;
+      align-items: center;
+      margin-bottom: 8px;
+      padding: 10px 12px;
+      background: #f8fafc;
+      border: 1px solid #dbe3f1;
+      border-radius: 8px;
+    }
+    .giiatja-search-form input[type="text"] {
+      min-width: 280px;
+      flex: 1;
+      border: 1px solid #cbd5e1;
+      border-radius: 6px;
+      padding: 7px 10px;
+      font-size: 12px;
+    }
+    .giiatja-search-form button,
+    .giiatja-search-form a {
+      border: 1px solid #1d4ed8;
+      border-radius: 6px;
+      padding: 7px 10px;
+      font-size: 12px;
+      font-weight: bold;
+      text-decoration: none;
+      cursor: pointer;
+    }
+    .giiatja-search-form button {
+      background: #1d4ed8;
+      color: #fff;
+    }
+    .giiatja-search-form a {
+      background: #eff6ff;
+      color: #1d4ed8;
+    }
+    .giiatja-month-row td {
+      background: #eff6ff;
+      color: #1e3a8a;
+      font-weight: 800;
+      text-transform: uppercase;
+      letter-spacing: .2px;
+    }
     .giiatja-panel + .giiatja-panel { margin-top: 12px; }
     .giiatja-panel .panel-content { padding: 0; }
     .giiatja-table-scroll { overflow: auto; max-height: 52vh; }
@@ -110,7 +154,18 @@
                       -
                     <% } %>
                   </td>
-                  <td><%= detail ? (detail.pengawas || '-') : '-' %></td>
+                  <td>
+                    <% const pengawasLines = String(detail ? (detail.pengawas || '') : '').split(/\r?\n/).map(line => line.trim()).filter(Boolean); %>
+                    <% if (pengawasLines.length) { %>
+                      <ol style="margin:0; padding-left:18px;">
+                        <% pengawasLines.forEach((line) => { %>
+                          <li><%= line %></li>
+                        <% }) %>
+                      </ol>
+                    <% } else { %>
+                      -
+                    <% } %>
+                  </td>
                   <td>
                     <% if (detail && detail.dokumentasiPath) { %>
                       <a href="<%= detail.dokumentasiPath %>" target="_blank" rel="noopener noreferrer" class="giiatja-preview-btn">🔍 Lihat</a>
@@ -134,6 +189,13 @@
         <span><%= pelatihanList.length %> data</span>
       </div>
       <div class="panel-content">
+        <form method="GET" action="/kalapas/table/giiatja" class="giiatja-search-form">
+          <input type="text" name="search" value="<%= searchKeyword || '' %>" placeholder="Cari nama / no registrasi / tanggal (contoh: 2026-04-18, 18/04/2026, 18 April 2026)">
+          <button type="submit">🔎 Cari History</button>
+          <% if (searchKeyword) { %>
+            <a href="/kalapas/table/giiatja">↺ Reset</a>
+          <% } %>
+        </form>
         <div class="giiatja-table-scroll table-wrap">
           <table class="admin-table">
             <thead>
@@ -149,9 +211,12 @@
               </tr>
             </thead>
             <tbody>
-              <% pelatihanList.forEach((item, i) => { %>
+              <% let pelatihanNo = 0; %>
+              <% (pelatihanGroupedByMonth || []).forEach((group) => { %>
+              <tr class="giiatja-month-row"><td colspan="8">BULAN: <%= group.monthLabel %> (<%= group.items.length %> data)</td></tr>
+              <% group.items.forEach((item) => { pelatihanNo += 1; %>
               <tr>
-                <td><%= i + 1 %></td>
+                <td><%= pelatihanNo %></td>
                 <td><%= item.noRegistrasi || '-' %></td>
                 <td><%= item.namaWbp || '-' %></td>
                 <td><%= item.jenisPelatihan || '-' %></td>
@@ -165,8 +230,9 @@
                 <td><%= item.keterangan || '-' %></td>
               </tr>
               <% }) %>
+              <% }) %>
               <% if (!pelatihanList.length) { %>
-              <tr><td colspan="8" class="giiatja-empty">Belum ada data</td></tr>
+              <tr><td colspan="8" class="giiatja-empty"><%= searchKeyword ? 'Data tidak ditemukan untuk kata kunci tersebut.' : 'Belum ada data' %></td></tr>
               <% } %>
             </tbody>
           </table>
