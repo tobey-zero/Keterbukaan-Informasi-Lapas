@@ -290,7 +290,7 @@ PETUGAS B"></textarea></div>
       <div class="card">
         <div class="card-header"><h3>➕ Tabel PNBP</h3></div>
         <div class="card-body">
-          <form method="POST" action="/admin/giiatja/pnbp/add">
+          <form method="POST" action="/admin/giiatja/pnbp/add" data-pnbp-auto="true">
             <div class="form-grid col-4" style="margin-bottom:12px;">
               <div class="form-group"><label>Tahun</label><input type="number" min="2000" max="2100" name="tahun" value="<%= selectedPnbpYear && selectedPnbpYear !== 'SEMUA' ? selectedPnbpYear : pnbpTahun %>" required></div>
               <div class="form-group"><label>Periode PNBP</label>
@@ -301,10 +301,10 @@ PETUGAS B"></textarea></div>
                   <% }) %>
                 </select>
               </div>
-              <div class="form-group"><label>Jumlah PNBP</label><input type="text" name="jumlah_pnbp" placeholder="cth: 10.500.000"></div>
-              <div class="form-group"><label>Target Realisasi</label><input type="text" name="target_realisasi" placeholder="cth: 10.000.000"></div>
-              <div class="form-group"><label>Persentase</label><input type="text" name="persentase" placeholder="cth: 105%"></div>
-              <div class="form-group"><label>Keterangan</label><input type="text" name="keterangan" placeholder="cth: TERCAPAI"></div>
+              <div class="form-group"><label>Jumlah PNBP</label><input type="text" name="jumlah_pnbp" placeholder="cth: 10.500.000" data-pnbp-field="jumlah"></div>
+              <div class="form-group"><label>Target Realisasi</label><input type="text" name="target_realisasi" placeholder="cth: 10.000.000" data-pnbp-field="target"></div>
+              <div class="form-group"><label>Persentase</label><input type="text" name="persentase" placeholder="cth: 105%" data-pnbp-field="persentase" readonly></div>
+              <div class="form-group"><label>Keterangan</label><input type="text" name="keterangan" placeholder="cth: TERCAPAI" data-pnbp-field="keterangan" readonly></div>
             </div>
             <button type="submit" class="btn btn-primary btn-sm">➕ Tambah PNBP</button>
           </form>
@@ -314,7 +314,7 @@ PETUGAS B"></textarea></div>
       <% if (editPnbp) { %>
       <div class="edit-panel">
         <h4>✏️ Edit PNBP (ID: <%= editPnbp.id %>)</h4>
-        <form method="POST" action="/admin/giiatja/pnbp/<%= editPnbp.id %>/update">
+        <form method="POST" action="/admin/giiatja/pnbp/<%= editPnbp.id %>/update" data-pnbp-auto="true">
           <div class="form-grid col-4" style="margin-bottom:12px;">
             <div class="form-group"><label>Tahun</label><input type="number" min="2000" max="2100" name="tahun" value="<%= editPnbp.tahun || pnbpTahun %>" required></div>
             <div class="form-group"><label>Periode PNBP</label>
@@ -327,10 +327,10 @@ PETUGAS B"></textarea></div>
                 <% }) %>
               </select>
             </div>
-            <div class="form-group"><label>Jumlah PNBP</label><input type="text" name="jumlah_pnbp" value="<%= editPnbp.jumlah_pnbp || '' %>"></div>
-            <div class="form-group"><label>Target Realisasi</label><input type="text" name="target_realisasi" value="<%= editPnbp.target_realisasi || '' %>"></div>
-            <div class="form-group"><label>Persentase</label><input type="text" name="persentase" value="<%= editPnbp.persentase || '' %>"></div>
-            <div class="form-group"><label>Keterangan</label><input type="text" name="keterangan" value="<%= editPnbp.keterangan || '' %>"></div>
+            <div class="form-group"><label>Jumlah PNBP</label><input type="text" name="jumlah_pnbp" value="<%= editPnbp.jumlah_pnbp || '' %>" data-pnbp-field="jumlah"></div>
+            <div class="form-group"><label>Target Realisasi</label><input type="text" name="target_realisasi" value="<%= editPnbp.target_realisasi || '' %>" data-pnbp-field="target"></div>
+            <div class="form-group"><label>Persentase</label><input type="text" name="persentase" value="<%= editPnbp.persentase || '' %>" data-pnbp-field="persentase" readonly></div>
+            <div class="form-group"><label>Keterangan</label><input type="text" name="keterangan" value="<%= editPnbp.keterangan || '' %>" data-pnbp-field="keterangan" readonly></div>
           </div>
           <div style="display:flex;gap:8px;">
             <button type="submit" class="btn btn-success btn-sm">💾 Simpan</button>
@@ -516,5 +516,70 @@ PETUGAS B"></textarea></div>
     </div>
   </div>
 </div>
+<script>
+  (function () {
+    var parseNumber = function (raw) {
+      var text = String(raw || '').trim();
+      if (!text) return 0;
+      text = text.replace(/[^\d,.-]/g, '');
+      if (text.indexOf(',') !== -1 && text.indexOf('.') !== -1) {
+        if (text.lastIndexOf(',') > text.lastIndexOf('.')) {
+          text = text.replace(/\./g, '').replace(',', '.');
+        } else {
+          text = text.replace(/,/g, '');
+        }
+      } else if (text.indexOf(',') !== -1) {
+        text = text.replace(/\./g, '').replace(',', '.');
+      } else {
+        text = text.replace(/,/g, '');
+      }
+      var value = Number(text);
+      return Number.isFinite(value) ? value : 0;
+    };
+
+    var formatPercent = function (value) {
+      var rounded = Math.round(value * 100) / 100;
+      if (Math.abs(rounded - Math.round(rounded)) < 0.001) {
+        return String(Math.round(rounded)) + '%';
+      }
+      return rounded.toFixed(2).replace(/\.00$/, '') + '%';
+    };
+
+    var updatePnbpForm = function (form) {
+      var jumlahInput = form.querySelector('[data-pnbp-field="jumlah"]');
+      var targetInput = form.querySelector('[data-pnbp-field="target"]');
+      var persentaseInput = form.querySelector('[data-pnbp-field="persentase"]');
+      var keteranganInput = form.querySelector('[data-pnbp-field="keterangan"]');
+      if (!jumlahInput || !targetInput || !persentaseInput || !keteranganInput) return;
+
+      var jumlah = parseNumber(jumlahInput.value);
+      var target = parseNumber(targetInput.value);
+
+      if (target <= 0) {
+        persentaseInput.value = '';
+        keteranganInput.value = '';
+        return;
+      }
+
+      var percent = (jumlah / target) * 100;
+      persentaseInput.value = formatPercent(percent);
+      keteranganInput.value = percent >= 100 ? 'TERCAPAI' : 'BELUM TERCAPAI';
+    };
+
+    document.querySelectorAll('form[data-pnbp-auto="true"]').forEach(function (form) {
+      var jumlahInput = form.querySelector('[data-pnbp-field="jumlah"]');
+      var targetInput = form.querySelector('[data-pnbp-field="target"]');
+      if (jumlahInput) {
+        jumlahInput.addEventListener('input', function () { updatePnbpForm(form); });
+        jumlahInput.addEventListener('change', function () { updatePnbpForm(form); });
+      }
+      if (targetInput) {
+        targetInput.addEventListener('input', function () { updatePnbpForm(form); });
+        targetInput.addEventListener('change', function () { updatePnbpForm(form); });
+      }
+      updatePnbpForm(form);
+    });
+  })();
+</script>
 </body>
 </html>
