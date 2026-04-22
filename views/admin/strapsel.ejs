@@ -35,7 +35,7 @@
                 <input type="text" name="tanggal_masuk_strapsel" placeholder="Contoh: 14 April 2026" required>
               </div>
               <div class="form-group">
-                <label>Ekspirasi</label>
+                <label>Tanggal Keluar</label>
                 <input type="text" name="ekspirasi" placeholder="Contoh: 14 Mei 2026">
               </div>
               <div class="form-group">
@@ -74,7 +74,7 @@
               <input type="text" name="tanggal_masuk_strapsel" value="<%= edit.tanggal_masuk_strapsel %>" required>
             </div>
             <div class="form-group">
-              <label>Ekspirasi</label>
+              <label>Tanggal Keluar</label>
               <input type="text" name="ekspirasi" value="<%= edit.ekspirasi || '' %>">
             </div>
             <div class="form-group">
@@ -136,7 +136,7 @@
           </div>
           <div class="table-wrap">
             <table class="admin-table">
-              <thead><tr><th>#</th><th>Nama WBP</th><th>Blok Hunian</th><th>Tanggal Masuk</th><th>Ekspirasi</th><th>Permasalahan</th><th>Barang Bukti</th><th>Dokumentasi</th><th>Aksi</th></tr></thead>
+              <thead><tr><th>#</th><th>Nama WBP</th><th>Blok Hunian</th><th>Tanggal Masuk</th><th>Tanggal Keluar</th><th>Permasalahan</th><th>Barang Bukti</th><th>Dokumentasi</th><th>Aksi</th></tr></thead>
               <tbody>
                 <% list.forEach((item, i) => { %>
                 <tr>

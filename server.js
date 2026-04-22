@@ -1825,7 +1825,7 @@ app.get('/kalapas/table/strapsel', (req, res) => {
       searchPlaceholder: 'Cari nama, blok, permasalahan, barang bukti, tanggal...',
       searchValue: searchKeyword
     },
-    columns: ['NAMA WBP', 'BLOK HUNIAN', 'TANGGAL MASUK STRAPSEL', 'EKSPIRASI', 'PERMASALAHAN', 'BARANG BUKTI', 'DOKUMENTASI'],
+    columns: ['NAMA WBP', 'BLOK HUNIAN', 'TANGGAL MASUK STRAPSEL', 'TANGGAL KELUAR', 'PERMASALAHAN', 'BARANG BUKTI', 'DOKUMENTASI'],
     rows,
     backUrl: '/kalapas'
   });
