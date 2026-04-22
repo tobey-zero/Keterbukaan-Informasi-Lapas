@@ -98,7 +98,18 @@
                   <td rowspan="<%= details.length %>"><%= category.kategori || '-' %></td>
                   <% } %>
                   <td><%= detail ? (detail.jenisKegiatan || '-') : '-' %></td>
-                  <td><%= detail ? (detail.pesertaKegiatan || '-') : '-' %></td>
+                  <td>
+                    <% const pesertaLines = String(detail ? (detail.pesertaKegiatan || '') : '').split(/\r?\n/).map(line => line.trim()).filter(Boolean); %>
+                    <% if (pesertaLines.length) { %>
+                      <ol style="margin:0; padding-left:18px;">
+                        <% pesertaLines.forEach((line) => { %>
+                          <li><%= line %></li>
+                        <% }) %>
+                      </ol>
+                    <% } else { %>
+                      -
+                    <% } %>
+                  </td>
                   <td><%= detail ? (detail.pengawas || '-') : '-' %></td>
                   <td>
                     <% if (detail && detail.dokumentasiPath) { %>

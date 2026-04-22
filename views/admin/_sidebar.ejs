@@ -103,8 +103,14 @@
 
     <% if (allowed.includes('menu')) { %>
     <div class="nav-label">Role Dapur</div>
-    <a href="/admin/menu" class="nav-item <%= active==='menu'?'active':'' %>">
-      <span class="icon">🍽</span><span>Menu Makan</span>
+    <a href="/admin/menu/master" class="nav-item <%= active==='menu-master'?'active':'' %>">
+      <span class="icon">📚</span><span>Master Menu</span>
+    </a>
+    <a href="/admin/menu/template" class="nav-item <%= active==='menu-template'?'active':'' %>">
+      <span class="icon">📅</span><span>Template Hari</span>
+    </a>
+    <a href="/admin/menu/makanan" class="nav-item <%= active==='menu-makanan'?'active':'' %>">
+      <span class="icon">🍱</span><span>Menu Makanan</span>
     </a>
     <% } %>
 
@@ -211,8 +217,14 @@
     <% } %>
 
     <% if (allowed.includes('menu')) { %>
-    <a href="/admin/menu" class="nav-item <%= active==='menu'?'active':'' %>">
-      <span class="icon">🍽</span><span>Menu Makan</span>
+    <a href="/admin/menu/master" class="nav-item <%= active==='menu-master'?'active':'' %>">
+      <span class="icon">📚</span><span>Master Menu</span>
+    </a>
+    <a href="/admin/menu/template" class="nav-item <%= active==='menu-template'?'active':'' %>">
+      <span class="icon">📅</span><span>Template Hari</span>
+    </a>
+    <a href="/admin/menu/makanan" class="nav-item <%= active==='menu-makanan'?'active':'' %>">
+      <span class="icon">🍱</span><span>Menu Makanan</span>
     </a>
     <% } %>
 

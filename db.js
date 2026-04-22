@@ -36,6 +36,50 @@ db.exec(`
     photo_path TEXT
   );
 
+  CREATE TABLE IF NOT EXISTS menu_master (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    waktu TEXT NOT NULL,
+    menu TEXT NOT NULL,
+    photo_path TEXT,
+    sort_order INTEGER NOT NULL DEFAULT 0,
+    created_at TEXT NOT NULL DEFAULT (datetime('now','localtime'))
+  );
+
+  CREATE TABLE IF NOT EXISTS menu_harian (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    tanggal TEXT NOT NULL,
+    menu_master_id INTEGER NOT NULL,
+    sort_order INTEGER NOT NULL DEFAULT 0,
+    created_at TEXT NOT NULL DEFAULT (datetime('now','localtime')),
+    UNIQUE (tanggal, menu_master_id),
+    FOREIGN KEY (menu_master_id) REFERENCES menu_master(id)
+  );
+
+  CREATE TABLE IF NOT EXISTS menu_harian_list (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    nama_list TEXT NOT NULL,
+    sort_order INTEGER NOT NULL DEFAULT 0,
+    created_at TEXT NOT NULL DEFAULT (datetime('now','localtime'))
+  );
+
+  CREATE TABLE IF NOT EXISTS menu_harian_list_item (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    list_id INTEGER NOT NULL,
+    menu_master_id INTEGER NOT NULL,
+    sort_order INTEGER NOT NULL DEFAULT 0,
+    UNIQUE (list_id, menu_master_id),
+    FOREIGN KEY (list_id) REFERENCES menu_harian_list(id),
+    FOREIGN KEY (menu_master_id) REFERENCES menu_master(id)
+  );
+
+  CREATE TABLE IF NOT EXISTS menu_harian_set (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    tanggal TEXT NOT NULL UNIQUE,
+    list_id INTEGER NOT NULL,
+    created_at TEXT NOT NULL DEFAULT (datetime('now','localtime')),
+    FOREIGN KEY (list_id) REFERENCES menu_harian_list(id)
+  );
+
   CREATE TABLE IF NOT EXISTS pentahapan_pembinaan (
     id INTEGER PRIMARY KEY AUTOINCREMENT,
     nama_wbp TEXT NOT NULL,
@@ -379,6 +423,113 @@ db.exec(`
   SET tanggal = COALESCE(NULLIF(TRIM(tanggal), ''), date('now', 'localtime'))
 `);
 
+const legacyMenuRows = db.prepare(`
+  SELECT id, tanggal, waktu, menu, photo_path AS photoPath
+  FROM menu_makan
+  ORDER BY id ASC
+`).all();
+
+const masterMenuCount = db.prepare('SELECT COUNT(*) AS c FROM menu_master').get().c;
+if (masterMenuCount === 0 && legacyMenuRows.length) {
+  const insertMasterMenu = db.prepare('INSERT INTO menu_master (waktu, menu, photo_path, sort_order) VALUES (?, ?, ?, ?)');
+  const seenMasterMenu = new Set();
+  let sortOrder = 1;
+
+  legacyMenuRows.forEach((item) => {
+    const key = `${String(item.waktu || '').trim().toUpperCase()}|${String(item.menu || '').trim()}|${String(item.photoPath || '').trim()}`;
+    if (!item.waktu || !item.menu || seenMasterMenu.has(key)) return;
+    insertMasterMenu.run(item.waktu, item.menu, item.photoPath || null, sortOrder);
+    seenMasterMenu.add(key);
+    sortOrder += 1;
+  });
+}
+
+const menuHarianCount = db.prepare('SELECT COUNT(*) AS c FROM menu_harian').get().c;
+if (menuHarianCount === 0 && legacyMenuRows.length) {
+  const getMasterId = db.prepare(`
+    SELECT id
+    FROM menu_master
+    WHERE waktu = ?
+      AND menu = ?
+      AND COALESCE(photo_path, '') = COALESCE(?, '')
+    ORDER BY id ASC
+    LIMIT 1
+  `);
+  const insertMenuHarian = db.prepare('INSERT OR IGNORE INTO menu_harian (tanggal, menu_master_id, sort_order) VALUES (?, ?, ?)');
+  const perDateOrder = new Map();
+
+  legacyMenuRows.forEach((item) => {
+    const tanggal = String(item.tanggal || '').trim();
+    if (!tanggal || !item.waktu || !item.menu) return;
+
+    const foundMaster = getMasterId.get(item.waktu, item.menu, item.photoPath || null);
+    if (!foundMaster?.id) return;
+
+    const nextOrder = (perDateOrder.get(tanggal) || 0) + 1;
+    perDateOrder.set(tanggal, nextOrder);
+    insertMenuHarian.run(tanggal, foundMaster.id, nextOrder);
+  });
+}
+
+const menuListCount = db.prepare('SELECT COUNT(*) AS c FROM menu_harian_list').get().c;
+if (menuListCount === 0) {
+  const legacyDates = db.prepare('SELECT DISTINCT tanggal FROM menu_harian ORDER BY tanggal ASC').all();
+  const insertList = db.prepare('INSERT INTO menu_harian_list (nama_list, sort_order) VALUES (?, ?)');
+  const insertListItem = db.prepare('INSERT OR IGNORE INTO menu_harian_list_item (list_id, menu_master_id, sort_order) VALUES (?, ?, ?)');
+  const upsertSet = db.prepare(`
+    INSERT INTO menu_harian_set (tanggal, list_id)
+    VALUES (?, ?)
+    ON CONFLICT(tanggal) DO UPDATE SET list_id=excluded.list_id
+  `);
+
+  if (legacyDates.length) {
+    legacyDates.forEach((row, index) => {
+      const result = insertList.run(`Hari Ke-${index + 1}`, index + 1);
+      const listId = Number(result.lastInsertRowid);
+
+      const mappedItems = db.prepare(`
+        SELECT menu_master_id AS menuMasterId, sort_order AS sortOrder
+        FROM menu_harian
+        WHERE tanggal = ?
+        ORDER BY sort_order ASC, id ASC
+      `).all(row.tanggal);
+
+      mappedItems.forEach((item, itemIndex) => {
+        insertListItem.run(listId, item.menuMasterId, Number(item.sortOrder) || (itemIndex + 1));
+      });
+
+      upsertSet.run(row.tanggal, listId);
+    });
+  } else {
+    const result = insertList.run('Hari Ke-1', 1);
+    const listId = Number(result.lastInsertRowid);
+    const allMaster = db.prepare('SELECT id FROM menu_master ORDER BY sort_order ASC, id ASC').all();
+    allMaster.forEach((item, index) => {
+      insertListItem.run(listId, item.id, index + 1);
+    });
+  }
+}
+
+const menuSetCount = db.prepare('SELECT COUNT(*) AS c FROM menu_harian_set').get().c;
+if (menuSetCount === 0) {
+  const firstList = db.prepare('SELECT id FROM menu_harian_list ORDER BY sort_order ASC, id ASC LIMIT 1').get();
+  if (firstList?.id) {
+    const legacyDates = db.prepare('SELECT DISTINCT tanggal FROM menu_harian ORDER BY tanggal ASC').all();
+    const upsertSet = db.prepare(`
+      INSERT INTO menu_harian_set (tanggal, list_id)
+      VALUES (?, ?)
+      ON CONFLICT(tanggal) DO UPDATE SET list_id=excluded.list_id
+    `);
+
+    if (legacyDates.length) {
+      legacyDates.forEach((row) => upsertSet.run(row.tanggal, firstList.id));
+    } else {
+      const todayRow = db.prepare("SELECT date('now','localtime') AS ymd").get();
+      upsertSet.run(todayRow.ymd, firstList.id);
+    }
+  }
+}
+
 const strapselColumns = db.prepare("PRAGMA table_info('strapsel_data')").all();
 const strapselColumnNames = strapselColumns.map(col => col.name);
 if (!strapselColumnNames.includes('nama_wbp')) db.exec("ALTER TABLE strapsel_data ADD COLUMN nama_wbp TEXT DEFAULT ''");
@@ -558,16 +709,36 @@ seedIfEmpty('besaran_remisi', () => {
   rows.forEach(r => insert.run(...r));
 });
 
-seedIfEmpty('menu_makan', () => {
-  const insert = db.prepare('INSERT INTO menu_makan (tanggal, waktu, menu) VALUES (?, ?, ?)');
+seedIfEmpty('menu_master', () => {
+  const insert = db.prepare('INSERT INTO menu_master (waktu, menu, sort_order) VALUES (?, ?, ?)');
   const rows = [
-    ['2026-04-15', 'MAKAN PAGI',  'Nasi Putih, Telur rebus, Tumis wortel + kacang panjang'],
-    ['2026-04-15', 'SNACK',       'Bubur Kc hijau'],
-    ['2026-04-15', 'MAKAN SIANG', 'Nasi putih, Ayam kecap, Tahu goreng Tumis sawi + wortel, Sambal, Pisang'],
-    ['2026-04-15', 'SNACK',       'Ubi rebus'],
-    ['2026-04-15', 'MAKAN SORE',  'Nasi putih, Ikan goreng, Kacang tanah giling Pecel sayuran, Sambal'],
+    ['MAKAN PAGI',  'Nasi Putih, Telur rebus, Tumis wortel + kacang panjang', 1],
+    ['SNACK',       'Bubur Kacang Hijau', 2],
+    ['MAKAN SIANG', 'Nasi Putih, Ayam Kecap, Tahu Goreng, Tumis Sawi + Wortel, Sambal, Pisang', 3],
+    ['SNACK',       'Ubi Rebus', 4],
+    ['MAKAN SORE',  'Nasi Putih, Ikan Goreng, Pecel Sayuran, Sambal', 5],
   ];
   rows.forEach(r => insert.run(...r));
+});
+
+seedIfEmpty('menu_harian_list', () => {
+  db.prepare('INSERT INTO menu_harian_list (nama_list, sort_order) VALUES (?, ?)').run('Hari Ke-1', 1);
+});
+
+seedIfEmpty('menu_harian_list_item', () => {
+  const firstList = db.prepare('SELECT id FROM menu_harian_list ORDER BY sort_order ASC, id ASC LIMIT 1').get();
+  if (!firstList?.id) return;
+  const masterList = db.prepare('SELECT id FROM menu_master ORDER BY sort_order ASC, id ASC').all();
+  const insert = db.prepare('INSERT INTO menu_harian_list_item (list_id, menu_master_id, sort_order) VALUES (?, ?, ?)');
+  masterList.forEach((item, index) => {
+    insert.run(firstList.id, item.id, index + 1);
+  });
+});
+
+seedIfEmpty('menu_harian_set', () => {
+  const firstList = db.prepare('SELECT id FROM menu_harian_list ORDER BY sort_order ASC, id ASC LIMIT 1').get();
+  if (!firstList?.id) return;
+  db.prepare('INSERT INTO menu_harian_set (tanggal, list_id) VALUES (?, ?)').run('2026-04-15', firstList.id);
 });
 
 seedIfEmpty('pentahapan_pembinaan', () => {

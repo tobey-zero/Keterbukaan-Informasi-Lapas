@@ -9,8 +9,18 @@
 <div class="admin-wrapper">
   <%- include('_sidebar') %>
   <div class="main-content">
+    <% const isMaster = menuSection === 'master'; %>
+    <% const isTemplate = menuSection === 'template'; %>
+    <% const isMakanan = menuSection === 'makanan'; %>
     <div class="topbar">
-      <div class="topbar-title"><h2>🍽 Menu Makan</h2><p>Kelola menu makan hari ini</p></div>
+      <div class="topbar-title">
+        <h2>🍽 Menu Makan</h2>
+        <p>
+          <%= isMaster ? 'Kelola data Master Menu dasar untuk dapur' : '' %>
+          <%= isTemplate ? 'Kelola Template Hari agar menu tidak perlu disusun ulang' : '' %>
+          <%= isMakanan ? 'Tetapkan Menu Makanan harian cukup pilih tanggal + template' : '' %>
+        </p>
+      </div>
       <div class="topbar-actions"><a href="/" target="_blank" class="btn-public">🌐 Lihat Publik</a></div>
     </div>
     <div class="content-area">
@@ -18,6 +28,15 @@
       <% if (titleSuccess) { %><div class="alert alert-success">✅ Judul menu berhasil diperbarui.</div><% } %>
       <% if (error) { %><div class="alert alert-danger">❌ <%= error %></div><% } %>
 
+      <div class="card">
+        <div class="card-body" style="display:flex; gap:8px; flex-wrap:wrap;">
+          <a href="/admin/menu/master" class="btn btn-sm <%= isMaster ? 'btn-primary' : 'btn-secondary' %>">📚 Master Menu</a>
+          <a href="/admin/menu/template" class="btn btn-sm <%= isTemplate ? 'btn-primary' : 'btn-secondary' %>">📅 Template Hari</a>
+          <a href="/admin/menu/makanan" class="btn btn-sm <%= isMakanan ? 'btn-primary' : 'btn-secondary' %>">🍱 Menu Makanan</a>
+        </div>
+      </div>
+
+      <% if (isMakanan) { %>
       <div class="card">
         <div class="card-header"><h3>📝 Judul Menu (Publik)</h3></div>
         <div class="card-body">
@@ -32,107 +51,58 @@
       </div>
 
       <div class="card">
-        <div class="card-header"><h3>🗓 Filter Tanggal Menu</h3></div>
+        <div class="card-header"><h3>🗓 Set Menu Harian (Tanggal + List Hari)</h3></div>
         <div class="card-body">
-          <form method="GET" action="/admin/menu" style="display:flex; gap:10px; flex-wrap:wrap; align-items:end;">
+          <form method="GET" action="/admin/menu/makanan" style="display:flex; gap:10px; flex-wrap:wrap; align-items:end; margin-bottom:12px;">
             <div class="form-group" style="min-width: 220px; margin:0;">
               <label>Tanggal tampil</label>
               <input type="date" name="tanggal" value="<%= selectedTanggal || todayYmd %>">
             </div>
             <div style="display:flex; gap:8px; align-items:center;">
               <button type="submit" class="btn btn-primary btn-sm">🔎 Tampilkan</button>
-              <a href="/admin/menu" class="btn btn-secondary btn-sm">↺ Hari ini</a>
+              <a href="/admin/menu/makanan" class="btn btn-secondary btn-sm">↺ Hari ini</a>
             </div>
           </form>
-          <div style="margin-top:10px; font-size:12px; color:#64748b; font-weight:700;">Tanggal aktif: <%= formatDateIndo(selectedTanggal || todayYmd) %> | Total history tersimpan: <%= totalHistory %></div>
-        </div>
-      </div>
-
-      <!-- Form Tambah -->
-      <div class="card">
-        <div class="card-header"><h3>➕ Tambah Menu</h3></div>
-        <div class="card-body">
-          <form method="POST" action="/admin/menu/add" enctype="multipart/form-data">
-            <div class="form-grid col-3" style="margin-bottom:12px;">
-              <div class="form-group">
-                <label>Tanggal</label>
-                <input type="date" name="tanggal" value="<%= todayYmd %>" required>
-              </div>
-              <div class="form-group">
-                <label>Waktu Makan</label>
-                <select name="waktu" required>
-                  <option value="">-- Pilih --</option>
-                  <option value="MAKAN PAGI">MAKAN PAGI</option>
-                  <option value="SNACK">SNACK</option>
-                  <option value="MAKAN SIANG">MAKAN SIANG</option>
-                  <option value="MAKAN SORE">MAKAN SORE</option>
-                </select>
-              </div>
-              <div class="form-group">
-                <label>Menu</label>
-                <input type="text" name="menu" placeholder="Deskripsi menu makanan" required>
-              </div>
-              <div class="form-group full">
-                <label>Foto Menu (opsional)</label>
-                <input type="file" name="photo" accept="image/*">
-                <small style="color:#888;">Format gambar apa pun didukung, akan ditampilkan ukuran tetap.</small>
-              </div>
+          <form method="POST" action="/admin/menu/harian/set">
+            <input type="hidden" name="tanggal" value="<%= selectedTanggal || todayYmd %>">
+            <div style="margin-top:10px; font-size:12px; color:#64748b; font-weight:700; margin-bottom:10px;">
+              Tanggal aktif: <%= formatDateIndo(selectedTanggal || todayYmd) %> | Total tanggal tersimpan: <%= totalHistory %>
+              <% if (selectedSet) { %> | List aktif: <%= selectedSet.namaList %><% } %>
             </div>
-            <button type="submit" class="btn btn-primary btn-sm">➕ Tambah</button>
-          </form>
-        </div>
-      </div>
-
-      <!-- Form Edit -->
-      <% if (edit) { %>
-      <div class="edit-panel">
-        <h4>✏️ Edit Menu (ID: <%= edit.id %>)</h4>
-        <form method="POST" action="/admin/menu/<%= edit.id %>/update" enctype="multipart/form-data">
-          <div class="form-grid col-3" style="margin-bottom:12px;">
-            <div class="form-group">
-              <label>Tanggal</label>
-              <input type="date" name="tanggal" value="<%= edit.tanggal || todayYmd %>" required>
+            <div style="display:grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap:10px; margin-bottom:12px;">
+              <% dayLists.forEach((item) => { %>
+              <label style="display:flex; gap:10px; align-items:flex-start; border:1px solid #dbe3f1; border-radius:10px; padding:10px; cursor:pointer;">
+                <input type="radio" name="list_id" value="<%= item.id %>" <%= Number(selectedListId || 0) === Number(item.id) ? 'checked' : '' %> style="margin-top:3px;">
+                <div>
+                  <div style="font-weight:800; font-size:12px; color:#334155;"><%= item.namaList %></div>
+                  <div style="font-size:12px; color:#64748b;"><%= item.totalItem %> menu</div>
+                </div>
+              </label>
+              <% }) %>
             </div>
-            <div class="form-group">
-              <label>Waktu Makan</label>
-              <select name="waktu" required>
-                <% ['MAKAN PAGI','SNACK','MAKAN SIANG','MAKAN SORE'].forEach(w => { %>
-                <option value="<%= w %>" <%= edit.waktu===w?'selected':'' %>><%= w %></option>
-                <% }) %>
-              </select>
-            </div>
-            <div class="form-group">
-              <label>Menu</label>
-              <input type="text" name="menu" value="<%= edit.menu %>" required>
-            </div>
-            <div class="form-group full">
-              <label>Foto Menu (opsional, upload untuk mengganti)</label>
-              <input type="file" name="photo" accept="image/*">
-            </div>
-            <% if (edit.photo_path) { %>
-            <div class="form-group full">
-              <label>Foto Saat Ini</label>
-              <img src="<%= edit.photo_path %>" alt="Foto menu" class="admin-menu-photo-preview">
-            </div>
+            <% if (!dayLists.length) { %>
+            <div style="font-size:13px; color:#9ca3af; margin-bottom:12px;">Belum ada list hari. Buat dulu di bagian List Hari.</div>
             <% } %>
-          </div>
-          <div style="display:flex;gap:8px;">
-            <button type="submit" class="btn btn-success btn-sm">💾 Simpan</button>
-            <a href="/admin/menu" class="btn btn-secondary btn-sm">✕ Batal</a>
-          </div>
-        </form>
+            <button type="submit" class="btn btn-primary btn-sm" <%= !dayLists.length ? 'disabled' : '' %>>💾 Set Menu Harian</button>
+          </form>
+        </div>
       </div>
       <% } %>
 
-      <!-- Tabel -->
-      <div class="card">
-        <div class="card-header"><h3>Daftar Menu Tanggal <%= formatDateIndo(selectedTanggal || todayYmd) %> (<%= list.length %> item)</h3></div>
+      <% if (isMakanan) { %>
+      <div class="card" id="menu-preview-card">
+        <div class="card-header">
+          <h3>
+            <%= `Preview Menu Tanggal ${formatDateIndo(selectedTanggal || todayYmd)}` %>
+            (<%= dailyList.length %> item)
+          </h3>
+        </div>
         <div class="card-body" style="padding:0;">
           <div class="table-wrap">
             <table class="admin-table">
-              <thead><tr><th>#</th><th>Tanggal</th><th>Foto</th><th>Waktu</th><th>Menu</th><th>Aksi</th></tr></thead>
+              <thead><tr><th>#</th><th>Tanggal</th><th>Foto</th><th>Waktu</th><th>Menu</th></tr></thead>
               <tbody>
-                <% list.forEach((item, i) => { %>
+                <% dailyList.forEach((item, i) => { %>
                 <tr>
                   <td><%= i+1 %></td>
                   <td><%= formatDateIndo(item.tanggal) %></td>
@@ -145,9 +115,196 @@
                   </td>
                   <td><strong><%= item.waktu %></strong></td>
                   <td><%= item.menu %></td>
+                </tr>
+                <% }) %>
+                <% if (!dailyList.length) { %><tr><td colspan="5" style="text-align:center;color:#aaa;padding:20px;">Belum ada data pada tanggal ini</td></tr><% } %>
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+      <% } %>
+
+      <% if (isTemplate) { %>
+      <div class="card" id="list-hari-card">
+        <div class="card-header"><h3>📅 List Hari (Template Harian)</h3></div>
+        <div class="card-body">
+          <form method="POST" action="<%= editDayList ? `/admin/menu/list/${editDayList.id}/update` : '/admin/menu/list/add' %>">
+            <div class="form-grid col-3" style="margin-bottom:12px;">
+              <div class="form-group">
+                <label>Nama List Hari</label>
+                <input type="text" id="nama-list-hari" name="nama_list" placeholder="Contoh: Hari Ke-1" value="<%= editDayList ? editDayList.namaList : '' %>" required>
+              </div>
+            </div>
+            <label style="display:block; font-weight:700; margin-bottom:8px;">Isi Menu dalam List Hari</label>
+            <div style="display:grid; grid-template-columns: repeat(auto-fit, minmax(260px, 1fr)); gap:10px; margin-bottom:12px;">
+              <% masterList.forEach((item) => { %>
+              <label style="display:flex; gap:10px; align-items:flex-start; border:1px solid #dbe3f1; border-radius:10px; padding:10px; cursor:pointer;">
+                <input type="checkbox" name="menu_ids" value="<%= item.id %>" <%= selectedMasterIds.includes(item.id) ? 'checked' : '' %> style="margin-top:3px;">
+                <div>
+                  <div style="font-weight:800; font-size:12px; color:#334155;"><%= item.waktu %></div>
+                  <div style="font-size:13px; color:#0f172a;"><%= item.menu %></div>
+                </div>
+              </label>
+              <% }) %>
+            </div>
+            <div style="display:flex; gap:8px; align-items:center;">
+              <button type="submit" class="btn btn-primary btn-sm" <%= !masterList.length ? 'disabled' : '' %>><%= editDayList ? '💾 Simpan Perubahan List' : '➕ Tambah List Hari' %></button>
+              <% if (editDayList) { %>
+              <a href="/admin/menu/template?tanggal=<%= selectedTanggal || todayYmd %>" class="btn btn-secondary btn-sm">✕ Batal Edit List</a>
+              <% } %>
+            </div>
+          </form>
+
+          <div class="table-wrap" style="margin-top:14px;">
+            <table class="admin-table">
+              <thead><tr><th>#</th><th>Nama List</th><th>Total Menu</th><th>Aksi</th></tr></thead>
+              <tbody>
+                <% dayLists.forEach((item, i) => { %>
+                <tr data-list-id="<%= item.id %>">
+                  <td><%= i + 1 %></td>
+                  <td><strong><%= item.namaList %></strong></td>
+                  <td><%= item.totalItem %></td>
                   <td>
                     <div class="actions">
-                      <a href="/admin/menu?edit=<%= item.id %>" class="btn btn-warning btn-xs">✏️ Edit</a>
+                      <a href="/admin/menu/template?tanggal=<%= selectedTanggal || todayYmd %>&editList=<%= item.id %>#list-hari-card" class="btn btn-warning btn-xs">✏️ Edit</a>
+                      <a href="/admin/menu/template?tanggal=<%= selectedTanggal || todayYmd %>&previewList=<%= item.id %>#menu-preview-card" class="btn btn-info btn-xs">👁 Preview</a>
+                      <form method="POST" action="/admin/menu/list/<%= item.id %>/delete" style="display:inline" onsubmit="return confirm('Hapus list hari ini?')">
+                        <button class="btn btn-danger btn-xs">🗑 Hapus</button>
+                      </form>
+                    </div>
+                  </td>
+                </tr>
+                <% }) %>
+                <% if (!dayLists.length) { %><tr><td colspan="4" style="text-align:center;color:#aaa;padding:20px;">Belum ada list hari</td></tr><% } %>
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+
+      <div class="card" id="menu-preview-card">
+        <div class="card-header">
+          <h3>
+            <%= `Preview Template ${dayLists.find(item => Number(item.id) === Number(selectedListId || 0))?.namaList || '-'}` %>
+            (<%= dailyList.length %> item)
+          </h3>
+        </div>
+        <div class="card-body" style="padding:0;">
+          <div class="table-wrap">
+            <table class="admin-table">
+              <thead><tr><th>#</th><th>Foto</th><th>Waktu</th><th>Menu</th></tr></thead>
+              <tbody>
+                <% dailyList.forEach((item, i) => { %>
+                <tr>
+                  <td><%= i+1 %></td>
+                  <td>
+                    <% if (item.photo_path) { %>
+                      <img src="<%= item.photo_path %>" alt="Foto menu" class="admin-menu-photo-thumb">
+                    <% } else { %>
+                      <span style="color:#aaa;">-</span>
+                    <% } %>
+                  </td>
+                  <td><strong><%= item.waktu %></strong></td>
+                  <td><%= item.menu %></td>
+                </tr>
+                <% }) %>
+                <% if (!dailyList.length) { %><tr><td colspan="4" style="text-align:center;color:#aaa;padding:20px;">Belum ada data template ini</td></tr><% } %>
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+      <% } %>
+
+      <% if (isMaster) { %>
+      <div class="card">
+        <div class="card-header"><h3>📚 Master List Menu</h3></div>
+        <div class="card-body">
+          <form method="POST" action="/admin/menu/add" enctype="multipart/form-data">
+            <div class="form-grid col-3" style="margin-bottom:12px;">
+              <div class="form-group">
+                <label>Waktu Makan</label>
+                <select name="waktu" required>
+                  <option value="">-- Pilih --</option>
+                  <option value="MAKAN PAGI">MAKAN PAGI</option>
+                  <option value="SNACK">SNACK</option>
+                  <option value="MAKAN SIANG">MAKAN SIANG</option>
+                  <option value="MAKAN SORE">MAKAN SORE</option>
+                </select>
+              </div>
+              <div class="form-group">
+                <label>Deskripsi Menu</label>
+                <input type="text" name="menu" placeholder="Contoh: Nasi Putih, Ayam Kecap" required>
+              </div>
+              <div class="form-group">
+                <label>Foto Menu (opsional)</label>
+                <input type="file" name="photo" accept="image/*">
+              </div>
+            </div>
+            <button type="submit" class="btn btn-primary btn-sm">➕ Tambah ke Master</button>
+          </form>
+        </div>
+      </div>
+
+      <% if (editMaster) { %>
+      <div class="edit-panel">
+        <h4>✏️ Edit Master Menu (ID: <%= editMaster.id %>)</h4>
+        <form method="POST" action="/admin/menu/<%= editMaster.id %>/update" enctype="multipart/form-data">
+          <div class="form-grid col-3" style="margin-bottom:12px;">
+            <div class="form-group">
+              <label>Waktu Makan</label>
+              <select name="waktu" required>
+                <% ['MAKAN PAGI','SNACK','MAKAN SIANG','MAKAN SORE'].forEach(w => { %>
+                <option value="<%= w %>" <%= editMaster.waktu===w?'selected':'' %>><%= w %></option>
+                <% }) %>
+              </select>
+            </div>
+            <div class="form-group">
+              <label>Menu</label>
+              <input type="text" name="menu" value="<%= editMaster.menu %>" required>
+            </div>
+            <div class="form-group full">
+              <label>Foto Menu (opsional, upload untuk mengganti)</label>
+              <input type="file" name="photo" accept="image/*">
+            </div>
+            <% if (editMaster.photo_path) { %>
+            <div class="form-group full">
+              <label>Foto Saat Ini</label>
+              <img src="<%= editMaster.photo_path %>" alt="Foto menu" class="admin-menu-photo-preview">
+            </div>
+            <% } %>
+          </div>
+          <div style="display:flex;gap:8px;">
+            <button type="submit" class="btn btn-success btn-sm">💾 Simpan</button>
+            <a href="/admin/menu/master" class="btn btn-secondary btn-sm">✕ Batal</a>
+          </div>
+        </form>
+      </div>
+      <% } %>
+
+      <div class="card">
+        <div class="card-header"><h3>Daftar Master Menu (<%= masterList.length %> item)</h3></div>
+        <div class="card-body" style="padding:0;">
+          <div class="table-wrap">
+            <table class="admin-table">
+              <thead><tr><th>#</th><th>Foto</th><th>Waktu</th><th>Menu</th><th>Aksi</th></tr></thead>
+              <tbody>
+                <% masterList.forEach((item, i) => { %>
+                <tr>
+                  <td><%= i+1 %></td>
+                  <td>
+                    <% if (item.photo_path) { %>
+                      <img src="<%= item.photo_path %>" alt="Foto menu" class="admin-menu-photo-thumb">
+                    <% } else { %>
+                      <span style="color:#aaa;">-</span>
+                    <% } %>
+                  </td>
+                  <td><strong><%= item.waktu %></strong></td>
+                  <td><%= item.menu %></td>
+                  <td>
+                    <div class="actions">
+                      <a href="/admin/menu/master?editMaster=<%= item.id %>" class="btn btn-warning btn-xs">✏️ Edit</a>
                       <form method="POST" action="/admin/menu/<%= item.id %>/delete" style="display:inline" onsubmit="return confirm('Hapus?')">
                         <button class="btn btn-danger btn-xs">🗑 Hapus</button>
                       </form>
@@ -155,14 +312,58 @@
                   </td>
                 </tr>
                 <% }) %>
-                <% if (!list.length) { %><tr><td colspan="6" style="text-align:center;color:#aaa;padding:20px;">Belum ada data pada tanggal ini</td></tr><% } %>
+                <% if (!masterList.length) { %><tr><td colspan="5" style="text-align:center;color:#aaa;padding:20px;">Belum ada master menu</td></tr><% } %>
               </tbody>
             </table>
           </div>
         </div>
       </div>
+      <% } %>
     </div>
   </div>
 </div>
+<script>
+  (function () {
+    const params = new URLSearchParams(window.location.search);
+    const editListId = params.get('editList');
+    const previewListId = params.get('previewList');
+
+    const flashTarget = (target) => {
+      if (!target) return;
+      const originalTransition = target.style.transition;
+      const originalOutline = target.style.outline;
+      const originalOutlineOffset = target.style.outlineOffset;
+      target.style.transition = 'outline-color 0.2s ease';
+      target.style.outline = '2px solid #2563eb';
+      target.style.outlineOffset = '2px';
+      setTimeout(() => {
+        target.style.outline = originalOutline;
+        target.style.outlineOffset = originalOutlineOffset;
+        target.style.transition = originalTransition;
+      }, 1400);
+    };
+
+    if (editListId) {
+      const section = document.getElementById('list-hari-card');
+      const input = document.getElementById('nama-list-hari');
+      section && section.scrollIntoView({ behavior: 'smooth', block: 'start' });
+      setTimeout(() => {
+        if (input) {
+          input.focus();
+          input.select();
+        }
+      }, 220);
+      flashTarget(section);
+    }
+
+    if (previewListId) {
+      const previewCard = document.getElementById('menu-preview-card');
+      const activeRow = document.querySelector(`tr[data-list-id="${previewListId}"]`);
+      previewCard && previewCard.scrollIntoView({ behavior: 'smooth', block: 'start' });
+      flashTarget(previewCard);
+      flashTarget(activeRow);
+    }
+  })();
+</script>
 </body>
 </html>

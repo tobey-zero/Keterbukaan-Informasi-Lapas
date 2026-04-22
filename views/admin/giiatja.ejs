@@ -110,7 +110,9 @@
               </div>
               <div class="form-group"><label>Urutan</label><input type="number" min="1" name="sort_order" value="1"></div>
               <div class="form-group"><label>Jenis Kegiatan</label><input type="text" name="jenis_kegiatan" required placeholder="cth: PANGKAS"></div>
-              <div class="form-group"><label>Nama Peserta</label><input type="text" name="peserta_kegiatan" required placeholder="cth: WBP A.N. A"></div>
+              <div class="form-group"><label>Nama Peserta</label><textarea name="peserta_kegiatan" rows="3" required placeholder="cth:
+WBP A.N. A
+WBP B.N. B"></textarea></div>
               <div class="form-group"><label>Pengawas</label><input type="text" name="pengawas" placeholder="cth: Petugas A"></div>
               <div class="form-group"><label>Dokumentasi (opsional)</label><input type="file" name="dokumentasi" accept="image/*"></div>
             </div>
@@ -134,7 +136,7 @@
             </div>
             <div class="form-group"><label>Urutan</label><input type="number" min="1" name="sort_order" value="<%= editKegiatan.sort_order || 1 %>"></div>
             <div class="form-group"><label>Jenis Kegiatan</label><input type="text" name="jenis_kegiatan" value="<%= editKegiatan.jenis_kegiatan || '' %>" required></div>
-            <div class="form-group"><label>Nama Peserta</label><input type="text" name="peserta_kegiatan" value="<%= editKegiatan.peserta_kegiatan || '' %>" required></div>
+            <div class="form-group"><label>Nama Peserta</label><textarea name="peserta_kegiatan" rows="3" required><%= editKegiatan.peserta_kegiatan || '' %></textarea></div>
             <div class="form-group"><label>Pengawas</label><input type="text" name="pengawas" value="<%= editKegiatan.pengawas || '' %>"></div>
             <div class="form-group"><label>Dokumentasi Baru (opsional)</label><input type="file" name="dokumentasi" accept="image/*"></div>
           </div>
@@ -158,7 +160,18 @@
                   <td><%= i + 1 %></td>
                   <td><%= item.kategori || '-' %></td>
                   <td><%= item.jenis_kegiatan || '-' %></td>
-                  <td><%= item.peserta_kegiatan || '-' %></td>
+                  <td>
+                    <% const pesertaLines = String(item.peserta_kegiatan || '').split(/\r?\n/).map(line => line.trim()).filter(Boolean); %>
+                    <% if (pesertaLines.length) { %>
+                      <ol style="margin:0; padding-left:18px; white-space:normal;">
+                        <% pesertaLines.forEach((line) => { %>
+                          <li><%= line %></li>
+                        <% }) %>
+                      </ol>
+                    <% } else { %>
+                      -
+                    <% } %>
+                  </td>
                   <td><%= item.pengawas || '-' %></td>
                   <td>
                     <% if (item.dokumentasi_path) { %>

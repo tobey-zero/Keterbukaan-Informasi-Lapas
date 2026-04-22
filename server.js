@@ -674,11 +674,36 @@ function getPublicData() {
     .all();
 
   const menuMakan = db
-    .prepare('SELECT tanggal, waktu, menu, photo_path AS photoPath FROM menu_makan WHERE tanggal = ? ORDER BY id')
+    .prepare(`SELECT
+      s.tanggal,
+      m.waktu,
+      m.menu,
+      m.photo_path AS photoPath
+    FROM menu_harian_set s
+    INNER JOIN menu_harian_list_item li ON li.list_id = s.list_id
+    INNER JOIN menu_master m ON m.id = li.menu_master_id
+    WHERE s.tanggal = ?
+    ORDER BY li.sort_order ASC,
+      CASE m.waktu
+        WHEN 'MAKAN PAGI' THEN 1
+        WHEN 'SNACK' THEN 2
+        WHEN 'MAKAN SIANG' THEN 3
+        WHEN 'MAKAN SORE' THEN 4
+        ELSE 5
+      END ASC,
+      m.id ASC`)
     .all(todayYmd);
 
   const menuMakanHistory = db
-    .prepare('SELECT tanggal, waktu, menu, photo_path AS photoPath FROM menu_makan ORDER BY tanggal DESC, id DESC')
+    .prepare(`SELECT
+      s.tanggal,
+      m.waktu,
+      m.menu,
+      m.photo_path AS photoPath
+    FROM menu_harian_set s
+    INNER JOIN menu_harian_list_item li ON li.list_id = s.list_id
+    INNER JOIN menu_master m ON m.id = li.menu_master_id
+    ORDER BY s.tanggal DESC, li.sort_order ASC, m.id ASC`)
     .all();
 
   const rawPembinaan = db
@@ -2043,7 +2068,7 @@ app.get('/admin', requireLogin, (req, res) => res.redirect('/admin/dashboard'));
 app.get('/admin/dashboard', requireAccess('dashboard'), (req, res) => {
   const stats = {
     remisi: db.prepare('SELECT COUNT(*) AS c FROM besaran_remisi').get().c,
-    menu: db.prepare('SELECT COUNT(*) AS c FROM menu_makan').get().c,
+    menu: db.prepare('SELECT COUNT(*) AS c FROM menu_harian_set').get().c,
     pembinaan: db.prepare('SELECT COUNT(*) AS c FROM pentahapan_pembinaan').get().c,
     detail: db.prepare('SELECT COUNT(*) AS c FROM pentahapan_pembinaan_detail').get().c,
     jadwal: db.prepare('SELECT COUNT(*) AS c FROM jadwal_kegiatan').get().c,
@@ -2146,25 +2171,126 @@ app.post('/admin/kata-bijak/update', requireAccess('kata-bijak'), (req, res) => 
 });
 
 // ── Menu Makan ────────────────────────────────────────────────────
-app.get('/admin/menu', requireAccess('menu'), (req, res) => {
+function renderAdminMenuPage(req, res, menuSection) {
   const selectedTanggal = (req.query.tanggal || '').trim() || getTodayYmd();
-  const list = db.prepare('SELECT * FROM menu_makan WHERE tanggal = ? ORDER BY id DESC').all(selectedTanggal);
-  const totalHistory = db.prepare('SELECT COUNT(*) AS c FROM menu_makan').get().c;
-  const edit = req.query.edit ? db.prepare('SELECT * FROM menu_makan WHERE id=?').get(Number(req.query.edit)) : null;
+  const masterList = db.prepare(`SELECT
+    id,
+    waktu,
+    menu,
+    photo_path,
+    sort_order AS sortOrder
+  FROM menu_master
+  ORDER BY sort_order ASC,
+    CASE waktu
+      WHEN 'MAKAN PAGI' THEN 1
+      WHEN 'SNACK' THEN 2
+      WHEN 'MAKAN SIANG' THEN 3
+      WHEN 'MAKAN SORE' THEN 4
+      ELSE 5
+    END ASC,
+    id ASC`).all();
+
+  const dayLists = db.prepare(`SELECT
+    l.id,
+    l.nama_list AS namaList,
+    l.sort_order AS sortOrder,
+    COUNT(li.id) AS totalItem
+  FROM menu_harian_list l
+  LEFT JOIN menu_harian_list_item li ON li.list_id = l.id
+  GROUP BY l.id, l.nama_list, l.sort_order
+  ORDER BY l.sort_order ASC, l.id ASC`).all();
+
+  const selectedSet = db.prepare(`SELECT
+    s.id,
+    s.tanggal,
+    s.list_id AS listId,
+    l.nama_list AS namaList
+  FROM menu_harian_set s
+  INNER JOIN menu_harian_list l ON l.id = s.list_id
+  WHERE s.tanggal = ?
+  LIMIT 1`).get(selectedTanggal);
+
+  const selectedListId = req.query.previewList
+    ? Number(req.query.previewList)
+    : Number(selectedSet?.listId || dayLists[0]?.id || 0);
+
+  const dailyList = selectedListId
+    ? db.prepare(`SELECT
+    li.id,
+    ? AS tanggal,
+    li.menu_master_id AS menuMasterId,
+    li.sort_order AS sortOrder,
+    m.waktu,
+    m.menu,
+    m.photo_path
+  FROM menu_harian_list_item li
+  INNER JOIN menu_master m ON m.id = li.menu_master_id
+  WHERE li.list_id = ?
+  ORDER BY li.sort_order ASC,
+    CASE m.waktu
+      WHEN 'MAKAN PAGI' THEN 1
+      WHEN 'SNACK' THEN 2
+      WHEN 'MAKAN SIANG' THEN 3
+      WHEN 'MAKAN SORE' THEN 4
+      ELSE 5
+    END ASC,
+    li.id ASC`).all(selectedTanggal, selectedListId)
+    : [];
+
+  const totalHistory = db.prepare('SELECT COUNT(*) AS c FROM menu_harian_set').get().c;
+  const editMaster = req.query.editMaster
+    ? db.prepare('SELECT id, waktu, menu, photo_path FROM menu_master WHERE id=?').get(Number(req.query.editMaster))
+    : null;
+  const editDayList = req.query.editList
+    ? db.prepare('SELECT id, nama_list AS namaList FROM menu_harian_list WHERE id=?').get(Number(req.query.editList))
+    : null;
+  const selectedMasterIds = editDayList
+    ? db.prepare('SELECT menu_master_id AS menuMasterId FROM menu_harian_list_item WHERE list_id=? ORDER BY sort_order ASC, id ASC').all(editDayList.id).map(item => Number(item.menuMasterId))
+    : [];
   const menuTitle = getAppSetting('menu_title', 'DAFTAR MENU MAKAN HARI INI');
+
+  const activeMap = {
+    master: 'menu-master',
+    template: 'menu-template',
+    makanan: 'menu-makanan',
+  };
+
   res.render('admin/menu', {
     user: req.session.user,
-    list,
-    edit,
+    menuSection,
+    masterList,
+    dayLists,
+    selectedSet,
+    selectedListId,
+    dailyList,
+    editMaster,
+    editDayList,
+    selectedMasterIds,
     menuTitle,
     todayYmd: getTodayYmd(),
     selectedTanggal,
     totalHistory,
-    active: 'menu',
+    active: activeMap[menuSection] || 'menu-makanan',
     success: req.query.success,
     titleSuccess: req.query.titleSuccess,
     error: req.query.error
   });
+}
+
+app.get('/admin/menu', requireAccess('menu'), (req, res) => {
+  return res.redirect('/admin/menu/makanan');
+});
+
+app.get('/admin/menu/master', requireAccess('menu'), (req, res) => {
+  return renderAdminMenuPage(req, res, 'master');
+});
+
+app.get('/admin/menu/template', requireAccess('menu'), (req, res) => {
+  return renderAdminMenuPage(req, res, 'template');
+});
+
+app.get('/admin/menu/makanan', requireAccess('menu'), (req, res) => {
+  return renderAdminMenuPage(req, res, 'makanan');
 });
 
 app.post('/admin/menu/title/update', requireAccess('menu'), (req, res) => {
@@ -2174,22 +2300,21 @@ app.post('/admin/menu/title/update', requireAccess('menu'), (req, res) => {
     VALUES (?, ?)
     ON CONFLICT(key) DO UPDATE SET value=excluded.value
   `).run('menu_title', nextTitle);
-  res.redirect('/admin/menu?titleSuccess=1');
+  res.redirect('/admin/menu/makanan?titleSuccess=1');
 });
 
 app.post('/admin/menu/add', requireAccess('menu'), menuUpload.single('photo'), (req, res) => {
-  const tanggal = (req.body.tanggal || '').trim() || getTodayYmd();
   const { waktu, menu } = req.body;
   const photoPath = req.file ? `/uploads/menu/${req.file.filename}` : null;
-  db.prepare('INSERT INTO menu_makan (tanggal, waktu, menu, photo_path) VALUES (?, ?, ?, ?)').run(tanggal, waktu, menu, photoPath);
-  res.redirect('/admin/menu?success=1');
+  const sortOrder = Number(db.prepare('SELECT COALESCE(MAX(sort_order), 0) + 1 AS n FROM menu_master').get().n || 1);
+  db.prepare('INSERT INTO menu_master (waktu, menu, photo_path, sort_order) VALUES (?, ?, ?, ?)').run(waktu, menu, photoPath, sortOrder);
+  res.redirect('/admin/menu/master?success=1');
 });
 
 app.post('/admin/menu/:id/update', requireAccess('menu'), menuUpload.single('photo'), (req, res) => {
-  const tanggal = (req.body.tanggal || '').trim() || getTodayYmd();
   const { waktu, menu } = req.body;
   const id = Number(req.params.id);
-  const existing = db.prepare('SELECT photo_path FROM menu_makan WHERE id=?').get(id);
+  const existing = db.prepare('SELECT photo_path FROM menu_master WHERE id=?').get(id);
   let nextPhotoPath = existing?.photo_path || null;
 
   if (req.file) {
@@ -2197,16 +2322,93 @@ app.post('/admin/menu/:id/update', requireAccess('menu'), menuUpload.single('pho
     nextPhotoPath = `/uploads/menu/${req.file.filename}`;
   }
 
-  db.prepare('UPDATE menu_makan SET tanggal=?, waktu=?, menu=?, photo_path=? WHERE id=?').run(tanggal, waktu, menu, nextPhotoPath, id);
-  res.redirect('/admin/menu?success=1');
+  db.prepare('UPDATE menu_master SET waktu=?, menu=?, photo_path=? WHERE id=?').run(waktu, menu, nextPhotoPath, id);
+  res.redirect('/admin/menu/master?success=1');
 });
 
 app.post('/admin/menu/:id/delete', requireAccess('menu'), (req, res) => {
   const id = Number(req.params.id);
-  const existing = db.prepare('SELECT photo_path FROM menu_makan WHERE id=?').get(id);
+  const existing = db.prepare('SELECT photo_path FROM menu_master WHERE id=?').get(id);
   if (existing?.photo_path) removeUploadedFile(existing.photo_path);
-  db.prepare('DELETE FROM menu_makan WHERE id=?').run(id);
-  res.redirect('/admin/menu');
+  db.prepare('DELETE FROM menu_harian_list_item WHERE menu_master_id=?').run(id);
+  db.prepare('DELETE FROM menu_harian WHERE menu_master_id=?').run(id);
+  db.prepare('DELETE FROM menu_master WHERE id=?').run(id);
+  res.redirect('/admin/menu/master');
+});
+
+app.post('/admin/menu/list/add', requireAccess('menu'), (req, res) => {
+  const namaList = (req.body.nama_list || '').trim();
+  const incoming = req.body.menu_ids;
+  const selectedIdsRaw = Array.isArray(incoming) ? incoming : (incoming ? [incoming] : []);
+  const selectedIds = Array.from(new Set(selectedIdsRaw
+    .map(value => Number(value))
+    .filter(value => Number.isInteger(value) && value > 0)));
+
+  if (!namaList) return res.redirect('/admin/menu/template?error=Nama+list+harus+diisi.');
+  if (!selectedIds.length) return res.redirect('/admin/menu/template?error=Pilih+minimal+1+menu+master+untuk+list+hari.');
+
+  const sortOrder = Number(db.prepare('SELECT COALESCE(MAX(sort_order), 0) + 1 AS n FROM menu_harian_list').get().n || 1);
+  const insertList = db.prepare('INSERT INTO menu_harian_list (nama_list, sort_order) VALUES (?, ?)');
+  const result = insertList.run(namaList, sortOrder);
+  const listId = Number(result.lastInsertRowid);
+
+  const insertItem = db.prepare('INSERT INTO menu_harian_list_item (list_id, menu_master_id, sort_order) VALUES (?, ?, ?)');
+  selectedIds.forEach((menuMasterId, index) => {
+    insertItem.run(listId, menuMasterId, index + 1);
+  });
+
+  return res.redirect('/admin/menu/template?success=1');
+});
+
+app.post('/admin/menu/list/:id/update', requireAccess('menu'), (req, res) => {
+  const listId = Number(req.params.id);
+  const namaList = (req.body.nama_list || '').trim();
+  const incoming = req.body.menu_ids;
+  const selectedIdsRaw = Array.isArray(incoming) ? incoming : (incoming ? [incoming] : []);
+  const selectedIds = Array.from(new Set(selectedIdsRaw
+    .map(value => Number(value))
+    .filter(value => Number.isInteger(value) && value > 0)));
+
+  if (!namaList) return res.redirect(`/admin/menu/template?editList=${listId}&error=Nama+list+harus+diisi.`);
+  if (!selectedIds.length) return res.redirect(`/admin/menu/template?editList=${listId}&error=Pilih+minimal+1+menu+master+untuk+list+hari.`);
+
+  db.prepare('UPDATE menu_harian_list SET nama_list=? WHERE id=?').run(namaList, listId);
+  db.prepare('DELETE FROM menu_harian_list_item WHERE list_id=?').run(listId);
+  const insertItem = db.prepare('INSERT INTO menu_harian_list_item (list_id, menu_master_id, sort_order) VALUES (?, ?, ?)');
+  selectedIds.forEach((menuMasterId, index) => {
+    insertItem.run(listId, menuMasterId, index + 1);
+  });
+
+  return res.redirect('/admin/menu/template?success=1');
+});
+
+app.post('/admin/menu/list/:id/delete', requireAccess('menu'), (req, res) => {
+  const listId = Number(req.params.id);
+  const usedCount = db.prepare('SELECT COUNT(*) AS c FROM menu_harian_set WHERE list_id=?').get(listId).c;
+  if (Number(usedCount) > 0) {
+    return res.redirect('/admin/menu/template?error=List+hari+masih+dipakai+di+menu+harian.+Ubah+penetapan+tanggal+dulu.');
+  }
+  db.prepare('DELETE FROM menu_harian_list_item WHERE list_id=?').run(listId);
+  db.prepare('DELETE FROM menu_harian_list WHERE id=?').run(listId);
+  return res.redirect('/admin/menu/template');
+});
+
+app.post('/admin/menu/harian/set', requireAccess('menu'), (req, res) => {
+  const tanggal = (req.body.tanggal || '').trim() || getTodayYmd();
+  const listId = Number(req.body.list_id || 0);
+  if (!Number.isInteger(listId) || listId <= 0) {
+    const params = new URLSearchParams({ tanggal, error: 'Pilih list hari terlebih dahulu.' });
+    return res.redirect(`/admin/menu/makanan?${params.toString()}`);
+  }
+
+  db.prepare(`
+    INSERT INTO menu_harian_set (tanggal, list_id)
+    VALUES (?, ?)
+    ON CONFLICT(tanggal) DO UPDATE SET list_id=excluded.list_id
+  `).run(tanggal, listId);
+
+  const params = new URLSearchParams({ tanggal, success: '1' });
+  return res.redirect(`/admin/menu/makanan?${params.toString()}`);
 });
 
 // ── Pentahapan Pembinaan ──────────────────────────────────────────
@@ -2912,7 +3114,13 @@ app.post('/admin/giiatja/kategori/:id/delete', requireAccess('giiatja'), (req, r
 app.post('/admin/giiatja/kegiatan/add', requireAccess('giiatja'), raziaUpload.single('dokumentasi'), (req, res) => {
   const kegiatanId = Number(req.body.kegiatan_id || 0);
   const jenisKegiatan = String(req.body.jenis_kegiatan || '').trim().toUpperCase();
-  const pesertaKegiatan = String(req.body.peserta_kegiatan || '').trim().toUpperCase();
+  const pesertaKegiatan = String(req.body.peserta_kegiatan || '')
+    .replace(/\r\n/g, '\n')
+    .split('\n')
+    .map(line => line.trim())
+    .filter(Boolean)
+    .join('\n')
+    .toUpperCase();
   const pengawas = String(req.body.pengawas || '').trim();
   const sortOrder = Number(req.body.sort_order || 0) || 1;
   if (!kegiatanId || !jenisKegiatan || !pesertaKegiatan) return res.redirect('/admin/giiatja');
@@ -2931,7 +3139,13 @@ app.post('/admin/giiatja/kegiatan/:id/update', requireAccess('giiatja'), raziaUp
   const id = Number(req.params.id);
   const kegiatanId = Number(req.body.kegiatan_id || 0);
   const jenisKegiatan = String(req.body.jenis_kegiatan || '').trim().toUpperCase();
-  const pesertaKegiatan = String(req.body.peserta_kegiatan || '').trim().toUpperCase();
+  const pesertaKegiatan = String(req.body.peserta_kegiatan || '')
+    .replace(/\r\n/g, '\n')
+    .split('\n')
+    .map(line => line.trim())
+    .filter(Boolean)
+    .join('\n')
+    .toUpperCase();
   const pengawas = String(req.body.pengawas || '').trim();
   const sortOrder = Number(req.body.sort_order || 0) || 1;
   if (!kegiatanId || !jenisKegiatan || !pesertaKegiatan) return res.redirect('/admin/giiatja');
