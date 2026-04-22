@@ -57,6 +57,11 @@
           <div class="stat-card-value"><%= stats.tuUmum %></div>
           <div class="stat-card-sub">laporan barang pengguna</div>
         </div>
+        <div class="stat-card orange">
+          <div class="stat-card-label">GIIATJA</div>
+          <div class="stat-card-value"><%= stats.giiatja %></div>
+          <div class="stat-card-sub">entri kegiatan kerja</div>
+        </div>
         <div class="stat-card green">
           <div class="stat-card-label">Kamar/Blok</div>
           <div class="stat-card-value"><%= stats.kamarBlok %></div>
@@ -83,6 +88,7 @@
           <% if(allowed.includes('menu'))             { %><a href="/admin/menu"      class="btn btn-success">🍽 Menu Makan</a><% } %>
           <% if(allowed.includes('jadwal'))           { %><a href="/admin/jadwal"    class="btn btn-secondary">📅 Jadwal Kegiatan</a><% } %>
           <% if(allowed.includes('pembinaan-detail')) { %><a href="/admin/pembinaan-detail" class="btn btn-secondary">🧭 Detail Pembinaan</a><% } %>
+          <% if(allowed.includes('giiatja'))          { %><a href="/admin/giiatja" class="btn btn-secondary">🏭 GIIATJA</a><% } %>
           <% if(allowed.includes('razia'))            { %><a href="/admin/razia"    class="btn btn-danger">🚨 Razia</a><% } %>
           <% if(allowed.includes('pengawalan'))       { %><a href="/admin/pengawalan" class="btn btn-danger">🛡️ Giat Pengawalan</a><% } %>
           <% if(allowed.includes('strapsel'))         { %><a href="/admin/strapsel" class="btn btn-secondary">🛡️ Strapsel</a><% } %>

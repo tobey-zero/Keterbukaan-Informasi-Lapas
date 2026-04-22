@@ -42,12 +42,20 @@
             grid-area: auto;
         }
 
-        .panel-sebaran {
+        .dashboard-main > .panel-sebaran,
+        .dashboard-main > .panel-right-stack {
             grid-area: sebaran;
         }
 
         .panel-middle-stack {
             grid-area: middle;
+            display: grid;
+            gap: 12px;
+            align-content: start;
+        }
+
+        .panel-right-stack {
+            grid-area: sebaran;
             display: grid;
             gap: 12px;
             align-content: start;
@@ -546,6 +554,7 @@
             <a href="/klinik">🏥 Klinik</a>
             <a href="/kalapas/table/pengamanan">🔒 Pengamanan</a>
             <a href="/kalapas/table/kamtib">🛡️ Kamtib</a>
+            <a href="/kalapas/table/giiatja">🏭 GIIATJA</a>
             <a href="/kalapas/table/tu-umum">📑 Tata Usaha</a>
         </div>
     </header>
@@ -560,6 +569,7 @@
         label: 'Jadwal Razia' , value: raziaSummary.totalJadwalRazia, link: '/kalapas/table/razia-jadwal' }, {
         label: 'Barang Bukti Razia' , value: raziaSummary.totalBarangBukti, link: '/kalapas/table/razia-barang-bukti' },
         { label: 'Data Stapsel' , value: securitySummary.totalStrapsel, link: '/kalapas/table/strapsel' }, {
+        label: 'GIIATJA' , value: (giiatjaSummary && giiatjaSummary.total) || 0, link: '/kalapas/table/giiatja' }, {
         label: 'Laporan BMN' , value: tuUmumSummary.totalTuUmum, link: '/kalapas/table/tu-bmn' }, { label: 'Kepegawaian'
         , value: tuUmumSummary.totalPegawai, link: '/kalapas/table/kepegawaian' } ]; const
         occupied=Number(totalPenghuni) || 0; const capacityNum=Number(kapasitas) || 0; const
@@ -662,25 +672,46 @@
 
             </div>
 
-            <div class="panel panel-sebaran">
-                <div class="panel-header">SEBARAN PENGHUNI PER GEDUNG</div>
-                <div class="panel-content">
-                    <% const gedungTotalsMap = {};
-                    (housingBlocks || []).forEach(item => {
-                    const gedungName = (item.gedung || '-').trim() || '-';
-                    gedungTotalsMap[gedungName] = (gedungTotalsMap[gedungName] || 0) + (Number(item.totalPenghuni) || 0);
-                    });
-                    const gedungLabels = Object.keys(gedungTotalsMap);
-                    const gedungValues = gedungLabels.map(label => gedungTotalsMap[label]); %>
-                    <div class="pie-card clickable-chart" tabindex="0" role="link" data-link="/kalapas/table/kamar-blok"
-                        data-values="<%= gedungValues.join(',') %>"
-                        data-labels="<%= gedungLabels.join('|') %>">
-                        <h4 class="pie-title">Sebaran Penghuni per Gedung</h4>
-                        <div class="pie-layout">
-                            <div class="pie-chart">
-                                <div class="pie-center">0</div>
+            <div class="panel-right-stack">
+                <div class="panel panel-sebaran">
+                    <div class="panel-header">SEBARAN PENGHUNI PER GEDUNG</div>
+                    <div class="panel-content">
+                        <% const gedungTotalsMap = {};
+                        (housingBlocks || []).forEach(item => {
+                        const gedungName = (item.gedung || '-').trim() || '-';
+                        gedungTotalsMap[gedungName] = (gedungTotalsMap[gedungName] || 0) + (Number(item.totalPenghuni) || 0);
+                        });
+                        const gedungLabels = Object.keys(gedungTotalsMap);
+                        const gedungValues = gedungLabels.map(label => gedungTotalsMap[label]); %>
+                        <div class="pie-card clickable-chart" tabindex="0" role="link" data-link="/kalapas/table/kamar-blok"
+                            data-values="<%= gedungValues.join(',') %>"
+                            data-labels="<%= gedungLabels.join('|') %>">
+                            <h4 class="pie-title">Sebaran Penghuni per Gedung</h4>
+                            <div class="pie-layout">
+                                <div class="pie-chart">
+                                    <div class="pie-center">0</div>
+                                </div>
+                                <ul class="pie-legend"></ul>
                             </div>
-                            <ul class="pie-legend"></ul>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="panel panel-giiatja">
+                    <div class="panel-header">GRAFIK PIE PNBP GIIATJA</div>
+                    <div class="panel-content">
+                        <div class="pie-card clickable-chart" tabindex="0" role="link" data-link="/kalapas/table/giiatja"
+                            data-values="<%= [giiatjaPnbpChart.totalJumlahPnbp, giiatjaPnbpChart.sisaTargetPnbp].join(',') %>"
+                            data-labels="PNBP Tercapai|Sisa Target"
+                            data-center-mode="percent"
+                            data-center-value="<%= giiatjaPnbpChart.progressPercent.toFixed(1) %>">
+                            <h4 class="pie-title">Grafik Pie PNBP GIIATJA</h4>
+                            <div class="pie-layout">
+                                <div class="pie-chart">
+                                    <div class="pie-center"><%= giiatjaPnbpChart.progressPercent.toFixed(0) %>%</div>
+                                </div>
+                                <ul class="pie-legend"></ul>
+                            </div>
                         </div>
                     </div>
                 </div>

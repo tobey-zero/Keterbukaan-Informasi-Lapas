@@ -624,10 +624,10 @@ app.use((req, res, next) => {
 });
 
 // ─── Role Access Map ─────────────────────────────────────────────────────────
-const ROLES = ['superadmin', 'registrasi', 'pembinaan', 'klinik', 'dapur', 'humas', 'kamtib', 'tata_usaha', 'pengamanan'];
+const ROLES = ['superadmin', 'registrasi', 'pembinaan', 'klinik', 'dapur', 'humas', 'kamtib', 'tata_usaha', 'pengamanan', 'giiatja'];
 
 const roleAccess = {
-  superadmin: ['dashboard', 'statistik', 'remisi', 'kata-bijak', 'menu', 'jadwal', 'pembinaan-detail', 'razia', 'pengawalan', 'register-f', 'strapsel', 'piket-jaga', 'tu-umum', 'kamar-blok', 'papan-isi', 'luar-tembok', 'users', 'video', 'klinik-medis', 'klinik-berobat', 'klinik-oncall', 'klinik-kontrol', 'klinik-statistik'],
+  superadmin: ['dashboard', 'statistik', 'remisi', 'kata-bijak', 'menu', 'jadwal', 'pembinaan-detail', 'razia', 'pengawalan', 'register-f', 'strapsel', 'piket-jaga', 'tu-umum', 'kamar-blok', 'papan-isi', 'luar-tembok', 'giiatja', 'users', 'video', 'klinik-medis', 'klinik-berobat', 'klinik-oncall', 'klinik-kontrol', 'klinik-statistik'],
   registrasi: ['dashboard', 'statistik', 'remisi', 'papan-isi'],
   pembinaan: ['dashboard', 'jadwal', 'pembinaan-detail'],
   klinik: ['dashboard', 'klinik-medis', 'klinik-berobat', 'klinik-oncall', 'klinik-kontrol', 'klinik-statistik'],
@@ -636,6 +636,7 @@ const roleAccess = {
   kamtib: ['dashboard',  'razia', 'pengawalan', 'register-f', 'strapsel', 'piket-jaga'],
   tata_usaha: ['dashboard', 'tu-umum'],
   pengamanan: ['dashboard', 'kamar-blok', 'luar-tembok'],
+  giiatja: ['dashboard', 'giiatja'],
 };
 
 // ─── Auth Middleware ──────────────────────────────────────────────────────────
@@ -1003,6 +1004,100 @@ function getTuUmumData() {
   };
 }
 
+function getGiiatjaData() {
+  const parseNominal = (value) => {
+    const digits = String(value ?? '').replace(/\D/g, '');
+    const parsed = Number(digits);
+    if (!Number.isFinite(parsed)) return 0;
+    return Math.max(0, parsed);
+  };
+
+  const kegiatanList = db
+    .prepare(`SELECT
+      id,
+      kategori,
+      jenis_kegiatan AS jenisKegiatan,
+      peserta_kegiatan AS pesertaKegiatan,
+      pengawas,
+      dokumentasi_path AS dokumentasiPath,
+      sort_order AS sortOrder
+    FROM giiatja_kegiatan
+    ORDER BY sort_order ASC, id ASC`)
+    .all();
+
+  const pelatihanList = db
+    .prepare(`SELECT
+      id,
+      no_registrasi AS noRegistrasi,
+      nama_wbp AS namaWbp,
+      jenis_pelatihan AS jenisPelatihan,
+      tanggal_pelaksanaan AS tanggalPelaksanaan,
+      instruktur,
+      poto_sertifikat_path AS potoSertifikatPath,
+      keterangan
+    FROM giiatja_pelatihan_sertifikat
+    ORDER BY id ASC`)
+    .all();
+
+  const pnbpList = db
+    .prepare(`SELECT
+      id,
+      periode_pnbp AS periodePnbp,
+      jumlah_pnbp AS jumlahPnbp,
+      target_realisasi AS targetRealisasi,
+      persentase,
+      keterangan,
+      sort_order AS sortOrder
+    FROM giiatja_pnbp
+    ORDER BY sort_order ASC, id ASC`)
+    .all();
+
+  const premiList = db
+    .prepare(`SELECT
+      id,
+      no_registrasi AS noRegistrasi,
+      nama_wbp AS namaWbp,
+      jenis_kegiatan AS jenisKegiatan,
+      premi_didapat AS premiDidapat,
+      keterangan,
+      sort_order AS sortOrder
+    FROM giiatja_premi_wbp
+    ORDER BY sort_order ASC, id ASC`)
+    .all();
+
+  const pnbpTahun = getAppSetting('giiatja_pnbp_tahun', String(new Date().getFullYear()));
+  const premiPeriodeBulan = getAppSetting('giiatja_premi_periode_bulan', '-');
+
+  const totalJumlahPnbp = pnbpList.reduce((sum, item) => sum + parseNominal(item.jumlahPnbp), 0);
+  const totalTargetRealisasi = pnbpList.reduce((sum, item) => sum + parseNominal(item.targetRealisasi), 0);
+  const sisaTargetPnbp = Math.max(totalTargetRealisasi - totalJumlahPnbp, 0);
+  const progressPercent = totalTargetRealisasi > 0
+    ? Math.max(0, Math.min(100, (totalJumlahPnbp / totalTargetRealisasi) * 100))
+    : 0;
+
+  return {
+    kegiatanList,
+    pelatihanList,
+    pnbpList,
+    premiList,
+    pnbpTahun,
+    premiPeriodeBulan,
+    giiatjaSummary: {
+      kegiatan: kegiatanList.length,
+      pelatihan: pelatihanList.length,
+      pnbp: pnbpList.length,
+      premi: premiList.length,
+      total: kegiatanList.length + pelatihanList.length + pnbpList.length + premiList.length,
+      pnbpChart: {
+        totalJumlahPnbp,
+        totalTargetRealisasi,
+        sisaTargetPnbp,
+        progressPercent,
+      }
+    }
+  };
+}
+
 function getHousingData() {
   const blocks = db
     .prepare('SELECT id, gedung, nama_block AS namaBlock FROM housing_blocks ORDER BY gedung COLLATE NOCASE ASC, nama_block COLLATE NOCASE ASC')
@@ -1168,6 +1263,7 @@ function getKalapasData() {
   const security = getSecurityData();
   const pengawalan = getPengawalanData();
   const tuUmum = getTuUmumData();
+  const giiatja = getGiiatjaData();
   const housing = getHousingData();
   const board = getBoardData();
 
@@ -1197,6 +1293,8 @@ function getKalapasData() {
     pegawaiList: tuUmum.pegawaiList,
     financeSummary: tuUmum.financeSummary,
     tuUmumSummary: tuUmum.tuUmumSummary,
+    giiatjaSummary: giiatja.giiatjaSummary,
+    giiatjaPnbpChart: giiatja.giiatjaSummary.pnbpChart,
     housingBlocks: housing.housingBlocks,
     housingRooms: housing.housingRooms,
     housingSummary: housing.housingSummary,
@@ -1605,6 +1703,16 @@ app.get('/kalapas/table/pengawalan', (req, res) => {
   });
 });
 
+app.get('/kalapas/table/giiatja', (req, res) => {
+  const data = getGiiatjaData();
+  res.render('kalapas-giiatja', {
+    pageTitle: 'GIIATJA',
+    subtitle: `Kegiatan: ${data.kegiatanList.length} | Pelatihan Bersertifikat: ${data.pelatihanList.length} | PNBP: ${data.pnbpList.length} | Premi: ${data.premiList.length}`,
+    backUrl: '/kalapas',
+    ...data,
+  });
+});
+
 app.get('/kalapas/table/tu-realisasi', (req, res) => {
   const financeSummary = getFinanceSummary();
   const financeIndicator = getFinanceIndicatorSummary();
@@ -1901,6 +2009,10 @@ app.get('/admin/dashboard', requireAccess('dashboard'), (req, res) => {
     pengawalan: db.prepare('SELECT COUNT(*) AS c FROM giat_pengawalan').get().c,
     strapsel: db.prepare('SELECT COUNT(*) AS c FROM strapsel_data').get().c,
     tuUmum: db.prepare('SELECT COUNT(*) AS c FROM tu_umum_barang').get().c,
+    giiatja: db.prepare('SELECT COUNT(*) AS c FROM giiatja_kegiatan').get().c
+      + db.prepare('SELECT COUNT(*) AS c FROM giiatja_pelatihan_sertifikat').get().c
+      + db.prepare('SELECT COUNT(*) AS c FROM giiatja_pnbp').get().c
+      + db.prepare('SELECT COUNT(*) AS c FROM giiatja_premi_wbp').get().c,
     kamarBlok: db.prepare('SELECT COUNT(*) AS c FROM housing_blocks').get().c,
     papanIsi: db.prepare('SELECT COUNT(*) AS c FROM board_pidana').get().c + db.prepare('SELECT COUNT(*) AS c FROM board_luar_tembok').get().c + db.prepare('SELECT COUNT(*) AS c FROM board_agama').get().c,
     users: db.prepare('SELECT COUNT(*) AS c FROM users').get().c,
@@ -2646,6 +2758,250 @@ app.post('/admin/register-f/:id/delete', requireAccess('register-f'), (req, res)
   const redirectParams = new URLSearchParams({ success: '1' });
   if (searchKeyword) redirectParams.set('search', searchKeyword);
   res.redirect(`/admin/register-f?${redirectParams.toString()}`);
+});
+
+// ── GIIATJA (Kegiatan Kerja) ─────────────────────────────────────
+app.get('/admin/giiatja', requireAccess('giiatja'), (req, res) => {
+  const kegiatanList = db.prepare('SELECT * FROM giiatja_kegiatan ORDER BY sort_order ASC, id ASC').all();
+  const pelatihanList = db.prepare('SELECT * FROM giiatja_pelatihan_sertifikat ORDER BY id ASC').all();
+  const pnbpList = db.prepare('SELECT * FROM giiatja_pnbp ORDER BY sort_order ASC, id ASC').all();
+  const premiList = db.prepare('SELECT * FROM giiatja_premi_wbp ORDER BY sort_order ASC, id ASC').all();
+
+  const editKegiatan = req.query.editKegiatan
+    ? db.prepare('SELECT * FROM giiatja_kegiatan WHERE id=?').get(Number(req.query.editKegiatan))
+    : null;
+  const editPelatihan = req.query.editPelatihan
+    ? db.prepare('SELECT * FROM giiatja_pelatihan_sertifikat WHERE id=?').get(Number(req.query.editPelatihan))
+    : null;
+  const editPnbp = req.query.editPnbp
+    ? db.prepare('SELECT * FROM giiatja_pnbp WHERE id=?').get(Number(req.query.editPnbp))
+    : null;
+  const editPremi = req.query.editPremi
+    ? db.prepare('SELECT * FROM giiatja_premi_wbp WHERE id=?').get(Number(req.query.editPremi))
+    : null;
+
+  res.render('admin/giiatja', {
+    user: req.session.user,
+    kegiatanList,
+    pelatihanList,
+    pnbpList,
+    premiList,
+    editKegiatan,
+    editPelatihan,
+    editPnbp,
+    editPremi,
+    pnbpTahun: getAppSetting('giiatja_pnbp_tahun', String(new Date().getFullYear())),
+    premiPeriodeBulan: getAppSetting('giiatja_premi_periode_bulan', '-'),
+    active: 'giiatja',
+    success: req.query.success,
+  });
+});
+
+app.post('/admin/giiatja/settings/update', requireAccess('giiatja'), (req, res) => {
+  const pnbpTahun = String(req.body.giiatja_pnbp_tahun || '').trim() || String(new Date().getFullYear());
+  const premiPeriodeBulan = String(req.body.giiatja_premi_periode_bulan || '').trim() || '-';
+
+  db.prepare(`
+    INSERT INTO app_settings (key, value)
+    VALUES (?, ?)
+    ON CONFLICT(key) DO UPDATE SET value=excluded.value
+  `).run('giiatja_pnbp_tahun', pnbpTahun);
+
+  db.prepare(`
+    INSERT INTO app_settings (key, value)
+    VALUES (?, ?)
+    ON CONFLICT(key) DO UPDATE SET value=excluded.value
+  `).run('giiatja_premi_periode_bulan', premiPeriodeBulan);
+
+  res.redirect('/admin/giiatja?success=1');
+});
+
+app.post('/admin/giiatja/kegiatan/add', requireAccess('giiatja'), raziaUpload.single('dokumentasi'), (req, res) => {
+  const kategori = String(req.body.kategori || '').trim().toUpperCase();
+  const jenisKegiatan = String(req.body.jenis_kegiatan || '').trim().toUpperCase();
+  const pesertaKegiatan = String(req.body.peserta_kegiatan || '').trim();
+  const pengawas = String(req.body.pengawas || '').trim();
+  const sortOrder = Number(req.body.sort_order || 0) || 1;
+  if (!kategori) return res.redirect('/admin/giiatja');
+  const dokumentasiPath = req.file ? `/uploads/razia/${req.file.filename}` : null;
+
+  db.prepare(`
+    INSERT INTO giiatja_kegiatan
+      (kategori, jenis_kegiatan, peserta_kegiatan, pengawas, dokumentasi_path, sort_order)
+    VALUES (?, ?, ?, ?, ?, ?)
+  `).run(kategori, jenisKegiatan, pesertaKegiatan, pengawas, dokumentasiPath, sortOrder);
+
+  res.redirect('/admin/giiatja?success=1');
+});
+
+app.post('/admin/giiatja/kegiatan/:id/update', requireAccess('giiatja'), raziaUpload.single('dokumentasi'), (req, res) => {
+  const id = Number(req.params.id);
+  const kategori = String(req.body.kategori || '').trim().toUpperCase();
+  const jenisKegiatan = String(req.body.jenis_kegiatan || '').trim().toUpperCase();
+  const pesertaKegiatan = String(req.body.peserta_kegiatan || '').trim();
+  const pengawas = String(req.body.pengawas || '').trim();
+  const sortOrder = Number(req.body.sort_order || 0) || 1;
+  if (!kategori) return res.redirect('/admin/giiatja');
+
+  const existing = db.prepare('SELECT dokumentasi_path FROM giiatja_kegiatan WHERE id=?').get(id);
+  let nextDokumentasiPath = existing?.dokumentasi_path || null;
+  if (req.file) {
+    if (nextDokumentasiPath) removeUploadedFile(nextDokumentasiPath);
+    nextDokumentasiPath = `/uploads/razia/${req.file.filename}`;
+  }
+
+  db.prepare(`
+    UPDATE giiatja_kegiatan
+    SET kategori=?, jenis_kegiatan=?, peserta_kegiatan=?, pengawas=?, dokumentasi_path=?, sort_order=?
+    WHERE id=?
+  `).run(kategori, jenisKegiatan, pesertaKegiatan, pengawas, nextDokumentasiPath, sortOrder, id);
+
+  res.redirect('/admin/giiatja?success=1');
+});
+
+app.post('/admin/giiatja/kegiatan/:id/delete', requireAccess('giiatja'), (req, res) => {
+  const id = Number(req.params.id);
+  const existing = db.prepare('SELECT dokumentasi_path FROM giiatja_kegiatan WHERE id=?').get(id);
+  if (existing?.dokumentasi_path) removeUploadedFile(existing.dokumentasi_path);
+  db.prepare('DELETE FROM giiatja_kegiatan WHERE id=?').run(id);
+  res.redirect('/admin/giiatja?success=1');
+});
+
+app.post('/admin/giiatja/pelatihan/add', requireAccess('giiatja'), raziaUpload.single('poto_sertifikat'), (req, res) => {
+  const noRegistrasi = String(req.body.no_registrasi || '').trim().toUpperCase();
+  const namaWbp = String(req.body.nama_wbp || '').trim().toUpperCase();
+  const jenisPelatihan = String(req.body.jenis_pelatihan || '').trim().toUpperCase();
+  const tanggalPelaksanaan = String(req.body.tanggal_pelaksanaan || '').trim();
+  const instruktur = String(req.body.instruktur || '').trim();
+  const keterangan = String(req.body.keterangan || '').trim();
+  if (!namaWbp) return res.redirect('/admin/giiatja');
+  const potoSertifikatPath = req.file ? `/uploads/razia/${req.file.filename}` : null;
+
+  db.prepare(`
+    INSERT INTO giiatja_pelatihan_sertifikat
+      (no_registrasi, nama_wbp, jenis_pelatihan, tanggal_pelaksanaan, instruktur, poto_sertifikat_path, keterangan)
+    VALUES (?, ?, ?, ?, ?, ?, ?)
+  `).run(noRegistrasi, namaWbp, jenisPelatihan, tanggalPelaksanaan, instruktur, potoSertifikatPath, keterangan);
+
+  res.redirect('/admin/giiatja?success=1');
+});
+
+app.post('/admin/giiatja/pelatihan/:id/update', requireAccess('giiatja'), raziaUpload.single('poto_sertifikat'), (req, res) => {
+  const id = Number(req.params.id);
+  const noRegistrasi = String(req.body.no_registrasi || '').trim().toUpperCase();
+  const namaWbp = String(req.body.nama_wbp || '').trim().toUpperCase();
+  const jenisPelatihan = String(req.body.jenis_pelatihan || '').trim().toUpperCase();
+  const tanggalPelaksanaan = String(req.body.tanggal_pelaksanaan || '').trim();
+  const instruktur = String(req.body.instruktur || '').trim();
+  const keterangan = String(req.body.keterangan || '').trim();
+  if (!namaWbp) return res.redirect('/admin/giiatja');
+
+  const existing = db.prepare('SELECT poto_sertifikat_path FROM giiatja_pelatihan_sertifikat WHERE id=?').get(id);
+  let nextPotoSertifikatPath = existing?.poto_sertifikat_path || null;
+  if (req.file) {
+    if (nextPotoSertifikatPath) removeUploadedFile(nextPotoSertifikatPath);
+    nextPotoSertifikatPath = `/uploads/razia/${req.file.filename}`;
+  }
+
+  db.prepare(`
+    UPDATE giiatja_pelatihan_sertifikat
+    SET no_registrasi=?, nama_wbp=?, jenis_pelatihan=?, tanggal_pelaksanaan=?, instruktur=?, poto_sertifikat_path=?, keterangan=?
+    WHERE id=?
+  `).run(noRegistrasi, namaWbp, jenisPelatihan, tanggalPelaksanaan, instruktur, nextPotoSertifikatPath, keterangan, id);
+
+  res.redirect('/admin/giiatja?success=1');
+});
+
+app.post('/admin/giiatja/pelatihan/:id/delete', requireAccess('giiatja'), (req, res) => {
+  const id = Number(req.params.id);
+  const existing = db.prepare('SELECT poto_sertifikat_path FROM giiatja_pelatihan_sertifikat WHERE id=?').get(id);
+  if (existing?.poto_sertifikat_path) removeUploadedFile(existing.poto_sertifikat_path);
+  db.prepare('DELETE FROM giiatja_pelatihan_sertifikat WHERE id=?').run(id);
+  res.redirect('/admin/giiatja?success=1');
+});
+
+app.post('/admin/giiatja/pnbp/add', requireAccess('giiatja'), (req, res) => {
+  const periodePnbp = String(req.body.periode_pnbp || '').trim().toUpperCase();
+  const jumlahPnbp = String(req.body.jumlah_pnbp || '').trim();
+  const targetRealisasi = String(req.body.target_realisasi || '').trim();
+  const persentase = String(req.body.persentase || '').trim().toUpperCase();
+  const keterangan = String(req.body.keterangan || '').trim().toUpperCase();
+  const sortOrder = Number(req.body.sort_order || 0) || 1;
+  if (!periodePnbp) return res.redirect('/admin/giiatja');
+
+  db.prepare(`
+    INSERT INTO giiatja_pnbp
+      (periode_pnbp, jumlah_pnbp, target_realisasi, persentase, keterangan, sort_order)
+    VALUES (?, ?, ?, ?, ?, ?)
+  `).run(periodePnbp, jumlahPnbp, targetRealisasi, persentase, keterangan, sortOrder);
+
+  res.redirect('/admin/giiatja?success=1');
+});
+
+app.post('/admin/giiatja/pnbp/:id/update', requireAccess('giiatja'), (req, res) => {
+  const id = Number(req.params.id);
+  const periodePnbp = String(req.body.periode_pnbp || '').trim().toUpperCase();
+  const jumlahPnbp = String(req.body.jumlah_pnbp || '').trim();
+  const targetRealisasi = String(req.body.target_realisasi || '').trim();
+  const persentase = String(req.body.persentase || '').trim().toUpperCase();
+  const keterangan = String(req.body.keterangan || '').trim().toUpperCase();
+  const sortOrder = Number(req.body.sort_order || 0) || 1;
+  if (!periodePnbp) return res.redirect('/admin/giiatja');
+
+  db.prepare(`
+    UPDATE giiatja_pnbp
+    SET periode_pnbp=?, jumlah_pnbp=?, target_realisasi=?, persentase=?, keterangan=?, sort_order=?
+    WHERE id=?
+  `).run(periodePnbp, jumlahPnbp, targetRealisasi, persentase, keterangan, sortOrder, id);
+
+  res.redirect('/admin/giiatja?success=1');
+});
+
+app.post('/admin/giiatja/pnbp/:id/delete', requireAccess('giiatja'), (req, res) => {
+  db.prepare('DELETE FROM giiatja_pnbp WHERE id=?').run(Number(req.params.id));
+  res.redirect('/admin/giiatja?success=1');
+});
+
+app.post('/admin/giiatja/premi/add', requireAccess('giiatja'), (req, res) => {
+  const noRegistrasi = String(req.body.no_registrasi || '').trim().toUpperCase();
+  const namaWbp = String(req.body.nama_wbp || '').trim().toUpperCase();
+  const jenisKegiatan = String(req.body.jenis_kegiatan || '').trim().toUpperCase();
+  const premiDidapat = String(req.body.premi_didapat || '').trim();
+  const keterangan = String(req.body.keterangan || '').trim().toUpperCase();
+  const sortOrder = Number(req.body.sort_order || 0) || 1;
+  if (!namaWbp) return res.redirect('/admin/giiatja');
+
+  db.prepare(`
+    INSERT INTO giiatja_premi_wbp
+      (no_registrasi, nama_wbp, jenis_kegiatan, premi_didapat, keterangan, sort_order)
+    VALUES (?, ?, ?, ?, ?, ?)
+  `).run(noRegistrasi, namaWbp, jenisKegiatan, premiDidapat, keterangan, sortOrder);
+
+  res.redirect('/admin/giiatja?success=1');
+});
+
+app.post('/admin/giiatja/premi/:id/update', requireAccess('giiatja'), (req, res) => {
+  const id = Number(req.params.id);
+  const noRegistrasi = String(req.body.no_registrasi || '').trim().toUpperCase();
+  const namaWbp = String(req.body.nama_wbp || '').trim().toUpperCase();
+  const jenisKegiatan = String(req.body.jenis_kegiatan || '').trim().toUpperCase();
+  const premiDidapat = String(req.body.premi_didapat || '').trim();
+  const keterangan = String(req.body.keterangan || '').trim().toUpperCase();
+  const sortOrder = Number(req.body.sort_order || 0) || 1;
+  if (!namaWbp) return res.redirect('/admin/giiatja');
+
+  db.prepare(`
+    UPDATE giiatja_premi_wbp
+    SET no_registrasi=?, nama_wbp=?, jenis_kegiatan=?, premi_didapat=?, keterangan=?, sort_order=?
+    WHERE id=?
+  `).run(noRegistrasi, namaWbp, jenisKegiatan, premiDidapat, keterangan, sortOrder, id);
+
+  res.redirect('/admin/giiatja?success=1');
+});
+
+app.post('/admin/giiatja/premi/:id/delete', requireAccess('giiatja'), (req, res) => {
+  db.prepare('DELETE FROM giiatja_premi_wbp WHERE id=?').run(Number(req.params.id));
+  res.redirect('/admin/giiatja?success=1');
 });
 
 // ── TU Bagian Umum ───────────────────────────────────────────────

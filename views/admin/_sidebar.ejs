@@ -60,6 +60,13 @@
     </a>
     <% } %>
 
+    <% if (allowed.includes('giiatja')) { %>
+    <div class="nav-label">Role GIIATJA</div>
+    <a href="/admin/giiatja" class="nav-item <%= active==='giiatja'?'active':'' %>">
+      <span class="icon">🏭</span><span>GIIATJA</span>
+    </a>
+    <% } %>
+
     <% if (hasAny(['klinik-medis','klinik-berobat','klinik-oncall','klinik-kontrol','klinik-statistik'])) { %>
     <div class="nav-label">Role Klinik</div>
     <% } %>
@@ -181,7 +188,7 @@
     <% } %>
     <% } else { %>
 
-    <% if (hasAny(['statistik','remisi','kata-bijak','menu','video','jadwal','pembinaan-detail','razia','pengawalan','register-f','strapsel','piket-jaga','tu-umum','kamar-blok','papan-isi','luar-tembok'])) { %>
+    <% if (hasAny(['statistik','remisi','kata-bijak','menu','video','jadwal','pembinaan-detail','giiatja','razia','pengawalan','register-f','strapsel','piket-jaga','tu-umum','kamar-blok','papan-isi','luar-tembok'])) { %>
     <div class="nav-label">Kelola Data</div>
     <% } %>
 
@@ -224,6 +231,12 @@
     <% if (allowed.includes('pembinaan-detail')) { %>
     <a href="/admin/pembinaan-detail" class="nav-item <%= active==='pembinaan-detail'?'active':'' %>">
       <span class="icon">🧭</span><span>Detail Pembinaan</span>
+    </a>
+    <% } %>
+
+    <% if (allowed.includes('giiatja')) { %>
+    <a href="/admin/giiatja" class="nav-item <%= active==='giiatja'?'active':'' %>">
+      <span class="icon">🏭</span><span>GIIATJA</span>
     </a>
     <% } %>
 

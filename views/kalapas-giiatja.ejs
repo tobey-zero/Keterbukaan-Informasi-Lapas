@@ -1,0 +1,242 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title><%= pageTitle %> - Kalapas</title>
+  <link rel="stylesheet" href="/css/style.css?v=<%= Date.now() %>">
+  <style>
+    .giiatja-wrap { padding: 14px 15px; }
+    .giiatja-toolbar {
+      display: flex;
+      gap: 8px;
+      flex-wrap: wrap;
+      align-items: center;
+      margin-bottom: 10px;
+    }
+    .giiatja-toolbar a {
+      text-decoration: none;
+      color: #fff;
+      background: #1a4bb8;
+      border: 1px solid rgba(255,255,255,.3);
+      border-radius: 6px;
+      padding: 7px 11px;
+      font-size: 12px;
+      font-weight: bold;
+    }
+    .giiatja-panel + .giiatja-panel { margin-top: 12px; }
+    .giiatja-panel .panel-content { padding: 0; }
+    .giiatja-table-scroll { overflow: auto; max-height: 52vh; }
+    .giiatja-table-scroll thead th { position: sticky; top: 0; z-index: 2; }
+    .giiatja-panel table th,
+    .giiatja-panel table td { font-size: 12px; padding: 8px 9px; }
+    .giiatja-multiline { white-space: pre-line; line-height: 1.35; }
+    .giiatja-empty { text-align: center; color: #64748b; padding: 14px; font-weight: bold; }
+    .giiatja-preview-btn {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      padding: 6px 10px;
+      border-radius: 6px;
+      border: 1px solid #1d4ed8;
+      color: #1d4ed8;
+      text-decoration: none;
+      font-size: 11px;
+      font-weight: bold;
+      background: #eff6ff;
+    }
+  </style>
+</head>
+<body class="page-umum">
+  <header class="header">
+    <div class="header-content">
+      <div class="logo-section">
+        <div class="logo kalapas-logo">
+          <img src="/images/Logo.png" alt="Logo SIMWASPIM" class="kalapas-logo-img">
+        </div>
+        <div class="header-info">
+          <h2>GIIATJA (KEGIATAN KERJA)</h2>
+          <h3>Tabel Kegiatan Kerja Warga Binaan</h3>
+          <p class="address"><%= subtitle %></p>
+        </div>
+      </div>
+    </div>
+  </header>
+
+  <div class="giiatja-wrap">
+    <div class="giiatja-toolbar">
+      <a href="<%= backUrl %>">⬅ Kembali ke Kalapas</a>
+    </div>
+
+    <div class="panel giiatja-panel">
+      <div class="panel-header red">
+        <span>KEGIATAN</span>
+        <span><%= kegiatanList.length %> data</span>
+      </div>
+      <div class="panel-content">
+        <div class="giiatja-table-scroll table-wrap">
+          <table class="admin-table">
+            <thead>
+              <tr>
+                <th>NO</th>
+                <th>KATEGORI</th>
+                <th>JENIS KEGIATAN</th>
+                <th>PESERTA KEGIATAN</th>
+                <th>PENGAWAS</th>
+                <th>DOKUMENTASI</th>
+              </tr>
+            </thead>
+            <tbody>
+              <% kegiatanList.forEach((item, i) => { %>
+              <tr>
+                <td><%= i + 1 %></td>
+                <td><%= item.kategori || '-' %></td>
+                <td class="giiatja-multiline"><%= item.jenisKegiatan || '-' %></td>
+                <td class="giiatja-multiline"><%= item.pesertaKegiatan || '-' %></td>
+                <td class="giiatja-multiline"><%= item.pengawas || '-' %></td>
+                <td>
+                  <% if (item.dokumentasiPath) { %>
+                    <a href="<%= item.dokumentasiPath %>" target="_blank" rel="noopener noreferrer" class="giiatja-preview-btn">🔍 Lihat</a>
+                  <% } else { %>-<% } %>
+                </td>
+              </tr>
+              <% }) %>
+              <% if (!kegiatanList.length) { %>
+              <tr><td colspan="6" class="giiatja-empty">Belum ada data</td></tr>
+              <% } %>
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+
+    <div class="panel giiatja-panel">
+      <div class="panel-header red">
+        <span>WARGA BINAAN YANG MENDAPATKAN PELATIHAN BERSERTIFIKAT</span>
+        <span><%= pelatihanList.length %> data</span>
+      </div>
+      <div class="panel-content">
+        <div class="giiatja-table-scroll table-wrap">
+          <table class="admin-table">
+            <thead>
+              <tr>
+                <th>NO</th>
+                <th>NOMOR REGISTRASI</th>
+                <th>NAMA WBP</th>
+                <th>JENIS PELATIHAN</th>
+                <th>TANGGAL PELAKSANAAN</th>
+                <th>INSTRUKTUR</th>
+                <th>POTO SERTIFIKAT</th>
+                <th>KETERANGAN</th>
+              </tr>
+            </thead>
+            <tbody>
+              <% pelatihanList.forEach((item, i) => { %>
+              <tr>
+                <td><%= i + 1 %></td>
+                <td><%= item.noRegistrasi || '-' %></td>
+                <td><%= item.namaWbp || '-' %></td>
+                <td><%= item.jenisPelatihan || '-' %></td>
+                <td><%= formatDateIndo(item.tanggalPelaksanaan || '-') %></td>
+                <td><%= item.instruktur || '-' %></td>
+                <td>
+                  <% if (item.potoSertifikatPath) { %>
+                    <a href="<%= item.potoSertifikatPath %>" target="_blank" rel="noopener noreferrer" class="giiatja-preview-btn">🔍 Lihat</a>
+                  <% } else { %>-<% } %>
+                </td>
+                <td><%= item.keterangan || '-' %></td>
+              </tr>
+              <% }) %>
+              <% if (!pelatihanList.length) { %>
+              <tr><td colspan="8" class="giiatja-empty">Belum ada data</td></tr>
+              <% } %>
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+
+    <div class="panel giiatja-panel">
+      <div class="panel-header red">
+        <span>PENERIMAAN NEGARA BUKAN PAJAK (PNBP)</span>
+        <span><%= pnbpList.length %> data</span>
+      </div>
+      <div class="panel-content">
+        <div class="giiatja-table-scroll table-wrap">
+          <table class="admin-table">
+            <thead>
+              <tr>
+                <th colspan="6" style="text-align:left;">TAHUN <%= pnbpTahun || '-' %></th>
+              </tr>
+              <tr>
+                <th>NO</th>
+                <th>PERIODE PNBP</th>
+                <th>JUMLAH PNBP</th>
+                <th>TARGET REALISASI</th>
+                <th>PERSETASE</th>
+                <th>KETERANGAN</th>
+              </tr>
+            </thead>
+            <tbody>
+              <% pnbpList.forEach((item, i) => { %>
+              <tr>
+                <td><%= i + 1 %></td>
+                <td><%= item.periodePnbp || '-' %></td>
+                <td><%= item.jumlahPnbp || '-' %></td>
+                <td><%= item.targetRealisasi || '-' %></td>
+                <td><%= item.persentase || '-' %></td>
+                <td><%= item.keterangan || '-' %></td>
+              </tr>
+              <% }) %>
+              <% if (!pnbpList.length) { %>
+              <tr><td colspan="6" class="giiatja-empty">Belum ada data</td></tr>
+              <% } %>
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+
+    <div class="panel giiatja-panel">
+      <div class="panel-header red">
+        <span>WBP YANG MENERIMA PREMI DARI KEGIATAN YANG DILAKUKAN</span>
+        <span><%= premiList.length %> data</span>
+      </div>
+      <div class="panel-content">
+        <div class="giiatja-table-scroll table-wrap">
+          <table class="admin-table">
+            <thead>
+              <tr>
+                <th colspan="6" style="text-align:left;">PRIODE BULAN : <%= premiPeriodeBulan || '-' %></th>
+              </tr>
+              <tr>
+                <th>NO</th>
+                <th>NOMOR REGISTRASI</th>
+                <th>NAMA WBP</th>
+                <th>JENIS KEGIATAN</th>
+                <th>PREMI YANG DIDAPAT</th>
+                <th>KETERANGAN</th>
+              </tr>
+            </thead>
+            <tbody>
+              <% premiList.forEach((item, i) => { %>
+              <tr>
+                <td><%= i + 1 %></td>
+                <td><%= item.noRegistrasi || '-' %></td>
+                <td><%= item.namaWbp || '-' %></td>
+                <td><%= item.jenisKegiatan || '-' %></td>
+                <td><%= item.premiDidapat || '-' %></td>
+                <td><%= item.keterangan || '-' %></td>
+              </tr>
+              <% }) %>
+              <% if (!premiList.length) { %>
+              <tr><td colspan="6" class="giiatja-empty">Belum ada data</td></tr>
+              <% } %>
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+  </div>
+</body>
+</html>

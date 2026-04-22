@@ -239,6 +239,47 @@ db.exec(`
     type_pegawai TEXT NOT NULL DEFAULT ''
   );
 
+  CREATE TABLE IF NOT EXISTS giiatja_kegiatan (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    kategori TEXT NOT NULL,
+    jenis_kegiatan TEXT NOT NULL DEFAULT '',
+    peserta_kegiatan TEXT NOT NULL DEFAULT '',
+    pengawas TEXT NOT NULL DEFAULT '',
+    dokumentasi_path TEXT,
+    sort_order INTEGER NOT NULL DEFAULT 1
+  );
+
+  CREATE TABLE IF NOT EXISTS giiatja_pelatihan_sertifikat (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    no_registrasi TEXT NOT NULL DEFAULT '',
+    nama_wbp TEXT NOT NULL,
+    jenis_pelatihan TEXT NOT NULL DEFAULT '',
+    tanggal_pelaksanaan TEXT NOT NULL DEFAULT '',
+    instruktur TEXT NOT NULL DEFAULT '',
+    poto_sertifikat_path TEXT,
+    keterangan TEXT NOT NULL DEFAULT ''
+  );
+
+  CREATE TABLE IF NOT EXISTS giiatja_pnbp (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    periode_pnbp TEXT NOT NULL,
+    jumlah_pnbp TEXT NOT NULL DEFAULT '',
+    target_realisasi TEXT NOT NULL DEFAULT '',
+    persentase TEXT NOT NULL DEFAULT '',
+    keterangan TEXT NOT NULL DEFAULT '',
+    sort_order INTEGER NOT NULL DEFAULT 1
+  );
+
+  CREATE TABLE IF NOT EXISTS giiatja_premi_wbp (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    no_registrasi TEXT NOT NULL DEFAULT '',
+    nama_wbp TEXT NOT NULL,
+    jenis_kegiatan TEXT NOT NULL DEFAULT '',
+    premi_didapat TEXT NOT NULL DEFAULT '',
+    keterangan TEXT NOT NULL DEFAULT '',
+    sort_order INTEGER NOT NULL DEFAULT 1
+  );
+
   CREATE TABLE IF NOT EXISTS housing_blocks (
     id INTEGER PRIMARY KEY AUTOINCREMENT,
     gedung TEXT NOT NULL DEFAULT '',
@@ -726,6 +767,59 @@ seedIfEmpty('tu_kepegawaian', () => {
   rows.forEach(r => insert.run(...r));
 });
 
+seedIfEmpty('giiatja_kegiatan', () => {
+  const insert = db.prepare(`
+    INSERT INTO giiatja_kegiatan
+      (kategori, jenis_kegiatan, peserta_kegiatan, pengawas, dokumentasi_path, sort_order)
+    VALUES (?, ?, ?, ?, ?, ?)
+  `);
+  const rows = [
+    ['A (AREA DALAM)', 'UMKM DI DALAM\nPANGKAS\nHIDROPONIK\nLAUNDRY\nMENJAHIT\nBONSAI\nPERTUKANGAN\nHADY CRAF\nMABEL\nBENGKEL LAS\nCUSTOM', '-', '-', null, 1],
+    ['B (AREA PERTENGAHAN)', 'IKAN\n- IKAN EMAS\n- IKAN NILA\n- IKAN LELE\n- IKAN PATIN\nAYAM\n- AYAM PEDAGIN\n- AYAM PETELUR\nJAMUR TIRAM\nSABLON\nCUSTOM', '-', '-', null, 2],
+    ['C (AREA LUAR/ASIMILASI)', 'UMKM LUAR\nBODY REPAIR\nCAR WASH\nKETAPANG LUAR', '-', '-', null, 3],
+  ];
+  rows.forEach(r => insert.run(...r));
+});
+
+seedIfEmpty('giiatja_pelatihan_sertifikat', () => {
+  const insert = db.prepare(`
+    INSERT INTO giiatja_pelatihan_sertifikat
+      (no_registrasi, nama_wbp, jenis_pelatihan, tanggal_pelaksanaan, instruktur, poto_sertifikat_path, keterangan)
+    VALUES (?, ?, ?, ?, ?, ?, ?)
+  `);
+  const rows = [
+    ['BI.201-GJ/2026', 'WBP A.N. J', 'MENJAHIT', '18 April 2026', 'Instruktur BLK Medan', null, '-'],
+    ['BI.202-GJ/2026', 'WBP A.N. K', 'HIDROPONIK', '19 April 2026', 'Instruktur Dinas Pertanian', null, '-'],
+  ];
+  rows.forEach(r => insert.run(...r));
+});
+
+seedIfEmpty('giiatja_pnbp', () => {
+  const insert = db.prepare(`
+    INSERT INTO giiatja_pnbp
+      (periode_pnbp, jumlah_pnbp, target_realisasi, persentase, keterangan, sort_order)
+    VALUES (?, ?, ?, ?, ?, ?)
+  `);
+  const rows = [
+    ['JANUARI', '10.500.000', '10.000.000', '105%', 'TERCAPAI', 1],
+    ['FEBRUARI', '8.700.000', '10.000.000', '87%', 'TIDAK TERCAPAI', 2],
+  ];
+  rows.forEach(r => insert.run(...r));
+});
+
+seedIfEmpty('giiatja_premi_wbp', () => {
+  const insert = db.prepare(`
+    INSERT INTO giiatja_premi_wbp
+      (no_registrasi, nama_wbp, jenis_kegiatan, premi_didapat, keterangan, sort_order)
+    VALUES (?, ?, ?, ?, ?, ?)
+  `);
+  const rows = [
+    ['BI.301-GJ/2026', 'WBP A.N. L', 'PANGKAS', '150.000', '-', 1],
+    ['BI.302-GJ/2026', 'WBP A.N. M', 'SABLON', '125.000', '-', 2],
+  ];
+  rows.forEach(r => insert.run(...r));
+});
+
 seedIfEmpty('housing_blocks', () => {
   const insertBlock = db.prepare('INSERT INTO housing_blocks (gedung, nama_block) VALUES (?, ?)');
   const blockRows = [
@@ -838,5 +932,7 @@ db.prepare('INSERT OR IGNORE INTO app_settings (key, value) VALUES (?, ?)').run(
 db.prepare('INSERT OR IGNORE INTO app_settings (key, value) VALUES (?, ?)').run('keuangan_total_pagu', '57736940000');
 db.prepare('INSERT OR IGNORE INTO app_settings (key, value) VALUES (?, ?)').run('keuangan_realisasi_belanja', '17819254771');
 db.prepare('INSERT OR IGNORE INTO app_settings (key, value) VALUES (?, ?)').run('keuangan_updated_at', '2026-04-16T13:39');
+db.prepare('INSERT OR IGNORE INTO app_settings (key, value) VALUES (?, ?)').run('giiatja_pnbp_tahun', '2026');
+db.prepare('INSERT OR IGNORE INTO app_settings (key, value) VALUES (?, ?)').run('giiatja_premi_periode_bulan', '-');
 
 module.exports = db;
