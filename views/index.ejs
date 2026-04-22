@@ -9,6 +9,13 @@
     <meta http-equiv="Expires" content="0">
     <title>KRISNA - Sistem Informasi Warga Binaan</title>
     <link rel="stylesheet" href="/css/style.css?v=<%= Date.now() %>">
+    <style>
+        .status-overdue-cell {
+            background: #ef4444;
+            color: #ffffff;
+            font-weight: 700;
+        }
+    </style>
 </head>
 
 <body class="page-umum">
@@ -137,8 +144,12 @@
                             <tr>
                                 <th>NO. REG</th>
                                 <th>NAMA WARGA BINAAN</th>
+                                <th>BLOK/KAMAR</th>
+                                <th>TANGGAL 1/3</th>
+                                <th>TANGGAL 1/2</th>
                                 <th>TANGGAL 2/3</th>
                                 <th>TANGGAL EKSPIRASI AKHIR</th>
+                                <th>TOTAL REMISI</th>
                                 <th>KETERANGAN PROGRAM PEMBINAAN</th>
                                 <th>STATUS INTEGRASI</th>
                             </tr>
@@ -153,15 +164,27 @@
                                         <%= item.namaWbp %>
                                     </td>
                                     <td>
+                                        <%= item.blokKamar || '-' %>
+                                    </td>
+                                    <td>
+                                        <%= formatDateIndo(item.tanggal1) %>
+                                    </td>
+                                    <td>
+                                        <%= formatDateIndo(item.tanggal3) %>
+                                    </td>
+                                    <td>
                                         <%= formatDateIndo(item.tanggal2) %>
                                     </td>
                                     <td>
                                         <%= formatDateIndo(item.tanggal4) %>
                                     </td>
                                     <td>
-                                        <%= item.keterangan %>
+                                        <%= item.totalRemisi %>
                                     </td>
                                     <td>
+                                        <%= item.keterangan %>
+                                    </td>
+                                    <td class="<%= item.isStatusOverdue ? 'status-overdue-cell' : '' %>">
                                         <%= item.statusIntegrasi %>
                                     </td>
                                 </tr>

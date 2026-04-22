@@ -29,6 +29,7 @@
                 <label>Status Integrasi</label>
                 <select name="status_integrasi" required>
                   <option value="">-- Pilih Status --</option>
+                  <option value="-">-</option>
                   <option value="Menunggu SK">Menunggu SK</option>
                   <option value="Sudah dijatuhi Permintaan">Sudah dijatuhi Permintaan</option>
                   <option value="Sudah ada hasil SK">Sudah ada hasil SK</option>
@@ -54,7 +55,7 @@
             <div class="form-group">
               <label>Status Integrasi</label>
               <select name="status_integrasi" required>
-                <% ['Menunggu SK','Sudah dijatuhi Permintaan','Sudah ada hasil SK','Proses Sidang','Ditolak'].forEach(s => { %>
+                <% ['-','Menunggu SK','Sudah dijatuhi Permintaan','Sudah ada hasil SK','Proses Sidang','Ditolak'].forEach(s => { %>
                 <option value="<%= s %>" <%= edit.status_integrasi===s?'selected':'' %>><%= s %></option>
                 <% }) %>
               </select>

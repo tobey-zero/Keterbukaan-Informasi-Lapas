@@ -213,6 +213,34 @@ function normalizeDateToYmd(value) {
     oktober: '10',
     november: '11',
     desember: '12',
+    january: '01',
+    february: '02',
+    march: '03',
+    april: '04',
+    may: '05',
+    june: '06',
+    july: '07',
+    august: '08',
+    september: '09',
+    october: '10',
+    november: '11',
+    december: '12',
+    jan: '01',
+    feb: '02',
+    mar: '03',
+    apr: '04',
+    mei: '05',
+    jun: '06',
+    jul: '07',
+    agu: '08',
+    aug: '08',
+    sep: '09',
+    sept: '09',
+    okt: '10',
+    oct: '10',
+    nov: '11',
+    des: '12',
+    dec: '12',
   };
   const indoMatch = raw.match(/^(\d{1,2})\s+([A-Za-zÀ-ÿ.]+)\s+(\d{4})$/);
   if (indoMatch) {
@@ -269,6 +297,18 @@ function isOnGoingPunishment(selectedYmd, startDateValue, endDateValue) {
   if (start && !end) return selected >= start;
   if (!start && end) return selected <= end;
   return false;
+}
+
+function isEmptyIntegrationStatus(value) {
+  const normalized = String(value || '').trim();
+  return !normalized || normalized === '-';
+}
+
+function isIntegrationOverdue(tanggalDuaPerTiga, statusIntegrasi) {
+  const dueDate = normalizeDateToYmd(tanggalDuaPerTiga);
+  if (!dueDate) return false;
+  if (!isEmptyIntegrationStatus(statusIntegrasi)) return false;
+  return dueDate < getTodayYmd();
 }
 
 function parseMoneyNumber(value) {
@@ -656,14 +696,22 @@ function getPublicData() {
   const pentahapanPembinaanDetail = db
       .prepare(`SELECT d.no_reg AS noReg,
         d.nama_wbp AS namaWbp,
+        d.blok_kamar AS blokKamar,
+        d.tanggal1,
         d.tanggal2,
+        d.tanggal3,
         d.tanggal4,
+        d.total_remisi AS totalRemisi,
         d.keterangan,
         COALESCE(NULLIF(TRIM(d.status_integrasi), ''), p.status_integrasi, '-') AS statusIntegrasi
       FROM pentahapan_pembinaan_detail d
       LEFT JOIN pentahapan_pembinaan p ON UPPER(TRIM(p.nama_wbp)) = UPPER(TRIM(d.nama_wbp))
       ORDER BY d.nama_wbp COLLATE NOCASE ASC`)
-    .all();
+    .all()
+    .map((item) => ({
+      ...item,
+      isStatusOverdue: isIntegrationOverdue(item.tanggal2, item.statusIntegrasi),
+    }));
 
   const jadwalKegiatan = db
     .prepare('SELECT hari, waktu, kegiatan, lokasi, penanggung_jawab AS penanggungJawab FROM jadwal_kegiatan ORDER BY id')
@@ -1253,17 +1301,24 @@ app.get('/kalapas/table/pembinaan', (req, res) => {
   const rows = umum.pentahapanPembinaanDetail.map(item => [
     item.noReg || '-',
     item.namaWbp || '-',
+    item.blokKamar || '-',
+    item.tanggal1 || '-',
+    item.tanggal3 || '-',
     item.tanggal2 || '-',
     item.tanggal4 || '-',
+    item.totalRemisi || '-',
     item.keterangan || '-',
-    item.statusIntegrasi || '-'
+    {
+      value: item.statusIntegrasi || '-',
+      className: item.isStatusOverdue ? 'status-overdue' : ''
+    }
   ]);
 
   res.render('kalapas-table', {
     pageTitle: 'Pentahapan Pembinaan',
     sectionTitle: 'DETAIL PENTAHAPAN PEMBINAAN',
     subtitle: `Total data: ${rows.length}`,
-    columns: ['NO REG', 'NAMA WARGA BINAAN', 'TANGGAL 2/3', 'TANGGAL EKSPIRASI', 'KETERANGAN PROGRAM PEMBINAAN', 'STATUS INTEGRASI'],
+    columns: ['NO REG', 'NAMA WARGA BINAAN', 'BLOK/KAMAR', 'TANGGAL 1/3', 'TANGGAL 1/2', 'TANGGAL 2/3', 'TANGGAL EKSPIRASI', 'TOTAL REMISI', 'KETERANGAN PROGRAM PEMBINAAN', 'STATUS INTEGRASI'],
     rows,
     backUrl: '/kalapas'
   });
@@ -2025,28 +2080,31 @@ app.post('/admin/pembinaan/:id/delete', requireAccess('pembinaan'), (req, res) =
 
 // ── Pentahapan Pembinaan Detail ───────────────────────────────────
 app.get('/admin/pembinaan-detail', requireAccess('pembinaan-detail'), (req, res) => {
-  const list = db.prepare('SELECT * FROM pentahapan_pembinaan_detail ORDER BY id').all();
+  const list = db.prepare('SELECT * FROM pentahapan_pembinaan_detail ORDER BY id').all().map((item) => ({
+    ...item,
+    is_status_overdue: isIntegrationOverdue(item.tanggal2, item.status_integrasi),
+  }));
   const edit = req.query.edit ? db.prepare('SELECT * FROM pentahapan_pembinaan_detail WHERE id=?').get(Number(req.query.edit)) : null;
   res.render('admin/pembinaan-detail', { user: req.session.user, list, edit, active: 'pembinaan-detail', success: req.query.success });
 });
 
 app.post('/admin/pembinaan-detail/add', requireAccess('pembinaan-detail'), (req, res) => {
-  const { no_reg, tanggal2, tanggal4, keterangan } = req.body;
+  const { no_reg, blok_kamar, tanggal1, tanggal2, tanggal3, tanggal4, total_remisi, keterangan } = req.body;
   const statusIntegrasi = (req.body.status_integrasi || '').trim();
   const nama_wbp = (req.body.nama_wbp || '').toUpperCase();
-  db.prepare(`INSERT INTO pentahapan_pembinaan_detail (no_reg, nama_wbp, tanggal2, tanggal4, keterangan, status_integrasi)
-              VALUES (?, ?, ?, ?, ?, ?)`)
-    .run(no_reg, nama_wbp, tanggal2, tanggal4, keterangan, statusIntegrasi);
+  db.prepare(`INSERT INTO pentahapan_pembinaan_detail (no_reg, nama_wbp, blok_kamar, tanggal1, tanggal2, tanggal3, tanggal4, total_remisi, keterangan, status_integrasi)
+              VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`)
+    .run(no_reg, nama_wbp, blok_kamar, tanggal1, tanggal2, tanggal3, tanggal4, total_remisi, keterangan, statusIntegrasi);
   syncPembinaanMasterByName(nama_wbp, statusIntegrasi);
   res.redirect('/admin/pembinaan-detail?success=1');
 });
 
 app.post('/admin/pembinaan-detail/:id/update', requireAccess('pembinaan-detail'), (req, res) => {
-  const { no_reg, tanggal2, tanggal4, keterangan } = req.body;
+  const { no_reg, blok_kamar, tanggal1, tanggal2, tanggal3, tanggal4, total_remisi, keterangan } = req.body;
   const statusIntegrasi = (req.body.status_integrasi || '').trim();
   const nama_wbp = (req.body.nama_wbp || '').toUpperCase();
-  db.prepare(`UPDATE pentahapan_pembinaan_detail SET no_reg=?, nama_wbp=?, tanggal2=?, tanggal4=?, keterangan=?, status_integrasi=? WHERE id=?`)
-    .run(no_reg, nama_wbp, tanggal2, tanggal4, keterangan, statusIntegrasi, Number(req.params.id));
+  db.prepare(`UPDATE pentahapan_pembinaan_detail SET no_reg=?, nama_wbp=?, blok_kamar=?, tanggal1=?, tanggal2=?, tanggal3=?, tanggal4=?, total_remisi=?, keterangan=?, status_integrasi=? WHERE id=?`)
+    .run(no_reg, nama_wbp, blok_kamar, tanggal1, tanggal2, tanggal3, tanggal4, total_remisi, keterangan, statusIntegrasi, Number(req.params.id));
   syncPembinaanMasterByName(nama_wbp, statusIntegrasi);
   res.redirect('/admin/pembinaan-detail?success=1');
 });

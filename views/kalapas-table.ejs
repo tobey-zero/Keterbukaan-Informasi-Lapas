@@ -204,6 +204,11 @@
       font-weight: bold;
       background: #eff6ff;
     }
+    .status-overdue {
+      background: #ef4444;
+      color: #ffffff;
+      font-weight: 700;
+    }
 
     .finance-hero {
       border: 1px solid #1e40af;
@@ -344,7 +349,7 @@
               <span>Sisa Pagu <%= financeSummary.sisaPercent.toFixed(0) %>%</span>
             </div>
             <div class="finance-hero-track">
-              <div class="finance-hero-fill" style="width:<%= Math.max(0, Math.min(100, financeSummary.realisasiPercent)) %>%;"><%= financeSummary.realisasiPercent.toFixed(0) %>%</div>
+              <div class="finance-hero-fill" data-width-percent="<%= Math.max(0, Math.min(100, financeSummary.realisasiPercent)) %>"><%= financeSummary.realisasiPercent.toFixed(0) %>%</div>
             </div>
             <div class="finance-hero-bottom">
               <span>Realisasi: <%= financeSummary.realisasiBelanjaLabel %></span>
@@ -433,11 +438,13 @@
               <% rows.forEach(row => { %>
                 <tr>
                   <% row.forEach(cell => { %>
-                    <td>
-                      <% if (typeof cell === 'string' && cell.startsWith('/uploads/') && /\.(png|jpg|jpeg|webp|gif)$/i.test(cell)) { %>
-                        <a href="<%= cell %>" target="_blank" rel="noopener noreferrer" class="kalapas-preview-btn">🔍 Preview</a>
+                    <% const cellValue = (cell && typeof cell === 'object' && !Array.isArray(cell)) ? cell.value : cell; %>
+                    <% const cellClass = (cell && typeof cell === 'object' && !Array.isArray(cell)) ? (cell.className || '') : ''; %>
+                    <td class="<%= cellClass %>">
+                      <% if (typeof cellValue === 'string' && cellValue.startsWith('/uploads/') && /\.(png|jpg|jpeg|webp|gif)$/i.test(cellValue)) { %>
+                        <a href="<%= cellValue %>" target="_blank" rel="noopener noreferrer" class="kalapas-preview-btn">🔍 Preview</a>
                       <% } else { %>
-                        <%= formatDateIndo(cell) %>
+                        <%= formatDateIndo(cellValue) %>
                       <% } %>
                     </td>
                   <% }) %>
@@ -504,6 +511,12 @@
 
   <script>
     (function () {
+      document.querySelectorAll('.finance-hero-fill[data-width-percent]').forEach((element) => {
+        const widthPercent = Number(element.getAttribute('data-width-percent') || 0);
+        const bounded = Math.max(0, Math.min(100, widthPercent));
+        element.style.width = bounded + '%';
+      });
+
       const searchPrimary = document.getElementById('tableSearchPrimary');
       const searchSecondary = document.getElementById('tableSearchSecondary');
       const table = document.getElementById('dataTable');
