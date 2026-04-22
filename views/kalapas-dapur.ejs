@@ -1,0 +1,183 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Dapur - Kalapas</title>
+  <link rel="stylesheet" href="/css/style.css?v=<%= Date.now() %>">
+  <style>
+    .dapur-wrap { padding: 14px 15px; }
+    .dapur-toolbar {
+      display: flex;
+      gap: 8px;
+      flex-wrap: wrap;
+      align-items: center;
+      margin-bottom: 10px;
+    }
+    .dapur-toolbar a {
+      text-decoration: none;
+      color: #fff;
+      background: #1a4bb8;
+      border: 1px solid rgba(255,255,255,.3);
+      border-radius: 6px;
+      padding: 7px 11px;
+      font-size: 12px;
+      font-weight: bold;
+    }
+    .dapur-filter {
+      padding: 10px;
+      display: flex;
+      align-items: end;
+      gap: 8px;
+      flex-wrap: wrap;
+      justify-content: space-between;
+    }
+    .dapur-filter form {
+      display: flex;
+      gap: 8px;
+      align-items: end;
+      flex-wrap: wrap;
+    }
+    .dapur-filter .label {
+      font-size: 11px;
+      color: #334155;
+      font-weight: bold;
+      margin-bottom: 3px;
+      display: block;
+    }
+    .dapur-filter input[type="date"] {
+      border: 1px solid #cbd5e1;
+      border-radius: 6px;
+      padding: 7px 10px;
+      font-size: 12px;
+      font-weight: 700;
+      color: #0f172a;
+      background: #fff;
+    }
+    .dapur-filter button, .dapur-filter .reset {
+      text-decoration: none;
+      border: 1px solid rgba(255,255,255,.3);
+      border-radius: 6px;
+      padding: 7px 11px;
+      font-size: 12px;
+      font-weight: bold;
+      cursor: pointer;
+    }
+    .dapur-filter button {
+      color: #fff;
+      background: #1a4bb8;
+    }
+    .dapur-filter .reset {
+      color: #1e3a8a;
+      background: #eff6ff;
+      border-color: #cbd5e1;
+      display: inline-flex;
+      align-items: center;
+    }
+    .dapur-meta {
+      font-size: 12px;
+      color: #475569;
+      font-weight: 700;
+    }
+    .dapur-table td, .dapur-table th { font-size: 12px; }
+    .dapur-photo {
+      width: 56px;
+      height: 56px;
+      object-fit: cover;
+      border-radius: 8px;
+      border: 1px solid #dbeafe;
+      display: block;
+    }
+    .dapur-photo-placeholder {
+      width: 56px;
+      height: 56px;
+      border-radius: 8px;
+      border: 1px solid #dbeafe;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      color: #94a3b8;
+      font-size: 12px;
+      font-weight: bold;
+      background: #f8fafc;
+    }
+    .dapur-empty {
+      text-align: center;
+      color: #64748b;
+      padding: 16px;
+      font-weight: bold;
+    }
+  </style>
+</head>
+<body class="page-umum">
+  <header class="header">
+    <div class="header-content">
+      <div class="logo-section">
+        <div class="logo kalapas-logo">
+          <img src="/images/Logo.png" alt="Logo SIMWASPIM" class="kalapas-logo-img">
+        </div>
+        <div class="header-info">
+          <h1>SIMWASPIM – SISTEM PENGAWASAN PIMPINAN</h1>
+          <h3>LAPAS KELAS 1 MEDAN</h3>
+        </div>
+      </div>
+    </div>
+  </header>
+
+  <div class="dapur-wrap">
+    <div class="dapur-toolbar">
+      <a href="<%= backUrl %>">⬅ Kembali ke Dashboard Kalapas</a>
+    </div>
+
+    <div class="panel">
+      <div class="panel-header">INFORMASI DAPUR</div>
+      <div class="dapur-filter">
+        <form method="GET" action="/kalapas/table/dapur">
+          <div>
+            <span class="label">Tanggal Menu</span>
+            <input type="date" name="tanggal" value="<%= selectedDate %>">
+          </div>
+          <button type="submit">📅 Tampilkan</button>
+          <a href="/kalapas/table/dapur" class="reset">↺ Hari Ini</a>
+        </form>
+        <div class="dapur-meta">
+          <div><strong><%= menuTitle %></strong></div>
+          <div>Tanggal aktif: <%= selectedDateLabel %> | Total tanggal tersimpan: <%= totalHistory %></div>
+        </div>
+      </div>
+
+      <div class="panel-content" style="padding-top:0;">
+        <table class="data-table dapur-table">
+          <thead>
+            <tr>
+              <th>#</th>
+              <th>Foto</th>
+              <th>Waktu</th>
+              <th>Menu Makanan</th>
+            </tr>
+          </thead>
+          <tbody>
+            <% menuList.forEach((item, idx) => { %>
+              <tr>
+                <td><%= idx + 1 %></td>
+                <td>
+                  <% if (item.photoPath) { %>
+                    <img src="<%= item.photoPath %>" alt="Foto menu" class="dapur-photo">
+                  <% } else { %>
+                    <div class="dapur-photo-placeholder">-</div>
+                  <% } %>
+                </td>
+                <td><%= item.waktu || '-' %></td>
+                <td style="white-space:pre-line;"><%= item.menu || '-' %></td>
+              </tr>
+            <% }) %>
+            <% if (!menuList.length) { %>
+              <tr><td colspan="4" class="dapur-empty">Belum ada menu pada tanggal ini</td></tr>
+            <% } %>
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+</body>
+</html>

@@ -1586,6 +1586,57 @@ app.get('/kalapas', (req, res) => {
   res.render('kalapas', { ...getKalapasData(), activePage: 'kalapas' });
 });
 
+app.get('/kalapas/table/dapur', (req, res) => {
+  const selectedDate = /^\d{4}-\d{2}-\d{2}$/.test(String(req.query.tanggal || ''))
+    ? String(req.query.tanggal)
+    : getTodayYmd();
+
+  const menuTitle = getAppSetting('menu_title', 'DAFTAR MENU MAKAN HARI INI');
+  const selectedDateLabel = new Intl.DateTimeFormat('id-ID', {
+    timeZone: 'Asia/Jakarta',
+    weekday: 'long',
+    day: 'numeric',
+    month: 'long',
+    year: 'numeric'
+  }).format(new Date(`${selectedDate}T00:00:00`));
+
+  const menuList = db.prepare(`SELECT
+    s.tanggal,
+    m.waktu,
+    m.menu,
+    m.photo_path AS photoPath
+  FROM menu_harian_set s
+  INNER JOIN menu_harian_list_item li ON li.list_id = s.list_id
+  INNER JOIN menu_master m ON m.id = li.menu_master_id
+  WHERE s.tanggal = ?
+  ORDER BY li.sort_order ASC,
+    CASE m.waktu
+      WHEN 'MAKAN PAGI' THEN 1
+      WHEN 'SNACK' THEN 2
+      WHEN 'MAKAN SIANG' THEN 3
+      WHEN 'MAKAN SORE' THEN 4
+      ELSE 5
+    END ASC,
+    m.id ASC`).all(selectedDate);
+
+  const historyDates = db.prepare(`
+    SELECT tanggal
+    FROM menu_harian_set
+    ORDER BY tanggal DESC
+  `).all().map((item) => String(item.tanggal));
+
+  res.render('kalapas-dapur', {
+    activePage: 'kalapas',
+    menuTitle,
+    selectedDate,
+    selectedDateLabel,
+    menuList,
+    historyDates,
+    totalHistory: historyDates.length,
+    backUrl: '/kalapas',
+  });
+});
+
 app.get('/kalapas/table/pengamanan', (req, res) => {
   res.render('kalapas-pengamanan', {
     activePage: 'kalapas'
