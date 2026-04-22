@@ -317,6 +317,7 @@ db.exec(`
 
   CREATE TABLE IF NOT EXISTS giiatja_pnbp (
     id INTEGER PRIMARY KEY AUTOINCREMENT,
+    tahun TEXT NOT NULL DEFAULT '',
     periode_pnbp TEXT NOT NULL,
     jumlah_pnbp TEXT NOT NULL DEFAULT '',
     target_realisasi TEXT NOT NULL DEFAULT '',
@@ -329,6 +330,8 @@ db.exec(`
     id INTEGER PRIMARY KEY AUTOINCREMENT,
     no_registrasi TEXT NOT NULL DEFAULT '',
     nama_wbp TEXT NOT NULL,
+    periode_bulan TEXT NOT NULL DEFAULT '',
+    periode_tahun TEXT NOT NULL DEFAULT '',
     jenis_kegiatan TEXT NOT NULL DEFAULT '',
     premi_didapat TEXT NOT NULL DEFAULT '',
     keterangan TEXT NOT NULL DEFAULT '',
@@ -580,6 +583,30 @@ if (!piketJagaColumnNames.includes('regu_members_json')) db.exec("ALTER TABLE ka
 const remisiColumns = db.prepare("PRAGMA table_info('besaran_remisi')").all();
 const remisiColumnNames = remisiColumns.map(col => col.name);
 if (!remisiColumnNames.includes('remisi_total')) db.exec("ALTER TABLE besaran_remisi ADD COLUMN remisi_total TEXT NOT NULL DEFAULT ''");
+
+const giiatjaPnbpColumns = db.prepare("PRAGMA table_info('giiatja_pnbp')").all();
+const giiatjaPnbpColumnNames = giiatjaPnbpColumns.map(col => col.name);
+if (!giiatjaPnbpColumnNames.includes('tahun')) db.exec("ALTER TABLE giiatja_pnbp ADD COLUMN tahun TEXT NOT NULL DEFAULT ''");
+
+const giiatjaPremiColumns = db.prepare("PRAGMA table_info('giiatja_premi_wbp')").all();
+const giiatjaPremiColumnNames = giiatjaPremiColumns.map(col => col.name);
+if (!giiatjaPremiColumnNames.includes('periode_bulan')) db.exec("ALTER TABLE giiatja_premi_wbp ADD COLUMN periode_bulan TEXT NOT NULL DEFAULT ''");
+if (!giiatjaPremiColumnNames.includes('periode_tahun')) db.exec("ALTER TABLE giiatja_premi_wbp ADD COLUMN periode_tahun TEXT NOT NULL DEFAULT ''");
+
+const defaultGiiatjaPnbpYear = String(new Date().getFullYear());
+db.prepare(`
+  UPDATE giiatja_pnbp
+  SET tahun = COALESCE(NULLIF(TRIM(tahun), ''), ?)
+`).run(defaultGiiatjaPnbpYear);
+
+const defaultGiiatjaPremiMonth = 'APRIL';
+const defaultGiiatjaPremiYear = String(new Date().getFullYear());
+db.prepare(`
+  UPDATE giiatja_premi_wbp
+  SET
+    periode_bulan = COALESCE(NULLIF(TRIM(periode_bulan), ''), ?),
+    periode_tahun = COALESCE(NULLIF(TRIM(periode_tahun), ''), ?)
+`).run(defaultGiiatjaPremiMonth, defaultGiiatjaPremiYear);
 
 db.exec(`
   UPDATE besaran_remisi
@@ -1003,12 +1030,12 @@ seedIfEmpty('giiatja_pelatihan_sertifikat', () => {
 seedIfEmpty('giiatja_pnbp', () => {
   const insert = db.prepare(`
     INSERT INTO giiatja_pnbp
-      (periode_pnbp, jumlah_pnbp, target_realisasi, persentase, keterangan, sort_order)
-    VALUES (?, ?, ?, ?, ?, ?)
+      (tahun, periode_pnbp, jumlah_pnbp, target_realisasi, persentase, keterangan, sort_order)
+    VALUES (?, ?, ?, ?, ?, ?, ?)
   `);
   const rows = [
-    ['JANUARI', '10.500.000', '10.000.000', '105%', 'TERCAPAI', 1],
-    ['FEBRUARI', '8.700.000', '10.000.000', '87%', 'TIDAK TERCAPAI', 2],
+    ['2026', 'JANUARI', '10.500.000', '10.000.000', '105%', 'TERCAPAI', 1],
+    ['2026', 'FEBRUARI', '8.700.000', '10.000.000', '87%', 'TIDAK TERCAPAI', 2],
   ];
   rows.forEach(r => insert.run(...r));
 });
@@ -1016,12 +1043,12 @@ seedIfEmpty('giiatja_pnbp', () => {
 seedIfEmpty('giiatja_premi_wbp', () => {
   const insert = db.prepare(`
     INSERT INTO giiatja_premi_wbp
-      (no_registrasi, nama_wbp, jenis_kegiatan, premi_didapat, keterangan, sort_order)
-    VALUES (?, ?, ?, ?, ?, ?)
+      (no_registrasi, nama_wbp, periode_bulan, periode_tahun, jenis_kegiatan, premi_didapat, keterangan, sort_order)
+    VALUES (?, ?, ?, ?, ?, ?, ?, ?)
   `);
   const rows = [
-    ['BI.301-GJ/2026', 'WBP A.N. L', 'PANGKAS', '150.000', '-', 1],
-    ['BI.302-GJ/2026', 'WBP A.N. M', 'SABLON', '125.000', '-', 2],
+    ['BI.301-GJ/2026', 'WBP A.N. L', 'APRIL', '2026', 'PANGKAS', '150.000', '-', 1],
+    ['BI.302-GJ/2026', 'WBP A.N. M', 'APRIL', '2026', 'SABLON', '125.000', '-', 2],
   ];
   rows.forEach(r => insert.run(...r));
 });

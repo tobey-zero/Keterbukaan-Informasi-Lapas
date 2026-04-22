@@ -15,7 +15,9 @@
     </div>
 
     <div class="content-area">
+      <% const pnbpPeriodeOptions = ['JANUARI','FEBRUARI','MARET','APRIL','MEI','JUNI','JULI','AGUSTUS','SEPTEMBER','OKTOBER','NOVEMBER','DESEMBER']; %>
       <% if (success) { %><div class="alert alert-success">✅ Data GIIATJA berhasil disimpan.</div><% } %>
+      <% if (error) { %><div class="alert alert-danger">❌ <%= error %></div><% } %>
 
       <div class="card">
         <div class="card-header"><h3>⚙️ Pengaturan Judul Tabel</h3></div>
@@ -290,8 +292,15 @@ PETUGAS B"></textarea></div>
         <div class="card-body">
           <form method="POST" action="/admin/giiatja/pnbp/add">
             <div class="form-grid col-4" style="margin-bottom:12px;">
-              <div class="form-group"><label>Urutan</label><input type="number" min="1" name="sort_order" value="1"></div>
-              <div class="form-group"><label>Periode PNBP</label><input type="text" name="periode_pnbp" required></div>
+              <div class="form-group"><label>Tahun</label><input type="number" min="2000" max="2100" name="tahun" value="<%= selectedPnbpYear && selectedPnbpYear !== 'SEMUA' ? selectedPnbpYear : pnbpTahun %>" required></div>
+              <div class="form-group"><label>Periode PNBP</label>
+                <select name="periode_pnbp" required>
+                  <option value="">-- Pilih Periode --</option>
+                  <% pnbpPeriodeOptions.forEach((periode) => { %>
+                    <option value="<%= periode %>"><%= periode %></option>
+                  <% }) %>
+                </select>
+              </div>
               <div class="form-group"><label>Jumlah PNBP</label><input type="text" name="jumlah_pnbp" placeholder="cth: 10.500.000"></div>
               <div class="form-group"><label>Target Realisasi</label><input type="text" name="target_realisasi" placeholder="cth: 10.000.000"></div>
               <div class="form-group"><label>Persentase</label><input type="text" name="persentase" placeholder="cth: 105%"></div>
@@ -307,8 +316,17 @@ PETUGAS B"></textarea></div>
         <h4>✏️ Edit PNBP (ID: <%= editPnbp.id %>)</h4>
         <form method="POST" action="/admin/giiatja/pnbp/<%= editPnbp.id %>/update">
           <div class="form-grid col-4" style="margin-bottom:12px;">
-            <div class="form-group"><label>Urutan</label><input type="number" min="1" name="sort_order" value="<%= editPnbp.sort_order || 1 %>"></div>
-            <div class="form-group"><label>Periode PNBP</label><input type="text" name="periode_pnbp" value="<%= editPnbp.periode_pnbp || '' %>" required></div>
+            <div class="form-group"><label>Tahun</label><input type="number" min="2000" max="2100" name="tahun" value="<%= editPnbp.tahun || pnbpTahun %>" required></div>
+            <div class="form-group"><label>Periode PNBP</label>
+              <select name="periode_pnbp" required>
+                <% if (editPnbp.periode_pnbp && !pnbpPeriodeOptions.includes(editPnbp.periode_pnbp)) { %>
+                  <option value="<%= editPnbp.periode_pnbp %>" selected><%= editPnbp.periode_pnbp %></option>
+                <% } %>
+                <% pnbpPeriodeOptions.forEach((periode) => { %>
+                  <option value="<%= periode %>" <%= editPnbp.periode_pnbp === periode ? 'selected' : '' %>><%= periode %></option>
+                <% }) %>
+              </select>
+            </div>
             <div class="form-group"><label>Jumlah PNBP</label><input type="text" name="jumlah_pnbp" value="<%= editPnbp.jumlah_pnbp || '' %>"></div>
             <div class="form-group"><label>Target Realisasi</label><input type="text" name="target_realisasi" value="<%= editPnbp.target_realisasi || '' %>"></div>
             <div class="form-group"><label>Persentase</label><input type="text" name="persentase" value="<%= editPnbp.persentase || '' %>"></div>
@@ -316,7 +334,7 @@ PETUGAS B"></textarea></div>
           </div>
           <div style="display:flex;gap:8px;">
             <button type="submit" class="btn btn-success btn-sm">💾 Simpan</button>
-            <a href="/admin/giiatja" class="btn btn-secondary btn-sm">✕ Batal</a>
+            <a href="/admin/giiatja?pnbp_tahun=<%= encodeURIComponent(selectedPnbpYear || pnbpTahun) %>" class="btn btn-secondary btn-sm">✕ Batal</a>
           </div>
         </form>
       </div>
@@ -324,14 +342,32 @@ PETUGAS B"></textarea></div>
 
       <div class="card">
         <div class="card-header"><h3>Daftar PNBP (<%= pnbpList.length %> data)</h3></div>
+        <div class="card-body" style="padding-bottom:0;">
+          <form method="GET" action="/admin/giiatja" style="display:flex; gap:10px; flex-wrap:wrap; align-items:end;">
+            <div class="form-group" style="min-width:220px; margin:0;">
+              <label>Filter Tahun</label>
+              <select name="pnbp_tahun">
+                <option value="SEMUA" <%= selectedPnbpYear === 'SEMUA' ? 'selected' : '' %>>SEMUA TAHUN</option>
+                <% pnbpYearOptions.forEach((yearItem) => { %>
+                  <option value="<%= yearItem %>" <%= selectedPnbpYear === yearItem ? 'selected' : '' %>><%= yearItem %></option>
+                <% }) %>
+              </select>
+            </div>
+            <div style="display:flex; gap:8px; align-items:center;">
+              <button type="submit" class="btn btn-primary btn-sm">🔎 Terapkan</button>
+              <a href="/admin/giiatja" class="btn btn-secondary btn-sm">↺ Reset</a>
+            </div>
+          </form>
+        </div>
         <div class="card-body" style="padding:0;">
           <div class="table-wrap">
             <table class="admin-table">
-              <thead><tr><th>No</th><th>Periode PNBP</th><th>Jumlah PNBP</th><th>Target Realisasi</th><th>Persentase</th><th>Keterangan</th><th>Aksi</th></tr></thead>
+              <thead><tr><th>No</th><th>Tahun</th><th>Periode PNBP</th><th>Jumlah PNBP</th><th>Target Realisasi</th><th>Persentase</th><th>Keterangan</th><th>Aksi</th></tr></thead>
               <tbody>
                 <% pnbpList.forEach((item, i) => { %>
                 <tr>
                   <td><%= i + 1 %></td>
+                  <td><%= item.tahun || '-' %></td>
                   <td><%= item.periode_pnbp || '-' %></td>
                   <td><%= item.jumlah_pnbp || '-' %></td>
                   <td><%= item.target_realisasi || '-' %></td>
@@ -339,15 +375,16 @@ PETUGAS B"></textarea></div>
                   <td><%= item.keterangan || '-' %></td>
                   <td>
                     <div class="actions">
-                      <a href="/admin/giiatja?editPnbp=<%= item.id %>" class="btn btn-warning btn-xs">✏️</a>
+                      <a href="/admin/giiatja?editPnbp=<%= item.id %>&pnbp_tahun=<%= encodeURIComponent(selectedPnbpYear || item.tahun || pnbpTahun) %>" class="btn btn-warning btn-xs">✏️</a>
                       <form method="POST" action="/admin/giiatja/pnbp/<%= item.id %>/delete" style="display:inline" onsubmit="return confirm('Hapus data ini?')">
+                        <input type="hidden" name="pnbp_tahun" value="<%= selectedPnbpYear || item.tahun || '' %>">
                         <button class="btn btn-danger btn-xs">🗑</button>
                       </form>
                     </div>
                   </td>
                 </tr>
                 <% }) %>
-                <% if (!pnbpList.length) { %><tr><td colspan="7" style="text-align:center;color:#aaa;padding:20px;">Belum ada data</td></tr><% } %>
+                <% if (!pnbpList.length) { %><tr><td colspan="8" style="text-align:center;color:#aaa;padding:20px;">Belum ada data</td></tr><% } %>
               </tbody>
             </table>
           </div>
@@ -362,6 +399,16 @@ PETUGAS B"></textarea></div>
               <div class="form-group"><label>Urutan</label><input type="number" min="1" name="sort_order" value="1"></div>
               <div class="form-group"><label>No Registrasi</label><input type="text" name="no_registrasi"></div>
               <div class="form-group"><label>Nama WBP</label><input type="text" name="nama_wbp" required></div>
+              <div class="form-group">
+                <label>Periode Bulan</label>
+                <select name="periode_bulan" required>
+                  <option value="">Pilih Bulan</option>
+                  <% ['JANUARI','FEBRUARI','MARET','APRIL','MEI','JUNI','JULI','AGUSTUS','SEPTEMBER','OKTOBER','NOVEMBER','DESEMBER'].forEach((m) => { %>
+                    <option value="<%= m %>"><%= m %></option>
+                  <% }) %>
+                </select>
+              </div>
+              <div class="form-group"><label>Periode Tahun</label><input type="number" name="periode_tahun" min="2000" max="2100" value="<%= new Date().getFullYear() %>" required></div>
               <div class="form-group"><label>Jenis Kegiatan</label><input type="text" name="jenis_kegiatan"></div>
               <div class="form-group"><label>Premi yang Didapat</label><input type="text" name="premi_didapat"></div>
               <div class="form-group"><label>Keterangan</label><input type="text" name="keterangan"></div>
@@ -379,6 +426,16 @@ PETUGAS B"></textarea></div>
             <div class="form-group"><label>Urutan</label><input type="number" min="1" name="sort_order" value="<%= editPremi.sort_order || 1 %>"></div>
             <div class="form-group"><label>No Registrasi</label><input type="text" name="no_registrasi" value="<%= editPremi.no_registrasi || '' %>"></div>
             <div class="form-group"><label>Nama WBP</label><input type="text" name="nama_wbp" value="<%= editPremi.nama_wbp || '' %>" required></div>
+            <div class="form-group">
+              <label>Periode Bulan</label>
+              <select name="periode_bulan" required>
+                <option value="">Pilih Bulan</option>
+                <% ['JANUARI','FEBRUARI','MARET','APRIL','MEI','JUNI','JULI','AGUSTUS','SEPTEMBER','OKTOBER','NOVEMBER','DESEMBER'].forEach((m) => { %>
+                  <option value="<%= m %>" <%= (String(editPremi.periode_bulan || '').toUpperCase() === m) ? 'selected' : '' %>><%= m %></option>
+                <% }) %>
+              </select>
+            </div>
+            <div class="form-group"><label>Periode Tahun</label><input type="number" name="periode_tahun" min="2000" max="2100" value="<%= editPremi.periode_tahun || new Date().getFullYear() %>" required></div>
             <div class="form-group"><label>Jenis Kegiatan</label><input type="text" name="jenis_kegiatan" value="<%= editPremi.jenis_kegiatan || '' %>"></div>
             <div class="form-group"><label>Premi yang Didapat</label><input type="text" name="premi_didapat" value="<%= editPremi.premi_didapat || '' %>"></div>
             <div class="form-group"><label>Keterangan</label><input type="text" name="keterangan" value="<%= editPremi.keterangan || '' %>"></div>
@@ -393,30 +450,63 @@ PETUGAS B"></textarea></div>
 
       <div class="card">
         <div class="card-header"><h3>Daftar Premi WBP (<%= premiList.length %> data)</h3></div>
+        <div class="card-body" style="border-bottom:1px solid rgba(255,255,255,.06);">
+          <form method="GET" action="/admin/giiatja" class="form-grid col-4">
+            <div class="form-group"><label>Pencarian Premi</label><input type="text" name="premi_search" value="<%= premiSearch || '' %>" placeholder="Cari nama, kegiatan, premi..."></div>
+            <div class="form-group">
+              <label>Filter Bulan</label>
+              <select name="premi_bulan">
+                <option value="SEMUA">Semua Bulan</option>
+                <% premiMonthOptions.forEach((month) => { %>
+                  <option value="<%= month %>" <%= selectedPremiMonth === month ? 'selected' : '' %>><%= month %></option>
+                <% }) %>
+              </select>
+            </div>
+            <div class="form-group">
+              <label>Filter Tahun</label>
+              <select name="premi_tahun">
+                <option value="SEMUA">Semua Tahun</option>
+                <% premiYearOptions.forEach((year) => { %>
+                  <option value="<%= year %>" <%= selectedPremiYear === year ? 'selected' : '' %>><%= year %></option>
+                <% }) %>
+              </select>
+            </div>
+            <div class="form-group" style="display:flex;align-items:flex-end;gap:8px;">
+              <button type="submit" class="btn btn-primary btn-sm">🔎 Terapkan</button>
+              <a href="/admin/giiatja" class="btn btn-secondary btn-sm">Reset</a>
+            </div>
+            <input type="hidden" name="pnbp_tahun" value="<%= selectedPnbpYear || '' %>">
+          </form>
+        </div>
         <div class="card-body" style="padding:0;">
           <div class="table-wrap">
             <table class="admin-table">
-              <thead><tr><th>No</th><th>No Registrasi</th><th>Nama WBP</th><th>Jenis Kegiatan</th><th>Premi</th><th>Keterangan</th><th>Aksi</th></tr></thead>
+              <thead><tr><th>No</th><th>No Registrasi</th><th>Nama WBP</th><th>Periode</th><th>Jenis Kegiatan</th><th>Premi</th><th>Keterangan</th><th>Aksi</th></tr></thead>
               <tbody>
                 <% premiList.forEach((item, i) => { %>
                 <tr>
                   <td><%= i + 1 %></td>
                   <td><%= item.no_registrasi || '-' %></td>
                   <td><%= item.nama_wbp || '-' %></td>
+                  <td><%= ((item.periode_bulan || '-') + ' ' + (item.periode_tahun || '-')).trim() %></td>
                   <td><%= item.jenis_kegiatan || '-' %></td>
                   <td><%= item.premi_didapat || '-' %></td>
                   <td><%= item.keterangan || '-' %></td>
                   <td>
                     <div class="actions">
-                      <a href="/admin/giiatja?editPremi=<%= item.id %>" class="btn btn-warning btn-xs">✏️</a>
+                      <a href="/admin/giiatja?editPremi=<%= item.id %>&premi_search=<%= encodeURIComponent(premiSearch || '') %>&premi_bulan=<%= encodeURIComponent(selectedPremiMonth || 'SEMUA') %>&premi_tahun=<%= encodeURIComponent(selectedPremiYear || 'SEMUA') %>&pnbp_tahun=<%= encodeURIComponent(selectedPnbpYear || '') %>" class="btn btn-warning btn-xs">✏️</a>
                       <form method="POST" action="/admin/giiatja/premi/<%= item.id %>/delete" style="display:inline" onsubmit="return confirm('Hapus data ini?')">
+                        <input type="hidden" name="premi_search" value="<%= premiSearch || '' %>">
+                        <input type="hidden" name="premi_bulan" value="<%= selectedPremiMonth || 'SEMUA' %>">
+                        <input type="hidden" name="premi_tahun" value="<%= selectedPremiYear || 'SEMUA' %>">
+                        <input type="hidden" name="pnbp_tahun" value="<%= selectedPnbpYear || '' %>">
                         <button class="btn btn-danger btn-xs">🗑</button>
                       </form>
                     </div>
                   </td>
                 </tr>
                 <% }) %>
-                <% if (!premiList.length) { %><tr><td colspan="7" style="text-align:center;color:#aaa;padding:20px;">Belum ada data</td></tr><% } %>
+                <% if (!premiList.length) { %><tr><td colspan="8" style="text-align:center;color:#aaa;padding:20px;">Belum ada data</td></tr><% } %>
               </tbody>
             </table>
           </div>

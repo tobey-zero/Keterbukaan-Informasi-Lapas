@@ -190,10 +190,13 @@
       </div>
       <div class="panel-content">
         <form method="GET" action="/kalapas/table/giiatja" class="giiatja-search-form">
+          <% if (pnbpSelectedYear && pnbpSelectedYear !== 'SEMUA') { %>
+            <input type="hidden" name="tahun" value="<%= pnbpSelectedYear %>">
+          <% } %>
           <input type="text" name="search" value="<%= searchKeyword || '' %>" placeholder="Cari nama / no registrasi / tanggal (contoh: 2026-04-18, 18/04/2026, 18 April 2026)">
           <button type="submit">🔎 Cari History</button>
           <% if (searchKeyword) { %>
-            <a href="/kalapas/table/giiatja">↺ Reset</a>
+            <a href="/kalapas/table/giiatja<%= pnbpSelectedYear && pnbpSelectedYear !== 'SEMUA' ? `?tahun=${encodeURIComponent(pnbpSelectedYear)}` : '' %>">↺ Reset</a>
           <% } %>
         </form>
         <div class="giiatja-table-scroll table-wrap">
@@ -246,11 +249,23 @@
         <span><%= pnbpList.length %> data</span>
       </div>
       <div class="panel-content">
+        <form method="GET" action="/kalapas/table/giiatja" class="giiatja-search-form" style="margin: 10px 10px 0;">
+          <% if (searchKeyword) { %>
+            <input type="hidden" name="search" value="<%= searchKeyword %>">
+          <% } %>
+          <select name="tahun" style="min-width:220px; border:1px solid #cbd5e1; border-radius:6px; padding:7px 10px; font-size:12px;">
+            <option value="SEMUA" <%= pnbpSelectedYear === 'SEMUA' ? 'selected' : '' %>>SEMUA TAHUN</option>
+            <% (pnbpYears || []).forEach((yearItem) => { %>
+              <option value="<%= yearItem %>" <%= pnbpSelectedYear === yearItem ? 'selected' : '' %>><%= yearItem %></option>
+            <% }) %>
+          </select>
+          <button type="submit">📅 Filter Tahun</button>
+        </form>
         <div class="giiatja-table-scroll table-wrap">
           <table class="admin-table">
             <thead>
               <tr>
-                <th colspan="6" style="text-align:left;">TAHUN <%= pnbpTahun || '-' %></th>
+                <th colspan="6" style="text-align:left;">TAHUN <%= pnbpSelectedYear || pnbpTahun || '-' %></th>
               </tr>
               <tr>
                 <th>NO</th>
@@ -287,16 +302,42 @@
         <span><%= premiList.length %> data</span>
       </div>
       <div class="panel-content">
+        <form method="GET" action="/kalapas/table/giiatja" class="giiatja-search-form" style="margin-bottom:10px;display:flex;gap:8px;flex-wrap:wrap;">
+          <input
+            type="text"
+            name="premi_search"
+            value="<%= premiSearch || '' %>"
+            placeholder="Cari nama WBP, kegiatan, premi..."
+            style="min-width:230px;"
+          >
+          <select name="premi_bulan">
+            <option value="SEMUA">Semua Bulan</option>
+            <% (premiMonths || []).forEach((month) => { %>
+              <option value="<%= month %>" <%= premiSelectedMonth === month ? 'selected' : '' %>><%= month %></option>
+            <% }) %>
+          </select>
+          <select name="premi_tahun">
+            <option value="SEMUA">Semua Tahun</option>
+            <% (premiYears || []).forEach((year) => { %>
+              <option value="<%= year %>" <%= premiSelectedYear === year ? 'selected' : '' %>><%= year %></option>
+            <% }) %>
+          </select>
+          <button type="submit">🔎 Filter Premi</button>
+          <a href="/kalapas/table/giiatja" class="btn-link">Reset</a>
+          <input type="hidden" name="search" value="<%= searchKeyword || '' %>">
+          <input type="hidden" name="tahun" value="<%= pnbpSelectedYear || '' %>">
+        </form>
         <div class="giiatja-table-scroll table-wrap">
           <table class="admin-table">
             <thead>
               <tr>
-                <th colspan="6" style="text-align:left;">PRIODE BULAN : <%= premiPeriodeBulan || '-' %></th>
+                <th colspan="7" style="text-align:left;">PERIODE: <%= premiPeriodeBulan || '-' %></th>
               </tr>
               <tr>
                 <th>NO</th>
                 <th>NOMOR REGISTRASI</th>
                 <th>NAMA WBP</th>
+                <th>PERIODE</th>
                 <th>JENIS KEGIATAN</th>
                 <th>PREMI YANG DIDAPAT</th>
                 <th>KETERANGAN</th>
@@ -308,13 +349,14 @@
                 <td><%= i + 1 %></td>
                 <td><%= item.noRegistrasi || '-' %></td>
                 <td><%= item.namaWbp || '-' %></td>
+                <td><%= ((item.periodeBulan || '-') + ' ' + (item.periodeTahun || '-')).trim() %></td>
                 <td><%= item.jenisKegiatan || '-' %></td>
                 <td><%= item.premiDidapat || '-' %></td>
                 <td><%= item.keterangan || '-' %></td>
               </tr>
               <% }) %>
               <% if (!premiList.length) { %>
-              <tr><td colspan="6" class="giiatja-empty">Belum ada data</td></tr>
+              <tr><td colspan="7" class="giiatja-empty">Belum ada data</td></tr>
               <% } %>
             </tbody>
           </table>

@@ -1031,6 +1031,10 @@ function getTuUmumData() {
 
 function getGiiatjaData(options = {}) {
   const pelatihanSearch = String(options.pelatihanSearch || '').trim();
+  const pnbpYearFilter = String(options.pnbpYear || '').trim();
+  const premiSearch = String(options.premiSearch || '').trim();
+  const premiMonthFilter = String(options.premiMonth || '').trim().toUpperCase();
+  const premiYearFilter = String(options.premiYear || '').trim();
 
   const parseNominal = (value) => {
     const digits = String(value ?? '').replace(/\D/g, '');
@@ -1044,6 +1048,24 @@ function getGiiatjaData(options = {}) {
     .replace(/[^a-z0-9\s]/g, ' ')
     .replace(/\s+/g, ' ')
     .trim();
+
+  const monthOrderSql = `
+    CASE UPPER(TRIM(periode_bulan))
+      WHEN 'JANUARI' THEN 1
+      WHEN 'FEBRUARI' THEN 2
+      WHEN 'MARET' THEN 3
+      WHEN 'APRIL' THEN 4
+      WHEN 'MEI' THEN 5
+      WHEN 'JUNI' THEN 6
+      WHEN 'JULI' THEN 7
+      WHEN 'AGUSTUS' THEN 8
+      WHEN 'SEPTEMBER' THEN 9
+      WHEN 'OKTOBER' THEN 10
+      WHEN 'NOVEMBER' THEN 11
+      WHEN 'DESEMBER' THEN 12
+      ELSE 99
+    END
+  `;
 
   const buildPelatihanSearchBlob = (item) => {
     const rawTanggal = String(item.tanggalPelaksanaan || '').trim();
@@ -1167,9 +1189,10 @@ function getGiiatjaData(options = {}) {
       return b.monthKey.localeCompare(a.monthKey);
     });
 
-  const pnbpList = db
+  const pnbpRawList = db
     .prepare(`SELECT
       id,
+      tahun,
       periode_pnbp AS periodePnbp,
       jumlah_pnbp AS jumlahPnbp,
       target_realisasi AS targetRealisasi,
@@ -1177,24 +1200,105 @@ function getGiiatjaData(options = {}) {
       keterangan,
       sort_order AS sortOrder
     FROM giiatja_pnbp
-    ORDER BY sort_order ASC, id ASC`)
+    ORDER BY tahun DESC,
+      CASE UPPER(TRIM(periode_pnbp))
+        WHEN 'JANUARI' THEN 1
+        WHEN 'FEBRUARI' THEN 2
+        WHEN 'MARET' THEN 3
+        WHEN 'APRIL' THEN 4
+        WHEN 'MEI' THEN 5
+        WHEN 'JUNI' THEN 6
+        WHEN 'JULI' THEN 7
+        WHEN 'AGUSTUS' THEN 8
+        WHEN 'SEPTEMBER' THEN 9
+        WHEN 'OKTOBER' THEN 10
+        WHEN 'NOVEMBER' THEN 11
+        WHEN 'DESEMBER' THEN 12
+        ELSE 99
+      END ASC,
+      id ASC`)
     .all();
 
-  const premiList = db
+  const premiRawList = db
     .prepare(`SELECT
       id,
       no_registrasi AS noRegistrasi,
       nama_wbp AS namaWbp,
+      periode_bulan AS periodeBulan,
+      periode_tahun AS periodeTahun,
       jenis_kegiatan AS jenisKegiatan,
       premi_didapat AS premiDidapat,
       keterangan,
       sort_order AS sortOrder
     FROM giiatja_premi_wbp
-    ORDER BY sort_order ASC, id ASC`)
+    ORDER BY periode_tahun DESC,
+      ${monthOrderSql} ASC,
+      sort_order ASC,
+      id ASC`)
     .all();
 
-  const pnbpTahun = getAppSetting('giiatja_pnbp_tahun', String(new Date().getFullYear()));
-  const premiPeriodeBulan = getAppSetting('giiatja_premi_periode_bulan', '-');
+  const defaultPnbpYear = getAppSetting('giiatja_pnbp_tahun', String(new Date().getFullYear()));
+  const pnbpYears = Array.from(new Set(
+    pnbpRawList
+      .map(item => String(item.tahun || '').trim())
+      .filter(Boolean)
+  )).sort((a, b) => String(b).localeCompare(String(a), undefined, { numeric: true }));
+
+  const requestedYear = pnbpYearFilter || defaultPnbpYear;
+  const wantsAllYears = /^(semua|all)$/i.test(requestedYear);
+  const pnbpSelectedYear = wantsAllYears
+    ? 'SEMUA'
+    : (pnbpYears.includes(requestedYear) ? requestedYear : (pnbpYears[0] || defaultPnbpYear));
+
+  const pnbpList = wantsAllYears
+    ? pnbpRawList
+    : pnbpRawList.filter(item => String(item.tahun || '').trim() === pnbpSelectedYear);
+
+  const pnbpTahun = pnbpSelectedYear;
+  const premiMonths = Array.from(new Set(
+    premiRawList.map(item => String(item.periodeBulan || '').trim().toUpperCase()).filter(Boolean)
+  )).sort((a, b) => {
+    const orders = ['JANUARI','FEBRUARI','MARET','APRIL','MEI','JUNI','JULI','AGUSTUS','SEPTEMBER','OKTOBER','NOVEMBER','DESEMBER'];
+    const ia = orders.indexOf(a);
+    const ib = orders.indexOf(b);
+    const va = ia === -1 ? 99 : ia;
+    const vb = ib === -1 ? 99 : ib;
+    return va - vb;
+  });
+  const premiYears = Array.from(new Set(
+    premiRawList.map(item => String(item.periodeTahun || '').trim()).filter(Boolean)
+  )).sort((a, b) => String(b).localeCompare(String(a), undefined, { numeric: true }));
+
+  const premiSelectedMonth = premiMonthFilter && premiMonthFilter !== 'SEMUA'
+    ? premiMonthFilter
+    : 'SEMUA';
+  const premiSelectedYear = premiYearFilter && premiYearFilter !== 'SEMUA'
+    ? premiYearFilter
+    : 'SEMUA';
+  const normalizedPremiSearch = normalizeSearchText(premiSearch);
+
+  const premiList = premiRawList.filter((item) => {
+    const month = String(item.periodeBulan || '').trim().toUpperCase();
+    const year = String(item.periodeTahun || '').trim();
+    if (premiSelectedMonth !== 'SEMUA' && month !== premiSelectedMonth) return false;
+    if (premiSelectedYear !== 'SEMUA' && year !== premiSelectedYear) return false;
+    if (!normalizedPremiSearch) return true;
+    const blob = normalizeSearchText([
+      item.noRegistrasi,
+      item.namaWbp,
+      item.jenisKegiatan,
+      item.premiDidapat,
+      item.keterangan,
+      item.periodeBulan,
+      item.periodeTahun,
+      `${item.periodeBulan || ''} ${item.periodeTahun || ''}`
+    ].join(' '));
+    return blob.includes(normalizedPremiSearch);
+  });
+
+  const premiPeriodeBulan = premiSelectedMonth === 'SEMUA'
+    ? (premiSelectedYear === 'SEMUA' ? 'SEMUA PERIODE' : `SEMUA BULAN ${premiSelectedYear}`)
+    : `${premiSelectedMonth}${premiSelectedYear === 'SEMUA' ? '' : ` ${premiSelectedYear}`}`;
 
   const totalJumlahPnbp = pnbpList.reduce((sum, item) => sum + parseNominal(item.jumlahPnbp), 0);
   const totalTargetRealisasi = pnbpList.reduce((sum, item) => sum + parseNominal(item.targetRealisasi), 0);
@@ -1211,7 +1315,14 @@ function getGiiatjaData(options = {}) {
     pelatihanList,
     pelatihanGroupedByMonth,
     pelatihanSearch,
+    pnbpYears,
+    pnbpSelectedYear,
     pnbpList,
+    premiMonths,
+    premiYears,
+    premiSelectedMonth,
+    premiSelectedYear,
+    premiSearch,
     premiList,
     pnbpTahun,
     premiPeriodeBulan,
@@ -1838,20 +1949,36 @@ app.get('/kalapas/table/pengawalan', (req, res) => {
 
 app.get('/kalapas/table/giiatja', (req, res) => {
   const searchKeyword = String(req.query.search || '').trim();
-  const data = getGiiatjaData({ pelatihanSearch: searchKeyword });
+  const pnbpYear = String(req.query.tahun || '').trim();
+  const premiSearch = String(req.query.premi_search || '').trim();
+  const premiMonth = String(req.query.premi_bulan || '').trim();
+  const premiYear = String(req.query.premi_tahun || '').trim();
+  const data = getGiiatjaData({
+    pelatihanSearch: searchKeyword,
+    pnbpYear,
+    premiSearch,
+    premiMonth,
+    premiYear,
+  });
   res.render('kalapas-giiatja', {
     pageTitle: 'GIIATJA',
     subtitle: `Kegiatan: ${data.kegiatanList.length} | Pelatihan Bersertifikat: ${data.pelatihanList.length} | PNBP: ${data.pnbpList.length} | Premi: ${data.premiList.length}`,
     backUrl: '/kalapas',
     searchKeyword,
+    pnbpYear,
+    premiSearch,
+    premiMonth,
+    premiYear,
     ...data,
   });
 });
 
 app.get('/kalapas/table/pnbp-giiatja', (req, res) => {
-  const data = getGiiatjaData();
+  const pnbpYear = String(req.query.tahun || '').trim();
+  const data = getGiiatjaData({ pnbpYear });
   const rows = data.pnbpList.map((item, index) => [
     String(index + 1),
+    item.tahun || '-',
     item.periodePnbp || '-',
     `Rp ${formatRupiah(item.jumlahPnbp)}`,
     `Rp ${formatRupiah(item.targetRealisasi)}`,
@@ -1862,8 +1989,8 @@ app.get('/kalapas/table/pnbp-giiatja', (req, res) => {
   res.render('kalapas-table', {
     pageTitle: 'Grafik Pendapatan negara bukan pajak',
     sectionTitle: 'PENDAPATAN NEGARA BUKAN PAJAK',
-    subtitle: `Total data: ${rows.length}`,
-    columns: ['NO', 'PERIODE PNBP', 'JUMLAH PNBP', 'TARGET REALISASI', 'PERSENTASE', 'KETERANGAN'],
+    subtitle: `Tahun: ${data.pnbpSelectedYear || '-'} | Total data: ${rows.length}`,
+    columns: ['NO', 'TAHUN', 'PERIODE PNBP', 'JUMLAH PNBP', 'TARGET REALISASI', 'PERSENTASE', 'KETERANGAN'],
     rows,
     backUrl: '/kalapas'
   });
@@ -3095,6 +3222,10 @@ app.post('/admin/register-f/:id/delete', requireAccess('register-f'), (req, res)
 
 // ── GIIATJA (Kegiatan Kerja) ─────────────────────────────────────
 app.get('/admin/giiatja', requireAccess('giiatja'), (req, res) => {
+  const selectedPnbpYear = String(req.query.pnbp_tahun || '').trim();
+  const premiSearch = String(req.query.premi_search || '').trim();
+  const selectedPremiMonth = String(req.query.premi_bulan || '').trim().toUpperCase();
+  const selectedPremiYear = String(req.query.premi_tahun || '').trim();
   const kegiatanCategories = db.prepare('SELECT * FROM giiatja_kegiatan ORDER BY sort_order ASC, id ASC').all();
   const kegiatanDetails = db.prepare(`
     SELECT
@@ -3105,8 +3236,95 @@ app.get('/admin/giiatja', requireAccess('giiatja'), (req, res) => {
     ORDER BY c.sort_order ASC, c.id ASC, d.sort_order ASC, d.id ASC
   `).all();
   const pelatihanList = db.prepare('SELECT * FROM giiatja_pelatihan_sertifikat ORDER BY id ASC').all();
-  const pnbpList = db.prepare('SELECT * FROM giiatja_pnbp ORDER BY sort_order ASC, id ASC').all();
-  const premiList = db.prepare('SELECT * FROM giiatja_premi_wbp ORDER BY sort_order ASC, id ASC').all();
+  const pnbpAll = db.prepare(`
+    SELECT *
+    FROM giiatja_pnbp
+    ORDER BY tahun DESC,
+      CASE UPPER(TRIM(periode_pnbp))
+        WHEN 'JANUARI' THEN 1
+        WHEN 'FEBRUARI' THEN 2
+        WHEN 'MARET' THEN 3
+        WHEN 'APRIL' THEN 4
+        WHEN 'MEI' THEN 5
+        WHEN 'JUNI' THEN 6
+        WHEN 'JULI' THEN 7
+        WHEN 'AGUSTUS' THEN 8
+        WHEN 'SEPTEMBER' THEN 9
+        WHEN 'OKTOBER' THEN 10
+        WHEN 'NOVEMBER' THEN 11
+        WHEN 'DESEMBER' THEN 12
+        ELSE 99
+      END ASC,
+      id ASC
+  `).all();
+  const pnbpYearOptions = Array.from(new Set(
+    pnbpAll.map(item => String(item.tahun || '').trim()).filter(Boolean)
+  )).sort((a, b) => String(b).localeCompare(String(a), undefined, { numeric: true }));
+  const fallbackAdminPnbpYear = getAppSetting('giiatja_pnbp_tahun', String(new Date().getFullYear()));
+  const activePnbpYear = selectedPnbpYear && selectedPnbpYear !== 'SEMUA'
+    ? selectedPnbpYear
+    : (pnbpYearOptions[0] || fallbackAdminPnbpYear);
+  const pnbpList = selectedPnbpYear === 'SEMUA'
+    ? pnbpAll
+    : pnbpAll.filter(item => String(item.tahun || '').trim() === activePnbpYear);
+  const premiAll = db.prepare(`
+    SELECT *
+    FROM giiatja_premi_wbp
+    ORDER BY periode_tahun DESC,
+      CASE UPPER(TRIM(periode_bulan))
+        WHEN 'JANUARI' THEN 1
+        WHEN 'FEBRUARI' THEN 2
+        WHEN 'MARET' THEN 3
+        WHEN 'APRIL' THEN 4
+        WHEN 'MEI' THEN 5
+        WHEN 'JUNI' THEN 6
+        WHEN 'JULI' THEN 7
+        WHEN 'AGUSTUS' THEN 8
+        WHEN 'SEPTEMBER' THEN 9
+        WHEN 'OKTOBER' THEN 10
+        WHEN 'NOVEMBER' THEN 11
+        WHEN 'DESEMBER' THEN 12
+        ELSE 99
+      END ASC,
+      sort_order ASC,
+      id ASC
+  `).all();
+  const premiMonthOptions = Array.from(new Set(
+    premiAll.map(item => String(item.periode_bulan || '').trim().toUpperCase()).filter(Boolean)
+  )).sort((a, b) => {
+    const orders = ['JANUARI', 'FEBRUARI', 'MARET', 'APRIL', 'MEI', 'JUNI', 'JULI', 'AGUSTUS', 'SEPTEMBER', 'OKTOBER', 'NOVEMBER', 'DESEMBER'];
+    const ia = orders.indexOf(a);
+    const ib = orders.indexOf(b);
+    return (ia === -1 ? 99 : ia) - (ib === -1 ? 99 : ib);
+  });
+  const premiYearOptions = Array.from(new Set(
+    premiAll.map(item => String(item.periode_tahun || '').trim()).filter(Boolean)
+  )).sort((a, b) => String(b).localeCompare(String(a), undefined, { numeric: true }));
+  const activePremiMonth = selectedPremiMonth && selectedPremiMonth !== 'SEMUA' ? selectedPremiMonth : 'SEMUA';
+  const activePremiYear = selectedPremiYear && selectedPremiYear !== 'SEMUA' ? selectedPremiYear : 'SEMUA';
+  const normalizedPremiSearch = premiSearch
+    .toLowerCase()
+    .replace(/[^a-z0-9\s]/g, ' ')
+    .replace(/\s+/g, ' ')
+    .trim();
+  const premiList = premiAll.filter((item) => {
+    const month = String(item.periode_bulan || '').trim().toUpperCase();
+    const year = String(item.periode_tahun || '').trim();
+    if (activePremiMonth !== 'SEMUA' && month !== activePremiMonth) return false;
+    if (activePremiYear !== 'SEMUA' && year !== activePremiYear) return false;
+    if (!normalizedPremiSearch) return true;
+    const blob = [
+      item.no_registrasi,
+      item.nama_wbp,
+      item.jenis_kegiatan,
+      item.premi_didapat,
+      item.keterangan,
+      item.periode_bulan,
+      item.periode_tahun,
+      `${item.periode_bulan || ''} ${item.periode_tahun || ''}`,
+    ].join(' ').toLowerCase().replace(/[^a-z0-9\s]/g, ' ').replace(/\s+/g, ' ').trim();
+    return blob.includes(normalizedPremiSearch);
+  });
 
   const editKategori = req.query.editKategori
     ? db.prepare('SELECT * FROM giiatja_kegiatan WHERE id=?').get(Number(req.query.editKategori))
@@ -3136,10 +3354,18 @@ app.get('/admin/giiatja', requireAccess('giiatja'), (req, res) => {
     editPelatihan,
     editPnbp,
     editPremi,
+    pnbpYearOptions,
+    selectedPnbpYear: selectedPnbpYear === 'SEMUA' ? 'SEMUA' : activePnbpYear,
+    premiMonthOptions,
+    premiYearOptions,
+    selectedPremiMonth: activePremiMonth,
+    selectedPremiYear: activePremiYear,
+    premiSearch,
     pnbpTahun: getAppSetting('giiatja_pnbp_tahun', String(new Date().getFullYear())),
     premiPeriodeBulan: getAppSetting('giiatja_premi_periode_bulan', '-'),
     active: 'giiatja',
     success: req.query.success,
+    error: req.query.error,
   });
 });
 
@@ -3328,61 +3554,100 @@ app.post('/admin/giiatja/pelatihan/:id/delete', requireAccess('giiatja'), (req, 
 });
 
 app.post('/admin/giiatja/pnbp/add', requireAccess('giiatja'), (req, res) => {
+  const tahun = String(req.body.tahun || '').trim() || String(new Date().getFullYear());
   const periodePnbp = String(req.body.periode_pnbp || '').trim().toUpperCase();
   const jumlahPnbp = String(req.body.jumlah_pnbp || '').trim();
   const targetRealisasi = String(req.body.target_realisasi || '').trim();
   const persentase = String(req.body.persentase || '').trim().toUpperCase();
   const keterangan = String(req.body.keterangan || '').trim().toUpperCase();
-  const sortOrder = Number(req.body.sort_order || 0) || 1;
-  if (!periodePnbp) return res.redirect('/admin/giiatja');
+  if (!periodePnbp || !tahun) return res.redirect('/admin/giiatja');
+
+  const duplicate = db.prepare(`
+    SELECT id
+    FROM giiatja_pnbp
+    WHERE tahun = ?
+      AND UPPER(TRIM(periode_pnbp)) = ?
+    LIMIT 1
+  `).get(tahun, periodePnbp);
+
+  if (duplicate?.id) {
+    const query = new URLSearchParams({
+      pnbp_tahun: tahun,
+      error: `Data PNBP ${periodePnbp} tahun ${tahun} sudah ada.`
+    });
+    return res.redirect(`/admin/giiatja?${query.toString()}`);
+  }
 
   db.prepare(`
     INSERT INTO giiatja_pnbp
-      (periode_pnbp, jumlah_pnbp, target_realisasi, persentase, keterangan, sort_order)
+      (tahun, periode_pnbp, jumlah_pnbp, target_realisasi, persentase, keterangan)
     VALUES (?, ?, ?, ?, ?, ?)
-  `).run(periodePnbp, jumlahPnbp, targetRealisasi, persentase, keterangan, sortOrder);
+  `).run(tahun, periodePnbp, jumlahPnbp, targetRealisasi, persentase, keterangan);
 
-  res.redirect('/admin/giiatja?success=1');
+  res.redirect(`/admin/giiatja?success=1&pnbp_tahun=${encodeURIComponent(tahun)}`);
 });
 
 app.post('/admin/giiatja/pnbp/:id/update', requireAccess('giiatja'), (req, res) => {
   const id = Number(req.params.id);
+  const tahun = String(req.body.tahun || '').trim() || String(new Date().getFullYear());
   const periodePnbp = String(req.body.periode_pnbp || '').trim().toUpperCase();
   const jumlahPnbp = String(req.body.jumlah_pnbp || '').trim();
   const targetRealisasi = String(req.body.target_realisasi || '').trim();
   const persentase = String(req.body.persentase || '').trim().toUpperCase();
   const keterangan = String(req.body.keterangan || '').trim().toUpperCase();
-  const sortOrder = Number(req.body.sort_order || 0) || 1;
-  if (!periodePnbp) return res.redirect('/admin/giiatja');
+  if (!periodePnbp || !tahun) return res.redirect('/admin/giiatja');
+
+  const duplicate = db.prepare(`
+    SELECT id
+    FROM giiatja_pnbp
+    WHERE tahun = ?
+      AND UPPER(TRIM(periode_pnbp)) = ?
+      AND id <> ?
+    LIMIT 1
+  `).get(tahun, periodePnbp, id);
+
+  if (duplicate?.id) {
+    const query = new URLSearchParams({
+      pnbp_tahun: tahun,
+      editPnbp: String(id),
+      error: `Data PNBP ${periodePnbp} tahun ${tahun} sudah ada.`
+    });
+    return res.redirect(`/admin/giiatja?${query.toString()}`);
+  }
 
   db.prepare(`
     UPDATE giiatja_pnbp
-    SET periode_pnbp=?, jumlah_pnbp=?, target_realisasi=?, persentase=?, keterangan=?, sort_order=?
+    SET tahun=?, periode_pnbp=?, jumlah_pnbp=?, target_realisasi=?, persentase=?, keterangan=?
     WHERE id=?
-  `).run(periodePnbp, jumlahPnbp, targetRealisasi, persentase, keterangan, sortOrder, id);
+  `).run(tahun, periodePnbp, jumlahPnbp, targetRealisasi, persentase, keterangan, id);
 
-  res.redirect('/admin/giiatja?success=1');
+  res.redirect(`/admin/giiatja?success=1&pnbp_tahun=${encodeURIComponent(tahun)}`);
 });
 
 app.post('/admin/giiatja/pnbp/:id/delete', requireAccess('giiatja'), (req, res) => {
+  const pnbpTahun = String(req.body.pnbp_tahun || '').trim();
   db.prepare('DELETE FROM giiatja_pnbp WHERE id=?').run(Number(req.params.id));
-  res.redirect('/admin/giiatja?success=1');
+  const query = new URLSearchParams({ success: '1' });
+  if (pnbpTahun) query.set('pnbp_tahun', pnbpTahun);
+  res.redirect(`/admin/giiatja?${query.toString()}`);
 });
 
 app.post('/admin/giiatja/premi/add', requireAccess('giiatja'), (req, res) => {
   const noRegistrasi = String(req.body.no_registrasi || '').trim().toUpperCase();
   const namaWbp = String(req.body.nama_wbp || '').trim().toUpperCase();
+  const periodeBulan = String(req.body.periode_bulan || '').trim().toUpperCase();
+  const periodeTahun = String(req.body.periode_tahun || '').trim() || String(new Date().getFullYear());
   const jenisKegiatan = String(req.body.jenis_kegiatan || '').trim().toUpperCase();
   const premiDidapat = String(req.body.premi_didapat || '').trim();
   const keterangan = String(req.body.keterangan || '').trim().toUpperCase();
   const sortOrder = Number(req.body.sort_order || 0) || 1;
-  if (!namaWbp) return res.redirect('/admin/giiatja');
+  if (!namaWbp || !periodeBulan || !periodeTahun) return res.redirect('/admin/giiatja');
 
   db.prepare(`
     INSERT INTO giiatja_premi_wbp
-      (no_registrasi, nama_wbp, jenis_kegiatan, premi_didapat, keterangan, sort_order)
-    VALUES (?, ?, ?, ?, ?, ?)
-  `).run(noRegistrasi, namaWbp, jenisKegiatan, premiDidapat, keterangan, sortOrder);
+      (no_registrasi, nama_wbp, periode_bulan, periode_tahun, jenis_kegiatan, premi_didapat, keterangan, sort_order)
+    VALUES (?, ?, ?, ?, ?, ?, ?, ?)
+  `).run(noRegistrasi, namaWbp, periodeBulan, periodeTahun, jenisKegiatan, premiDidapat, keterangan, sortOrder);
 
   res.redirect('/admin/giiatja?success=1');
 });
@@ -3391,24 +3656,35 @@ app.post('/admin/giiatja/premi/:id/update', requireAccess('giiatja'), (req, res)
   const id = Number(req.params.id);
   const noRegistrasi = String(req.body.no_registrasi || '').trim().toUpperCase();
   const namaWbp = String(req.body.nama_wbp || '').trim().toUpperCase();
+  const periodeBulan = String(req.body.periode_bulan || '').trim().toUpperCase();
+  const periodeTahun = String(req.body.periode_tahun || '').trim() || String(new Date().getFullYear());
   const jenisKegiatan = String(req.body.jenis_kegiatan || '').trim().toUpperCase();
   const premiDidapat = String(req.body.premi_didapat || '').trim();
   const keterangan = String(req.body.keterangan || '').trim().toUpperCase();
   const sortOrder = Number(req.body.sort_order || 0) || 1;
-  if (!namaWbp) return res.redirect('/admin/giiatja');
+  if (!namaWbp || !periodeBulan || !periodeTahun) return res.redirect('/admin/giiatja');
 
   db.prepare(`
     UPDATE giiatja_premi_wbp
-    SET no_registrasi=?, nama_wbp=?, jenis_kegiatan=?, premi_didapat=?, keterangan=?, sort_order=?
+    SET no_registrasi=?, nama_wbp=?, periode_bulan=?, periode_tahun=?, jenis_kegiatan=?, premi_didapat=?, keterangan=?, sort_order=?
     WHERE id=?
-  `).run(noRegistrasi, namaWbp, jenisKegiatan, premiDidapat, keterangan, sortOrder, id);
+  `).run(noRegistrasi, namaWbp, periodeBulan, periodeTahun, jenisKegiatan, premiDidapat, keterangan, sortOrder, id);
 
   res.redirect('/admin/giiatja?success=1');
 });
 
 app.post('/admin/giiatja/premi/:id/delete', requireAccess('giiatja'), (req, res) => {
+  const premiSearch = String(req.body.premi_search || '').trim();
+  const premiMonth = String(req.body.premi_bulan || '').trim();
+  const premiYear = String(req.body.premi_tahun || '').trim();
+  const pnbpYear = String(req.body.pnbp_tahun || '').trim();
   db.prepare('DELETE FROM giiatja_premi_wbp WHERE id=?').run(Number(req.params.id));
-  res.redirect('/admin/giiatja?success=1');
+  const query = new URLSearchParams({ success: '1' });
+  if (premiSearch) query.set('premi_search', premiSearch);
+  if (premiMonth) query.set('premi_bulan', premiMonth);
+  if (premiYear) query.set('premi_tahun', premiYear);
+  if (pnbpYear) query.set('pnbp_tahun', pnbpYear);
+  res.redirect(`/admin/giiatja?${query.toString()}`);
 });
 
 // ── TU Bagian Umum ───────────────────────────────────────────────
