@@ -696,6 +696,7 @@ function getPublicData() {
   const pentahapanPembinaanDetail = db
       .prepare(`SELECT d.no_reg AS noReg,
         d.nama_wbp AS namaWbp,
+        d.jenis_kejahatan AS jenisKejahatan,
         d.blok_kamar AS blokKamar,
         d.tanggal1,
         d.tanggal2,
@@ -1301,6 +1302,7 @@ app.get('/kalapas/table/pembinaan', (req, res) => {
   const rows = umum.pentahapanPembinaanDetail.map(item => [
     item.noReg || '-',
     item.namaWbp || '-',
+    item.jenisKejahatan || '-',
     item.blokKamar || '-',
     item.tanggal1 || '-',
     item.tanggal3 || '-',
@@ -1318,7 +1320,7 @@ app.get('/kalapas/table/pembinaan', (req, res) => {
     pageTitle: 'Pentahapan Pembinaan',
     sectionTitle: 'DETAIL PENTAHAPAN PEMBINAAN',
     subtitle: `Total data: ${rows.length}`,
-    columns: ['NO REG', 'NAMA WARGA BINAAN', 'BLOK/KAMAR', 'TANGGAL 1/3', 'TANGGAL 1/2', 'TANGGAL 2/3', 'TANGGAL EKSPIRASI', 'TOTAL REMISI', 'KETERANGAN PROGRAM PEMBINAAN', 'STATUS INTEGRASI'],
+    columns: ['NO REG', 'NAMA WARGA BINAAN', 'JENIS KEJAHATAN', 'BLOK/KAMAR', 'TANGGAL 1/3', 'TANGGAL 1/2', 'TANGGAL 2/3', 'TANGGAL EKSPIRASI', 'TOTAL REMISI', 'KETERANGAN PROGRAM PEMBINAAN', 'STATUS INTEGRASI'],
     rows,
     backUrl: '/kalapas'
   });
@@ -2089,22 +2091,22 @@ app.get('/admin/pembinaan-detail', requireAccess('pembinaan-detail'), (req, res)
 });
 
 app.post('/admin/pembinaan-detail/add', requireAccess('pembinaan-detail'), (req, res) => {
-  const { no_reg, blok_kamar, tanggal1, tanggal2, tanggal3, tanggal4, total_remisi, keterangan } = req.body;
+  const { no_reg, jenis_kejahatan, blok_kamar, tanggal1, tanggal2, tanggal3, tanggal4, total_remisi, keterangan } = req.body;
   const statusIntegrasi = (req.body.status_integrasi || '').trim();
   const nama_wbp = (req.body.nama_wbp || '').toUpperCase();
-  db.prepare(`INSERT INTO pentahapan_pembinaan_detail (no_reg, nama_wbp, blok_kamar, tanggal1, tanggal2, tanggal3, tanggal4, total_remisi, keterangan, status_integrasi)
-              VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`)
-    .run(no_reg, nama_wbp, blok_kamar, tanggal1, tanggal2, tanggal3, tanggal4, total_remisi, keterangan, statusIntegrasi);
+  db.prepare(`INSERT INTO pentahapan_pembinaan_detail (no_reg, nama_wbp, jenis_kejahatan, blok_kamar, tanggal1, tanggal2, tanggal3, tanggal4, total_remisi, keterangan, status_integrasi)
+              VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`)
+    .run(no_reg, nama_wbp, jenis_kejahatan, blok_kamar, tanggal1, tanggal2, tanggal3, tanggal4, total_remisi, keterangan, statusIntegrasi);
   syncPembinaanMasterByName(nama_wbp, statusIntegrasi);
   res.redirect('/admin/pembinaan-detail?success=1');
 });
 
 app.post('/admin/pembinaan-detail/:id/update', requireAccess('pembinaan-detail'), (req, res) => {
-  const { no_reg, blok_kamar, tanggal1, tanggal2, tanggal3, tanggal4, total_remisi, keterangan } = req.body;
+  const { no_reg, jenis_kejahatan, blok_kamar, tanggal1, tanggal2, tanggal3, tanggal4, total_remisi, keterangan } = req.body;
   const statusIntegrasi = (req.body.status_integrasi || '').trim();
   const nama_wbp = (req.body.nama_wbp || '').toUpperCase();
-  db.prepare(`UPDATE pentahapan_pembinaan_detail SET no_reg=?, nama_wbp=?, blok_kamar=?, tanggal1=?, tanggal2=?, tanggal3=?, tanggal4=?, total_remisi=?, keterangan=?, status_integrasi=? WHERE id=?`)
-    .run(no_reg, nama_wbp, blok_kamar, tanggal1, tanggal2, tanggal3, tanggal4, total_remisi, keterangan, statusIntegrasi, Number(req.params.id));
+  db.prepare(`UPDATE pentahapan_pembinaan_detail SET no_reg=?, nama_wbp=?, jenis_kejahatan=?, blok_kamar=?, tanggal1=?, tanggal2=?, tanggal3=?, tanggal4=?, total_remisi=?, keterangan=?, status_integrasi=? WHERE id=?`)
+    .run(no_reg, nama_wbp, jenis_kejahatan, blok_kamar, tanggal1, tanggal2, tanggal3, tanggal4, total_remisi, keterangan, statusIntegrasi, Number(req.params.id));
   syncPembinaanMasterByName(nama_wbp, statusIntegrasi);
   res.redirect('/admin/pembinaan-detail?success=1');
 });

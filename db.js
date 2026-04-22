@@ -46,6 +46,7 @@ db.exec(`
     id INTEGER PRIMARY KEY AUTOINCREMENT,
     no_reg TEXT NOT NULL,
     nama_wbp TEXT NOT NULL,
+    jenis_kejahatan TEXT,
     blok_kamar TEXT,
     tanggal1 TEXT,
     tanggal2 TEXT,
@@ -408,6 +409,7 @@ db.exec(`
 
 const pembinaanDetailColumns = db.prepare("PRAGMA table_info('pentahapan_pembinaan_detail')").all();
 const pembinaanDetailColumnNames = pembinaanDetailColumns.map(col => col.name);
+if (!pembinaanDetailColumnNames.includes('jenis_kejahatan')) db.exec("ALTER TABLE pentahapan_pembinaan_detail ADD COLUMN jenis_kejahatan TEXT");
 if (!pembinaanDetailColumnNames.includes('blok_kamar')) db.exec("ALTER TABLE pentahapan_pembinaan_detail ADD COLUMN blok_kamar TEXT");
 if (!pembinaanDetailColumnNames.includes('tanggal1')) db.exec("ALTER TABLE pentahapan_pembinaan_detail ADD COLUMN tanggal1 TEXT");
 if (!pembinaanDetailColumnNames.includes('tanggal3')) db.exec("ALTER TABLE pentahapan_pembinaan_detail ADD COLUMN tanggal3 TEXT");
@@ -422,6 +424,7 @@ if (!pembinaanDetailColumnNamesAfterMigration.includes('status_integrasi')) {
 db.exec(`
   UPDATE pentahapan_pembinaan_detail
   SET
+    jenis_kejahatan = COALESCE(NULLIF(TRIM(jenis_kejahatan), ''), '-'),
     blok_kamar = COALESCE(NULLIF(TRIM(blok_kamar), ''), '-'),
     tanggal1 = COALESCE(NULLIF(TRIM(tanggal1), ''), NULLIF(TRIM(tanggal2), ''), ''),
     tanggal3 = COALESCE(NULLIF(TRIM(tanggal3), ''), NULLIF(TRIM(tanggal2), ''), ''),
@@ -533,13 +536,13 @@ seedIfEmpty('pentahapan_pembinaan', () => {
 seedIfEmpty('pentahapan_pembinaan_detail', () => {
   const insert = db.prepare(`
     INSERT INTO pentahapan_pembinaan_detail
-      (no_reg, nama_wbp, blok_kamar, tanggal1, tanggal2, tanggal3, tanggal4, total_remisi, keterangan, status_integrasi)
-    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+      (no_reg, nama_wbp, jenis_kejahatan, blok_kamar, tanggal1, tanggal2, tanggal3, tanggal4, total_remisi, keterangan, status_integrasi)
+    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
   `);
   const rows = [
-    ['BI.15-PK/PD/2023',  'NUR SLAMET ALS IGOR BIN SRIYANTO (ALM)', 'BLOK A / KAMAR 01', '15 Oct 2020', '15 Oct 2020', '15 Oct 2020', '28 Dec 2023', '-', 'HADIR', 'Menunggu SK'],
-    ['BI.1296-D/2020',    'IFANDI RIZKI FATMA BIN ILYAS',           'BLOK B / KAMAR 05', '22 Jun 2026', '22 Jun 2026', '22 Jun 2026', '28 Dec 2023', '-', 'HADIR', 'Sudah dijatuhi Permintaan'],
-    ['BI.084-O/2022',     'ARFAN HERMAWAN BIN A.B.A KARIES AHMAD',  'BLOK C / KAMAR 03', '15 Oct 2025', '15 Oct 2025', '15 Oct 2025', '15 Apr 2026', '-', 'HADIR', 'Sudah ada hasil SK'],
+    ['BI.15-PK/PD/2023',  'NUR SLAMET ALS IGOR BIN SRIYANTO (ALM)', 'NARKOTIKA', 'BLOK A / KAMAR 01', '15 Oct 2020', '15 Oct 2020', '15 Oct 2020', '28 Dec 2023', '-', 'HADIR', 'Menunggu SK'],
+    ['BI.1296-D/2020',    'IFANDI RIZKI FATMA BIN ILYAS',           'NARKOTIKA', 'BLOK B / KAMAR 05', '22 Jun 2026', '22 Jun 2026', '22 Jun 2026', '28 Dec 2023', '-', 'HADIR', 'Sudah dijatuhi Permintaan'],
+    ['BI.084-O/2022',     'ARFAN HERMAWAN BIN A.B.A KARIES AHMAD',  'PENCURIAN', 'BLOK C / KAMAR 03', '15 Oct 2025', '15 Oct 2025', '15 Oct 2025', '15 Apr 2026', '-', 'HADIR', 'Sudah ada hasil SK'],
   ];
   rows.forEach(r => insert.run(...r));
 });

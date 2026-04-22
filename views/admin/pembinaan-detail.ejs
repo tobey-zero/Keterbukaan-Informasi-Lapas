@@ -38,6 +38,10 @@
                 <input type="text" name="nama_wbp" placeholder="Nama lengkap" required>
               </div>
               <div class="form-group">
+                <label>Jenis Kejahatan</label>
+                <input type="text" name="jenis_kejahatan" placeholder="cth: Narkotika">
+              </div>
+              <div class="form-group">
                 <label>Blok/Kamar</label>
                 <input type="text" name="blok_kamar" placeholder="cth: BLOK A / KAMAR 01">
               </div>
@@ -106,6 +110,10 @@
               <input type="text" name="nama_wbp" value="<%= edit.nama_wbp %>" required>
             </div>
             <div class="form-group">
+              <label>Jenis Kejahatan</label>
+              <input type="text" name="jenis_kejahatan" value="<%= edit.jenis_kejahatan || '' %>">
+            </div>
+            <div class="form-group">
               <label>Blok/Kamar</label>
               <input type="text" name="blok_kamar" value="<%= edit.blok_kamar || '' %>">
             </div>
@@ -166,7 +174,7 @@
               <thead>
                 <tr>
                   <th>#</th><th>No. Reg</th><th>Nama WBP</th>
-                  <th>Blok/Kamar</th><th>Tgl 1/3</th><th>Tgl 1/2</th><th>Tgl 2/3</th><th>Ekspirasi</th><th>Total Remisi</th>
+                  <th>Jenis Kejahatan</th><th>Blok/Kamar</th><th>Tgl 1/3</th><th>Tgl 1/2</th><th>Tgl 2/3</th><th>Ekspirasi</th><th>Total Remisi</th>
                   <th>Ket.</th><th>Status Integrasi</th><th>Aksi</th>
                 </tr>
               </thead>
@@ -176,6 +184,7 @@
                   <td><%= i+1 %></td>
                   <td><%= item.no_reg %></td>
                   <td><%= item.nama_wbp %></td>
+                  <td><%= item.jenis_kejahatan||'-' %></td>
                   <td><%= item.blok_kamar||'-' %></td>
                   <td><%= formatDateIndo(item.tanggal1||'-') %></td>
                   <td><%= formatDateIndo(item.tanggal3||'-') %></td>
@@ -192,7 +201,7 @@
                       </form>
                     </div>
                   </td>
-                </tr>
+                  <% if (!list.length) { %><tr><td colspan="13" style="text-align:center;color:#aaa;padding:20px;">Belum ada data</td></tr><% } %>
                 <% }) %>
                 <% if (!list.length) { %><tr><td colspan="12" style="text-align:center;color:#aaa;padding:20px;">Belum ada data</td></tr><% } %>
               </tbody>
