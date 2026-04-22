@@ -104,6 +104,11 @@
             min-height: 100px;
             background: #f8fafc;
             border: 1px solid #dbeafe;
+            position: relative;
+        }
+
+        .summary-head {
+            position: static;
         }
 
         .summary-label {
@@ -112,6 +117,28 @@
             font-weight: bold;
             margin-bottom: 6px;
             line-height: 1.25;
+            padding-right: 60px;
+        }
+
+        .summary-icon {
+            width: 46px;
+            height: 46px;
+            color: #37547d;
+            opacity: .95;
+            position: absolute;
+            right: 8px;
+            top: 50%;
+            transform: translateY(-50%);
+        }
+
+        .summary-icon svg {
+            width: 100%;
+            height: 100%;
+            stroke: currentColor;
+            fill: none;
+            stroke-width: 2.2;
+            stroke-linecap: round;
+            stroke-linejoin: round;
         }
 
         .summary-value {
@@ -427,6 +454,228 @@
             line-height: 1.2;
         }
 
+        .crime-chart {
+            min-height: 220px;
+        }
+
+        .crime-header {
+            display: flex;
+            align-items: flex-end;
+            justify-content: space-between;
+            gap: 8px;
+            margin-bottom: 8px;
+        }
+
+        .crime-title {
+            margin: 0;
+            font-size: 12px;
+            font-weight: bold;
+            color: #0f2e78;
+            text-transform: uppercase;
+            line-height: 1.15;
+        }
+
+        .crime-total {
+            font-size: 34px;
+            font-weight: bold;
+            color: #1e3a8a;
+            line-height: 1;
+        }
+
+        .crime-bars {
+            display: grid;
+            gap: 4px;
+            max-height: 190px;
+            overflow-y: auto;
+            overflow-x: hidden;
+            padding-right: 2px;
+        }
+
+        .crime-row {
+            display: grid;
+            grid-template-columns: minmax(0, 1fr) 170px 36px;
+            gap: 6px;
+            align-items: center;
+            font-size: 10px;
+            color: #0f172a;
+        }
+
+        .crime-label {
+            font-weight: 700;
+            text-transform: uppercase;
+            line-height: 1.2;
+            overflow-wrap: anywhere;
+        }
+
+        .crime-track {
+            width: 100%;
+            height: 10px;
+            border-radius: 0;
+            background-image: repeating-linear-gradient(
+                to right,
+                #d1d5db 0,
+                #d1d5db 1px,
+                transparent 1px,
+                transparent calc(100% / var(--segments, 5))
+            );
+            background-size: 100% 100%;
+            overflow: hidden;
+            position: relative;
+        }
+
+        .crime-fill {
+            height: 100%;
+            border-radius: 0;
+            background: #0b7285;
+            width: 0;
+        }
+
+        .crime-value {
+            text-align: right;
+            font-weight: bold;
+            font-size: 10px;
+            color: #0f172a;
+        }
+
+        .crime-axis {
+            display: grid;
+            grid-template-columns: minmax(0, 1fr) 170px 36px;
+            gap: 6px;
+            align-items: start;
+            margin-top: 2px;
+        }
+
+        .crime-axis-labels {
+            display: flex;
+            justify-content: space-between;
+            font-size: 9px;
+            color: #374151;
+            font-weight: 700;
+            line-height: 1;
+        }
+
+        .crime-axis-labels span {
+            white-space: nowrap;
+        }
+
+        .vbar-card {
+            min-height: 220px;
+        }
+
+        .vbar-head {
+            display: grid;
+            grid-template-columns: auto 1fr;
+            gap: 8px;
+            align-items: start;
+            margin-bottom: 8px;
+        }
+
+        .vbar-total {
+            font-size: 40px;
+            line-height: 1;
+            font-weight: bold;
+            color: #1e3a8a;
+        }
+
+        .vbar-legend {
+            list-style: none;
+            margin: 0;
+            padding: 0;
+            display: grid;
+            gap: 3px;
+            font-size: 10px;
+            color: #0f172a;
+        }
+
+        .vbar-legend li {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 8px;
+        }
+
+        .vbar-legend-label {
+            display: inline-flex;
+            align-items: center;
+            gap: 5px;
+            min-width: 0;
+        }
+
+        .vbar-dot {
+            width: 8px;
+            height: 8px;
+            border-radius: 50%;
+            flex: 0 0 auto;
+        }
+
+        .vbar-chart {
+            height: 122px;
+            border-top: 1px solid #e2e8f0;
+            padding-top: 6px;
+            display: grid;
+            grid-template-rows: 1fr auto;
+            gap: 4px;
+        }
+
+        .vbar-plot {
+            position: relative;
+            display: grid;
+            grid-auto-flow: column;
+            grid-auto-columns: minmax(26px, 1fr);
+            align-items: end;
+            gap: 8px;
+            padding: 0 2px;
+            background-image: repeating-linear-gradient(
+                to top,
+                #e5e7eb 0,
+                #e5e7eb 1px,
+                transparent 1px,
+                transparent 20%
+            );
+            background-size: 100% 100%;
+            overflow: hidden;
+        }
+
+        .vbar-col {
+            display: grid;
+            align-items: end;
+            justify-items: center;
+            height: 100%;
+        }
+
+        .vbar-col .vbar {
+            width: min(100%, 34px);
+            background: #0b7285;
+            border-radius: 0;
+            min-height: 2px;
+        }
+
+        .vbar-col .vbar-value {
+            font-size: 10px;
+            font-weight: bold;
+            color: #0f172a;
+            margin-bottom: 2px;
+            line-height: 1;
+        }
+
+        .vbar-labels {
+            display: grid;
+            grid-auto-flow: column;
+            grid-auto-columns: minmax(26px, 1fr);
+            gap: 8px;
+            padding: 0 2px;
+        }
+
+        .vbar-label {
+            font-size: 9px;
+            text-align: center;
+            font-weight: 700;
+            color: #111827;
+            line-height: 1.15;
+            word-break: break-word;
+            text-transform: uppercase;
+        }
+
         .board-table {
             width: 100%;
             border-collapse: collapse;
@@ -571,6 +820,20 @@
         { label: 'Data Stapsel' , value: securitySummary.totalStrapsel, link: '/kalapas/table/strapsel' }, {
         label: 'Laporan BMN' , value: tuUmumSummary.totalTuUmum, link: '/kalapas/table/tu-bmn' }, { label: 'Kepegawaian'
         , value: tuUmumSummary.totalPegawai, link: '/kalapas/table/kepegawaian' } ]; const
+        summaryIconFor = (label) => {
+        const key = String(label || '').toLowerCase();
+        if (key.includes('remisi')) return '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 5h10l6 6v8a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2z"></path><path d="M14 5v6h6"></path></svg>';
+        if (key.includes('pembinaan')) return '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 4h16v16H4z"></path><path d="M8 2v4M16 2v4M8 10h8M8 14h8M8 18h5"></path></svg>';
+        if (key.includes('jadwal')) return '<svg viewBox="0 0 24 24" aria-hidden="true"><rect x="3" y="4" width="18" height="17" rx="2"></rect><path d="M8 2v4M16 2v4M3 10h18M9 14l2 2 4-4"></path></svg>';
+        if (key.includes('sakit') || key.includes('medis')) return '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M3 8a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2v10a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"></path><path d="M12 9v6M9 12h6"></path></svg>';
+        if (key.includes('luar tembok')) return '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M3 21V8l4-2 4 2 4-2 4 2v13"></path><path d="M11 3h10M17 3v8"></path></svg>';
+        if (key.includes('pengawalan')) return '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 3l7 3v6c0 5-3.5 8-7 9-3.5-1-7-4-7-9V6z"></path><path d="M9 12l2 2 4-4"></path></svg>';
+        if (key.includes('razia')) return '<svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="11" cy="11" r="7"></circle><path d="M21 21l-4.3-4.3"></path></svg>';
+        if (key.includes('stapsel') || key.includes('strapsel')) return '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M6 3h9l3 3v15H6z"></path><path d="M15 3v3h3M9 11h6M9 15h6"></path></svg>';
+        if (key.includes('bmn')) return '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M3 7h18v13H3z"></path><path d="M8 7V4h8v3M7 12h10"></path></svg>';
+        if (key.includes('kepegawaian')) return '<svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="8" r="4"></circle><path d="M4 21c1.5-4 5-6 8-6s6.5 2 8 6"></path></svg>';
+        return '<svg viewBox="0 0 24 24" aria-hidden="true"><rect x="4" y="4" width="16" height="16" rx="2"></rect><path d="M8 12h8"></path></svg>';
+        }; const
         occupied=Number(totalPenghuni) || 0; const capacityNum=Number(kapasitas) || 0; const
         available=Math.max(capacityNum - occupied, 0); const occupancyRate=capacityNum> 0 ? ((occupied / capacityNum) *
         100) : 0;
@@ -584,8 +847,11 @@
                     <div class="summary-grid">
                         <% summaryRows.forEach(item=> { %>
                             <div class="summary-card">
-                                <div class="summary-label">
-                                    <%= item.label %>
+                                <div class="summary-head">
+                                    <div class="summary-label">
+                                        <%= item.label %>
+                                    </div>
+                                    <div class="summary-icon"><%- summaryIconFor(item.label) %></div>
                                 </div>
                                 <div class="summary-value">
                                     <%= item.value %>
@@ -746,63 +1012,65 @@
                     %>
                     <div class="board-table-wrap board-three-col">
 
-                        <div class="pie-card clickable-chart" tabindex="0" role="link"
+                        <div class="pie-card clickable-chart crime-chart" tabindex="0" role="link"
                             data-link="/kalapas/table/pidana-khusus" data-values="<%= khususValues.join(',') %>"
-                            data-labels="<%= khususLabels.join('|') %>" data-show-zero="true">
-                            <h4 class="pie-title">Pidana Khusus</h4>
-                            <div class="pie-layout">
-                                <div class="pie-chart">
-                                    <div class="pie-center">0</div>
-                                </div>
-                                <ul class="pie-legend"></ul>
+                            data-labels="<%= khususLabels.join('|') %>" data-show-zero="true" data-chart-type="horizontal-bars">
+                            <div class="crime-header">
+                                <h4 class="crime-title">Pidana Khusus</h4>
+                                <div class="crime-total">0</div>
                             </div>
+                            <div class="crime-bars"></div>
                         </div>
 
-                        <div class="pie-card clickable-chart" tabindex="0" role="link"
+                        <div class="pie-card clickable-chart crime-chart" tabindex="0" role="link"
                             data-link="/kalapas/table/pidana-umum" data-values="<%= umumValues.join(',') %>"
-                            data-labels="<%= umumLabels.join('|') %>" data-show-zero="true">
-                            <h4 class="pie-title">Pidana Umum</h4>
-                            <div class="pie-layout">
-                                <div class="pie-chart">
-                                    <div class="pie-center">0</div>
-                                </div>
-                                <ul class="pie-legend"></ul>
+                            data-labels="<%= umumLabels.join('|') %>" data-show-zero="true" data-chart-type="horizontal-bars">
+                            <div class="crime-header">
+                                <h4 class="crime-title">Pidana Umum</h4>
+                                <div class="crime-total">0</div>
                             </div>
+                            <div class="crime-bars"></div>
                         </div>
 
-                        <div class="pie-card clickable-chart" tabindex="0" role="link" data-link="/kalapas/table/agama"
-                            data-values="<%= agamaValues.join(',') %>" data-labels="<%= agamaLabels.join('|') %>">
+                        <div class="pie-card vbar-card clickable-chart" tabindex="0" role="link" data-link="/kalapas/table/agama"
+                            data-values="<%= agamaValues.join(',') %>" data-labels="<%= agamaLabels.join('|') %>" data-chart-type="vertical-bars">
                             <h4 class="pie-title">Jumlah Berdasarkan Agama</h4>
-                            <div class="pie-layout">
-                                <div class="pie-chart">
-                                    <div class="pie-center">0</div>
-                                </div>
-                                <ul class="pie-legend"></ul>
+                            <div class="vbar-head">
+                                <div class="vbar-total">0</div>
+                                <ul class="vbar-legend"></ul>
+                            </div>
+                            <div class="vbar-chart">
+                                <div class="vbar-plot"></div>
+                                <div class="vbar-labels"></div>
                             </div>
                         </div>
 
 
-                        <div class="pie-card clickable-chart" tabindex="0" role="link" data-link="/kalapas/table/wna"
+                        <div class="pie-card vbar-card clickable-chart" tabindex="0" role="link" data-link="/kalapas/table/wna"
                             data-values="<%= wnaNegaraValues.join(',') %>"
-                            data-labels="<%= wnaNegaraLabels.join('|') %>">
+                            data-labels="<%= wnaNegaraLabels.join('|') %>" data-chart-type="vertical-bars">
                             <h4 class="pie-title">Warga Negara Asing</h4>
-                            <div class="pie-layout">
-                                <div class="pie-chart">
-                                    <div class="pie-center">0</div>
-                                </div>
-                                <ul class="pie-legend"></ul>
+                            <div class="vbar-head">
+                                <div class="vbar-total">0</div>
+                                <ul class="vbar-legend"></ul>
+                            </div>
+                            <div class="vbar-chart">
+                                <div class="vbar-plot"></div>
+                                <div class="vbar-labels"></div>
                             </div>
                         </div>
 
-                        <div class="pie-card clickable-chart" tabindex="0" role="link"
+                        <div class="pie-card vbar-card clickable-chart" tabindex="0" role="link"
                             data-link="/kalapas/table/wbp-luar-lapas" data-values="<%= luarValues.join(',') %>"
-                            data-labels="<%= luarLabels.join('|') %>">
+                            data-labels="<%= luarLabels.join('|') %>" data-chart-type="vertical-bars">
                             <h4 class="pie-title">WBP di Luar Lapas</h4>
-                            <div class="pie-layout">
-                                <div class="pie-chart">
-                                    <div class="pie-center">0</div>
-                                </div>
-                                <ul class="pie-legend"></ul>
+                            <div class="vbar-head">
+                                <div class="vbar-total">0</div>
+                                <ul class="vbar-legend"></ul>
+                            </div>
+                            <div class="vbar-chart">
+                                <div class="vbar-plot"></div>
+                                <div class="vbar-labels"></div>
                             </div>
                         </div>
 
@@ -846,6 +1114,7 @@
                     var rawValues = (card.getAttribute('data-values') || '').split(',').map(function (v) { return Number(v) || 0; });
                     var rawLabels = (card.getAttribute('data-labels') || '').split('|');
                     var showZero = (card.getAttribute('data-show-zero') || '').toLowerCase() === 'true';
+                    var chartType = (card.getAttribute('data-chart-type') || '').toLowerCase();
                     var pairs = [];
 
                     for (var i = 0; i < rawValues.length; i++) {
@@ -858,8 +1127,133 @@
                     var chartEl = card.querySelector('.pie-chart');
                     var centerEl = card.querySelector('.pie-center');
                     var legendEl = card.querySelector('.pie-legend');
+                    var crimeTotalEl = card.querySelector('.crime-total');
+                    var crimeBarsEl = card.querySelector('.crime-bars');
+                    var vbarTotalEl = card.querySelector('.vbar-total');
+                    var vbarLegendEl = card.querySelector('.vbar-legend');
+                    var vbarPlotEl = card.querySelector('.vbar-plot');
+                    var vbarLabelsEl = card.querySelector('.vbar-labels');
                     var centerMode = (card.getAttribute('data-center-mode') || '').toLowerCase();
                     var centerValue = Number(card.getAttribute('data-center-value')) || 0;
+
+                    if (chartType === 'horizontal-bars') {
+                        if (crimeTotalEl) {
+                            crimeTotalEl.textContent = String(total);
+                        }
+
+                        if (crimeBarsEl) {
+                            crimeBarsEl.innerHTML = '';
+
+                            if (!pairs.length) {
+                                var emptyRow = document.createElement('div');
+                                emptyRow.className = 'crime-row';
+                                emptyRow.innerHTML = '<div class="crime-label">Belum ada data</div><div class="crime-track"><div class="crime-fill" style="width:0%"></div></div><div class="crime-value">0</div>';
+                                crimeBarsEl.appendChild(emptyRow);
+                                return;
+                            }
+
+                            var maxValue = pairs.reduce(function (max, item) {
+                                return item.value > max ? item.value : max;
+                            }, 0);
+                            var computeNiceAxis = function (value) {
+                                var safeValue = Math.max(1, Number(value) || 1);
+                                var desiredTicks = 6;
+                                var roughStep = safeValue / (desiredTicks - 1);
+                                var power = Math.pow(10, Math.floor(Math.log10(roughStep)));
+                                var normalized = roughStep / power;
+                                var niceNormalized;
+
+                                if (normalized <= 1) niceNormalized = 1;
+                                else if (normalized <= 2) niceNormalized = 2;
+                                else if (normalized <= 5) niceNormalized = 5;
+                                else niceNormalized = 10;
+
+                                var step = niceNormalized * power;
+                                var axisMax = Math.ceil(safeValue / step) * step;
+                                var segments = Math.max(1, Math.round(axisMax / step));
+
+                                return { step: step, axisMax: axisMax, segments: segments };
+                            };
+
+                            var axis = computeNiceAxis(maxValue);
+                            var step = axis.step;
+                            var axisMax = axis.axisMax;
+                            var segments = axis.segments;
+
+                            pairs.sort(function (a, b) { return b.value - a.value; });
+
+                            pairs.forEach(function (item) {
+                                var width = axisMax > 0 ? (item.value / axisMax) * 100 : 0;
+                                var row = document.createElement('div');
+                                row.className = 'crime-row';
+                                row.innerHTML =
+                                    '<div class="crime-label">' + item.label + '</div>' +
+                                    '<div class="crime-track" style="--segments:' + segments + '"><div class="crime-fill" style="width:' + Math.max(0, Math.min(100, width)).toFixed(2) + '%"></div></div>' +
+                                    '<div class="crime-value">' + item.value + '</div>';
+                                crimeBarsEl.appendChild(row);
+                            });
+
+                            var axis = document.createElement('div');
+                            axis.className = 'crime-axis';
+                            var ticks = '';
+                            for (var t = 0; t <= segments; t++) {
+                                ticks += '<span>' + (t * step) + '</span>';
+                            }
+                            axis.innerHTML =
+                                '<div></div>' +
+                                '<div class="crime-axis-labels">' + ticks + '</div>' +
+                                '<div></div>';
+                            crimeBarsEl.appendChild(axis);
+                        }
+
+                        return;
+                    }
+
+                    if (chartType === 'vertical-bars') {
+                        if (vbarTotalEl) {
+                            vbarTotalEl.textContent = String(total);
+                        }
+
+                        if (vbarLegendEl) vbarLegendEl.innerHTML = '';
+                        if (vbarPlotEl) vbarPlotEl.innerHTML = '';
+                        if (vbarLabelsEl) vbarLabelsEl.innerHTML = '';
+
+                        if (!pairs.length) {
+                            if (vbarLegendEl) {
+                                vbarLegendEl.innerHTML = '<li><span class="vbar-legend-label"><span class="vbar-dot" style="background:' + colorPalette[1] + ';"></span><span>Belum ada data</span></span><strong>0</strong></li>';
+                            }
+                            return;
+                        }
+
+                        var maxValueV = pairs.reduce(function (max, item) { return item.value > max ? item.value : max; }, 0);
+
+                        pairs.forEach(function (item, index) {
+                            var color = colorPalette[index % colorPalette.length];
+                            var percent = maxValueV > 0 ? (item.value / maxValueV) * 100 : 0;
+
+                            if (vbarLegendEl) {
+                                var li = document.createElement('li');
+                                li.innerHTML = '<span class="vbar-legend-label"><span class="vbar-dot" style="background:' + color + ';"></span><span>' + item.label + '</span></span><strong>' + item.value + '</strong>';
+                                vbarLegendEl.appendChild(li);
+                            }
+
+                            if (vbarPlotEl) {
+                                var col = document.createElement('div');
+                                col.className = 'vbar-col';
+                                col.innerHTML = '<div class="vbar-value">' + item.value + '</div><div class="vbar" style="height:' + Math.max(2, Math.min(100, percent)).toFixed(2) + '%; background:' + color + ';"></div>';
+                                vbarPlotEl.appendChild(col);
+                            }
+
+                            if (vbarLabelsEl) {
+                                var label = document.createElement('div');
+                                label.className = 'vbar-label';
+                                label.textContent = item.label;
+                                vbarLabelsEl.appendChild(label);
+                            }
+                        });
+
+                        return;
+                    }
 
                     if (!chartEl || !centerEl) return;
 
