@@ -38,9 +38,80 @@
                 <input type="text" value="<%= financeSummary.sisaPaguLabel %>" disabled>
               </div>
             </div>
-            <div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap;">
+
+            <div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap;margin-top:6px;">
               <button type="submit" class="btn btn-primary btn-sm">💾 Simpan Data Keuangan</button>
               <span style="font-size:12px;color:#475569;">Data publik terakhir: <strong><%= financeSummary.updatedAtLabel %></strong></span>
+            </div>
+          </form>
+        </div>
+      </div>
+
+      <div class="card">
+        <div class="card-header"><h3>📄 Laporan PDF Realisasi</h3></div>
+        <div class="card-body">
+          <form method="POST" action="/admin/tu-umum/keuangan/pdf/update" enctype="multipart/form-data">
+            <div class="form-grid col-2" style="margin-bottom:12px;">
+              <div class="form-group">
+                <label>Upload Laporan PDF</label>
+                <input type="file" name="keuangan_pdf" accept=".pdf" style="padding:8px;border:1px solid #cbd5e1;border-radius:4px;" required>
+                <small style="color:#64748b;display:block;margin-top:6px;">Format: .pdf | Ukuran max: 10MB</small>
+              </div>
+              <div class="form-group">
+                <label>PDF Saat Ini</label>
+                <% if (financeSummary.pdfPath) { %>
+                  <a href="<%= financeSummary.pdfPath %>" target="_blank" style="color:#0ea5e9;text-decoration:underline;display:block;margin-bottom:8px;">📥 Lihat PDF</a>
+                  <small style="color:#64748b;">File uploaded</small>
+                <% } else { %>
+                  <span style="color:#94a3b8;">Belum ada PDF</span>
+                <% } %>
+              </div>
+            </div>
+            <div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap;">
+              <button type="submit" class="btn btn-primary btn-sm">💾 Simpan PDF</button>
+            </div>
+          </form>
+        </div>
+      </div>
+
+      <div class="card">
+        <div class="card-header"><h3>📊 Indikator Pelaksanaan Anggaran Satker</h3></div>
+        <div class="card-body">
+          <form method="POST" action="/admin/tu-umum/indikator/update">
+            <div class="form-grid col-4" style="margin-bottom:12px;">
+              <div class="form-group"><label>No</label><input type="text" name="no" value="<%= financeIndicator.no %>"></div>
+              <div class="form-group"><label>Periode</label><input type="text" name="periode" value="<%= financeIndicator.periode %>"></div>
+              <div class="form-group"><label>Kode KPPN</label><input type="text" name="kode_kppn" value="<%= financeIndicator.kodeKppn %>"></div>
+              <div class="form-group"><label>Kode BA</label><input type="text" name="kode_ba" value="<%= financeIndicator.kodeBa %>"></div>
+
+              <div class="form-group"><label>Kode Satker</label><input type="text" name="kode_satker" value="<%= financeIndicator.kodeSatker %>"></div>
+              <div class="form-group"><label>Uraian Satker</label><input type="text" name="uraian_satker" value="<%= financeIndicator.uraianSatker %>"></div>
+              <div class="form-group"><label>Keterangan</label><input type="text" name="keterangan" value="<%= financeIndicator.keterangan %>"></div>
+              <div class="form-group"><label>Revisi DIPA</label><input type="text" name="revisi_dipa" value="<%= financeIndicator.revisiDipa %>"></div>
+
+              <div class="form-group"><label>Deviasi Halaman III DIPA</label><input type="text" name="deviasi_halaman_iii_dipa" value="<%= financeIndicator.deviasiHalamanIiiDipa %>"></div>
+              <div class="form-group"><label>Nilai Aspek Perencanaan</label><input type="text" name="nilai_aspek_perencanaan" value="<%= financeIndicator.nilaiAspekPerencanaan %>"></div>
+              <div class="form-group"><label>Penyerapan Anggaran</label><input type="text" name="penyerapan_anggaran" value="<%= financeIndicator.penyerapanAnggaran %>"></div>
+              <div class="form-group"><label>Belanja Kontraktual</label><input type="text" name="belanja_kontraktual" value="<%= financeIndicator.belanjaKontraktual %>"></div>
+
+              <div class="form-group"><label>Penyelesaian Tagihan</label><input type="text" name="penyelesaian_tagihan" value="<%= financeIndicator.penyelesaianTagihan %>"></div>
+              <div class="form-group"><label>Pengelolaan UP dan TUP</label><input type="text" name="pengelolaan_up_dan_tup" value="<%= financeIndicator.pengelolaanUpDanTup %>"></div>
+              <div class="form-group"><label>Nilai Aspek Pelaksanaan</label><input type="text" name="nilai_aspek_pelaksanaan" value="<%= financeIndicator.nilaiAspekPelaksanaan %>"></div>
+              <div class="form-group"><label>Capaian Output</label><input type="text" name="capaian_output" value="<%= financeIndicator.capaianOutput %>"></div>
+
+              <div class="form-group"><label>Nilai Aspek Hasil</label><input type="text" name="nilai_aspek_hasil" value="<%= financeIndicator.nilaiAspekHasil %>"></div>
+              <div class="form-group"><label>Nilai Total</label><input type="text" name="nilai_total" value="<%= financeIndicator.nilaiTotal %>"></div>
+              <div class="form-group"><label>Konversi Bobot</label><input type="text" name="konversi_bobot" value="<%= financeIndicator.konversiBobot %>"></div>
+              <div class="form-group"><label>Dispensasi SPM (Pengurangan)</label><input type="text" name="dispensasi_spm" value="<%= financeIndicator.dispensasiSpm %>"></div>
+            </div>
+
+            <div class="form-grid col-4" style="margin-bottom:8px;">
+              <div class="form-group"><label>Nilai Akhir</label><input type="text" name="nilai_akhir" value="<%= financeIndicator.nilaiAkhir %>"></div>
+            </div>
+
+            <div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap;">
+              <button type="submit" class="btn btn-primary btn-sm">💾 Simpan Data Indikator</button>
+              <span style="font-size:12px;color:#64748b;">Perubahan akan tampil otomatis pada tabel indikator di halaman publik.</span>
             </div>
           </form>
         </div>

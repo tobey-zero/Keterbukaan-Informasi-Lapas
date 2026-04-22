@@ -304,7 +304,7 @@
           <img src="/images/Logo.png" alt="Logo SIMWASPIM" class="kalapas-logo-img">
         </div>
         <div class="header-info">
-          <h2><%= sectionTitle %></h2>
+          <h2><%= headerTitle || sectionTitle %></h2>
           <h3>Tampilan Tabel + Pencarian</h3>
           <p class="address"><%= subtitle %></p>
         </div>
@@ -357,7 +357,7 @@
 
     <div class="panel kalapas-table-panel">
       <div class="panel-header red">
-        <span><%= sectionTitle %></span>
+        <span><%= panelTitle || sectionTitle %></span>
         <span id="rowCount"><%= rows.length %> data</span>
       </div>
       <div class="panel-content" style="padding:0;">

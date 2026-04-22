@@ -92,6 +92,28 @@ const humasMediaUpload = multer({
   }
 });
 
+const PDF_UPLOAD_DIR = path.join(__dirname, 'public', 'uploads', 'pdf');
+if (!fs.existsSync(PDF_UPLOAD_DIR)) {
+  fs.mkdirSync(PDF_UPLOAD_DIR, { recursive: true });
+}
+
+const pdfStorage = multer.diskStorage({
+  destination: (_req, _file, cb) => cb(null, PDF_UPLOAD_DIR),
+  filename: (_req, file, cb) => {
+    const safeBase = 'laporan-realisasi';
+    cb(null, `${Date.now()}-${safeBase}.pdf`);
+  }
+});
+
+const pdfUpload = multer({
+  storage: pdfStorage,
+  limits: { fileSize: 10 * 1024 * 1024 }, // 10 MB
+  fileFilter: (_req, file, cb) => {
+    if (file.mimetype === 'application/pdf') return cb(null, true);
+    cb(new Error('File harus berupa PDF.'));
+  }
+});
+
 const RAZIA_UPLOAD_DIR = path.join(__dirname, 'public', 'uploads', 'razia');
 if (!fs.existsSync(RAZIA_UPLOAD_DIR)) {
   fs.mkdirSync(RAZIA_UPLOAD_DIR, { recursive: true });
@@ -280,6 +302,7 @@ function getFinanceSummary() {
   const realisasiBelanja = parseMoneyNumber(getAppSetting('keuangan_realisasi_belanja', '0'));
   const sisaPagu = Math.max(totalPagu - realisasiBelanja, 0);
   const updatedAtRaw = getAppSetting('keuangan_updated_at', getJakartaNowDatetimeLocal());
+  const pdfPath = getAppSetting('keuangan_pdf_path', '');
   const chartTotal = Math.max(totalPagu, realisasiBelanja + sisaPagu);
   const realisasiPercent = chartTotal > 0 ? ((realisasiBelanja / chartTotal) * 100) : 0;
   const sisaPercent = chartTotal > 0 ? ((sisaPagu / chartTotal) * 100) : 0;
@@ -289,12 +312,233 @@ function getFinanceSummary() {
     realisasiBelanja,
     sisaPagu,
     updatedAtRaw,
+    pdfPath,
     updatedAtLabel: formatFinanceUpdatedAt(updatedAtRaw),
     realisasiPercent: Number(realisasiPercent.toFixed(1)),
     sisaPercent: Number(sisaPercent.toFixed(1)),
     totalPaguLabel: `Rp ${formatRupiah(totalPagu)}`,
     realisasiBelanjaLabel: `Rp ${formatRupiah(realisasiBelanja)}`,
     sisaPaguLabel: `Rp ${formatRupiah(sisaPagu)}`,
+  };
+}
+
+function getFinanceIndicatorSummary() {
+  const defaults = {
+    no: '1',
+    periode: '04 April',
+    kodeKppn: '004',
+    kodeBa: '137',
+    kodeSatker: '692260',
+    uraianSatker: 'LAPAS KELAS I MEDAN',
+    keterangan: 'NILAI BOBOT NILAI AKHIR',
+    revisiDipa: '100,00',
+    deviasiHalamanIiiDipa: '94,58',
+    nilaiAspekPerencanaan: '97,29',
+    penyerapanAnggaran: '83,07',
+    belanjaKontraktual: '100,00',
+    penyelesaianTagihan: '90,00',
+    pengelolaanUpDanTup: '0,00',
+    nilaiAspekPelaksanaan: '91,02',
+    capaianOutput: '0,00',
+    nilaiAspekHasil: '0,00',
+    nilaiTotal: '59,80',
+    konversiBobot: '90,00%',
+    dispensasiSpm: '0,00',
+    nilaiAkhir: '66,45'
+  };
+
+  const raw = getAppSetting('keuangan_indikator_data', '');
+  if (!raw) return defaults;
+
+  try {
+    const parsed = JSON.parse(raw);
+    if (!parsed || typeof parsed !== 'object') return defaults;
+    return {
+      ...defaults,
+      ...Object.fromEntries(
+        Object.entries(parsed).map(([key, value]) => [key, String(value ?? '').trim()])
+      )
+    };
+  } catch {
+    return defaults;
+  }
+}
+
+function getMonthOptions() {
+  return [
+    { value: '01', label: 'Januari' },
+    { value: '02', label: 'Februari' },
+    { value: '03', label: 'Maret' },
+    { value: '04', label: 'April' },
+    { value: '05', label: 'Mei' },
+    { value: '06', label: 'Juni' },
+    { value: '07', label: 'Juli' },
+    { value: '08', label: 'Agustus' },
+    { value: '09', label: 'September' },
+    { value: '10', label: 'Oktober' },
+    { value: '11', label: 'November' },
+    { value: '12', label: 'Desember' },
+  ];
+}
+
+function getPiketJagaNotes() {
+  return [
+    'P = Bertugas sejak pukul 07.00 WIB s/d 13.00 WIB',
+    'S = Bertugas sejak pukul 13.00 WIB s/d 19.00 WIB',
+    'M = Bertugas sejak pukul 19.00 WIB s/d 07.00 WIB',
+    'Hadir 15 menit sebelum jam melaksanakan tugas',
+    'Pakaian dinas lapangan',
+    'Melaksanakan tugas dengan penuh pengabdian, kesadaran dan tanggung jawab',
+    'Tidak diperkenankan meninggalkan tugas tanpa seizin KA.KPLP atau Ka.Rupam',
+  ];
+}
+
+function getPiketJagaData(filter = {}) {
+  const [defaultYear, defaultMonth] = getTodayYmd().split('-');
+  const selectedYear = /^\d{4}$/.test(String(filter.year || '')) ? String(filter.year) : defaultYear;
+  const selectedMonth = /^(0[1-9]|1[0-2])$/.test(String(filter.month || '')) ? String(filter.month) : defaultMonth;
+  const daysInMonth = new Date(Number(selectedYear), Number(selectedMonth), 0).getDate();
+  const dayCodeMap = ['MG', 'SN', 'SL', 'RB', 'KM', 'JM', 'SB'];
+
+  const row = db.prepare(`
+    SELECT
+      regu1_name AS regu1Name,
+      regu2_name AS regu2Name,
+      regu3_name AS regu3Name,
+      regu4_name AS regu4Name,
+      regu1_schedule AS regu1Schedule,
+      regu2_schedule AS regu2Schedule,
+      regu3_schedule AS regu3Schedule,
+      regu4_schedule AS regu4Schedule,
+      regu_names_json AS reguNamesJson,
+      regu_schedules_json AS reguSchedulesJson,
+      regu_members_json AS reguMembersJson,
+      keterangan
+    FROM kamtib_piket_jaga
+    WHERE year = ? AND month = ?
+    LIMIT 1
+  `).get(selectedYear, selectedMonth);
+
+  const parseSchedule = (rawValue) => {
+    try {
+      const parsed = JSON.parse(String(rawValue || '[]'));
+      if (!Array.isArray(parsed)) return Array.from({ length: daysInMonth }, () => '');
+      return Array.from({ length: daysInMonth }, (_item, index) => String(parsed[index] || '').trim().toUpperCase());
+    } catch {
+      return Array.from({ length: daysInMonth }, () => '');
+    }
+  };
+
+  const legacyReguNames = [
+    row?.regu1Name || 'REGU I',
+    row?.regu2Name || 'REGU II',
+    row?.regu3Name || 'REGU III',
+    row?.regu4Name || 'REGU IV',
+  ];
+
+  const legacySchedules = [
+    parseSchedule(row?.regu1Schedule),
+    parseSchedule(row?.regu2Schedule),
+    parseSchedule(row?.regu3Schedule),
+    parseSchedule(row?.regu4Schedule),
+  ];
+
+  let reguNames = [];
+  try {
+    const parsedNames = JSON.parse(String(row?.reguNamesJson || '[]'));
+    if (Array.isArray(parsedNames)) {
+      reguNames = parsedNames
+        .map(item => String(item || '').trim())
+        .filter(Boolean)
+        .slice(0, 20);
+    }
+  } catch (_err) {
+    reguNames = [];
+  }
+  if (!reguNames.length) {
+    reguNames = legacyReguNames;
+  }
+
+  let schedules = [];
+  try {
+    const parsedSchedules = JSON.parse(String(row?.reguSchedulesJson || '[]'));
+    if (Array.isArray(parsedSchedules)) {
+      schedules = reguNames.map((_name, reguIndex) => {
+        const source = Array.isArray(parsedSchedules[reguIndex]) ? parsedSchedules[reguIndex] : [];
+        return Array.from({ length: daysInMonth }, (_item, index) => String(source[index] || '').trim().toUpperCase());
+      });
+    }
+  } catch (_err) {
+    schedules = [];
+  }
+  if (!schedules.length) {
+    schedules = reguNames.map((_name, reguIndex) => legacySchedules[reguIndex] || Array.from({ length: daysInMonth }, () => ''));
+  }
+
+  let reguMembers = [];
+  try {
+    const parsedMembers = JSON.parse(String(row?.reguMembersJson || '[]'));
+    if (Array.isArray(parsedMembers)) {
+      reguMembers = reguNames.map((_name, reguIndex) => {
+        const source = parsedMembers[reguIndex];
+        if (!Array.isArray(source)) return [];
+        return source
+          .map(item => {
+            if (item && typeof item === 'object') {
+              const nama = String(item.nama || item.name || '').trim();
+              const gol = String(item.gol || item.golongan || '-').trim() || '-';
+              const jabatan = String(item.jabatan || 'ANGGOTA').trim() || 'ANGGOTA';
+              return { nama, gol, jabatan };
+            }
+            const raw = String(item || '').trim();
+            if (!raw) return null;
+            const parts = raw.split('|').map(part => part.trim());
+            return {
+              nama: parts[0] || '',
+              gol: parts[1] || '-',
+              jabatan: parts[2] || 'ANGGOTA',
+            };
+          })
+          .filter(Boolean)
+          .filter(item => item.nama)
+          .filter(Boolean)
+          .slice(0, 100);
+      });
+    }
+  } catch (_err) {
+    reguMembers = [];
+  }
+  if (!reguMembers.length) {
+    reguMembers = reguNames.map(() => []);
+  }
+
+  const reguMemberLines = reguMembers.map(list => list.map(item => `${item.nama}|${item.gol}|${item.jabatan}`));
+
+  const days = Array.from({ length: daysInMonth }, (_item, index) => {
+    const day = index + 1;
+    const dateObj = new Date(Number(selectedYear), Number(selectedMonth) - 1, day);
+    return {
+      day,
+      dayCode: dayCodeMap[dateObj.getDay()] || '-',
+      isWeekend: dateObj.getDay() === 0,
+    };
+  });
+
+  const yearRows = db.prepare('SELECT DISTINCT year FROM kamtib_piket_jaga ORDER BY year DESC').all();
+  const yearOptions = Array.from(new Set([selectedYear, ...yearRows.map(item => String(item.year || '').trim()).filter(Boolean)])).sort((a, b) => Number(b) - Number(a));
+
+  return {
+    selectedYear,
+    selectedMonth,
+    monthOptions: getMonthOptions(),
+    yearOptions,
+    days,
+    daysInMonth,
+    reguNames,
+    schedules,
+    reguMembers,
+    reguMemberLines,
+    piketNotes: getPiketJagaNotes(),
   };
 }
 
@@ -343,13 +587,13 @@ app.use((req, res, next) => {
 const ROLES = ['superadmin', 'registrasi', 'pembinaan', 'klinik', 'dapur', 'humas', 'kamtib', 'tata_usaha', 'pengamanan'];
 
 const roleAccess = {
-  superadmin: ['dashboard', 'statistik', 'remisi', 'kata-bijak', 'menu', 'jadwal', 'pembinaan-detail', 'razia', 'pengawalan', 'register-f', 'strapsel', 'tu-umum', 'kamar-blok', 'papan-isi', 'luar-tembok', 'users', 'video', 'klinik-medis', 'klinik-berobat', 'klinik-oncall', 'klinik-kontrol', 'klinik-statistik'],
+  superadmin: ['dashboard', 'statistik', 'remisi', 'kata-bijak', 'menu', 'jadwal', 'pembinaan-detail', 'razia', 'pengawalan', 'register-f', 'strapsel', 'piket-jaga', 'tu-umum', 'kamar-blok', 'papan-isi', 'luar-tembok', 'users', 'video', 'klinik-medis', 'klinik-berobat', 'klinik-oncall', 'klinik-kontrol', 'klinik-statistik'],
   registrasi: ['dashboard', 'statistik', 'remisi', 'papan-isi'],
   pembinaan: ['dashboard', 'jadwal', 'pembinaan-detail'],
   klinik: ['dashboard', 'klinik-medis', 'klinik-berobat', 'klinik-oncall', 'klinik-kontrol', 'klinik-statistik'],
   dapur: ['dashboard', 'menu'],
   humas: ['dashboard', 'video', 'kata-bijak'],
-  kamtib: ['dashboard',  'razia', 'pengawalan', 'register-f', 'strapsel'],
+  kamtib: ['dashboard',  'razia', 'pengawalan', 'register-f', 'strapsel', 'piket-jaga'],
   tata_usaha: ['dashboard', 'tu-umum'],
   pengamanan: ['dashboard', 'kamar-blok', 'luar-tembok'],
 };
@@ -1249,25 +1493,13 @@ app.get('/kalapas/table/kamtib', (req, res) => {
   const selectedMonth = /^(0[1-9]|1[0-2])$/.test(String(req.query.month || '')) ? String(req.query.month) : defaultMonth;
   const pengawalan = getPengawalanData({ month: selectedMonth, year: selectedYear });
 
-  const monthOptions = [
-    { value: '01', label: 'Januari' },
-    { value: '02', label: 'Februari' },
-    { value: '03', label: 'Maret' },
-    { value: '04', label: 'April' },
-    { value: '05', label: 'Mei' },
-    { value: '06', label: 'Juni' },
-    { value: '07', label: 'Juli' },
-    { value: '08', label: 'Agustus' },
-    { value: '09', label: 'September' },
-    { value: '10', label: 'Oktober' },
-    { value: '11', label: 'November' },
-    { value: '12', label: 'Desember' },
-  ];
+  const monthOptions = getMonthOptions();
   const activeMonthLabel = monthOptions.find(item => item.value === selectedMonth)?.label || '-';
+  const piketJaga = getPiketJagaData({ year: selectedYear, month: selectedMonth });
 
   res.render('kalapas-kamtib', {
     pageTitle: 'Kamtib',
-    subtitle: `Jadwal Razia: ${razia.jadwalRazia.length} | Barang Bukti: ${razia.barangBuktiRazia.length} | Giat Pengawalan: ${pengawalan.list.length} (${activeMonthLabel} ${selectedYear}) | Strapsel: ${strapselSecurity.strapselList.length} | Register F: ${registerFSecurity.registerFList.length}`,
+    subtitle: `Jadwal Razia: ${razia.jadwalRazia.length} | Barang Bukti: ${razia.barangBuktiRazia.length} | Giat Pengawalan: ${pengawalan.list.length} (${activeMonthLabel} ${selectedYear}) | Piket Jaga: ${piketJaga.daysInMonth} hari | Strapsel: ${strapselSecurity.strapselList.length} | Register F: ${registerFSecurity.registerFList.length}`,
     jadwalRazia: razia.jadwalRazia,
     barangBuktiRazia: razia.barangBuktiRazia,
     pengawalanList: pengawalan.list,
@@ -1279,7 +1511,20 @@ app.get('/kalapas/table/kamtib', (req, res) => {
     yearOptions: pengawalan.years.length ? pengawalan.years : [defaultYear],
     strapselList: strapselSecurity.strapselList,
     registerFList: registerFSecurity.registerFList,
+    piketHref: `/kalapas/table/piket-jaga?month=${selectedMonth}&year=${selectedYear}`,
     backUrl: '/kalapas'
+  });
+});
+
+app.get('/kalapas/table/piket-jaga', (req, res) => {
+  const piket = getPiketJagaData({ year: req.query.year, month: req.query.month });
+  const activeMonthLabel = piket.monthOptions.find(item => item.value === piket.selectedMonth)?.label || '-';
+
+  res.render('kalapas-piket-jaga', {
+    pageTitle: 'Piket Jaga Kamtib',
+    subtitle: `${activeMonthLabel} ${piket.selectedYear}`,
+    backUrl: '/kalapas/table/kamtib',
+    ...piket,
   });
 });
 
@@ -1305,12 +1550,14 @@ app.get('/kalapas/table/pengawalan', (req, res) => {
 
 app.get('/kalapas/table/tu-realisasi', (req, res) => {
   const financeSummary = getFinanceSummary();
+  const financeIndicator = getFinanceIndicatorSummary();
 
   res.render('kalapas-tu-realisasi', {
     pageTitle: 'Realisasi Keuangan Tata Usaha',
     sectionTitle: 'REALISASI KEUANGAN - TATA USAHA',
     subtitle: 'Ringkasan data realisasi belanja',
     financeSummary,
+    financeIndicator,
     backUrl: '/kalapas'
   });
 });
@@ -1348,6 +1595,8 @@ app.get('/kalapas/table/tu-umum', (req, res) => {
 
   res.render('kalapas-table', {
     pageTitle: 'Tata Usaha',
+    headerTitle: 'TATA USAHA',
+    panelTitle: 'BAGIAN UMUM',
     sectionTitle: 'TATA USAHA',
     subtitle: `Total data: ${rows.length}`,
     financeSummary: data.financeSummary,
@@ -2075,6 +2324,128 @@ app.get('/admin/strapsel', requireAccess('strapsel'), (req, res) => {
   });
 });
 
+app.get('/admin/piket-jaga', requireAccess('piket-jaga'), (req, res) => {
+  const piket = getPiketJagaData({ year: req.query.year, month: req.query.month });
+  res.render('admin/piket-jaga', {
+    user: req.session.user,
+    active: 'piket-jaga',
+    success: req.query.success,
+    ...piket,
+  });
+});
+
+app.post('/admin/piket-jaga/update', requireAccess('piket-jaga'), (req, res) => {
+  const selectedYear = /^\d{4}$/.test(String(req.body.year || '')) ? String(req.body.year) : getTodayYmd().split('-')[0];
+  const selectedMonth = /^(0[1-9]|1[0-2])$/.test(String(req.body.month || '')) ? String(req.body.month) : getTodayYmd().split('-')[1];
+  const daysInMonth = new Date(Number(selectedYear), Number(selectedMonth), 0).getDate();
+  const defaultReguNames = ['REGU I', 'REGU II', 'REGU III', 'REGU IV'];
+
+  const readSchedule = (reguIndex) => Array.from({ length: daysInMonth }, (_item, index) => {
+    const fieldName = `shift_r${reguIndex}_d${index + 1}`;
+    return String(req.body[fieldName] || '').trim().toUpperCase().slice(0, 6);
+  });
+
+  const requestedReguCount = Number(req.body.regu_count || 0);
+  const reguCount = Number.isFinite(requestedReguCount) ? Math.max(1, Math.min(20, requestedReguCount)) : 4;
+  const rawReguNames = Array.isArray(req.body.regu_names)
+    ? req.body.regu_names
+    : (typeof req.body.regu_names === 'string' ? [req.body.regu_names] : []);
+  const rawReguMembers = Array.isArray(req.body.regu_members)
+    ? req.body.regu_members
+    : (typeof req.body.regu_members === 'string' ? [req.body.regu_members] : []);
+  const toArray = (value) => {
+    if (Array.isArray(value)) return value;
+    if (typeof value === 'string') return [value];
+    return [];
+  };
+
+  const reguNames = Array.from({ length: reguCount }, (_item, index) => {
+    const submitted = String(rawReguNames[index] || '').trim();
+    return submitted || defaultReguNames[index] || `REGU ${index + 1}`;
+  });
+
+  const schedules = reguNames.map((_name, index) => readSchedule(index + 1));
+  const reguMembers = reguNames.map((_name, index) => {
+    const reguIndex = index + 1;
+    const namaList = toArray(req.body[`member_nama_r${reguIndex}`]);
+    const golList = toArray(req.body[`member_gol_r${reguIndex}`]);
+    const jabatanList = toArray(req.body[`member_jabatan_r${reguIndex}`]);
+    const maxLength = Math.max(namaList.length, golList.length, jabatanList.length);
+
+    const structured = Array.from({ length: maxLength }, (_item, memberIndex) => {
+      const nama = String(namaList[memberIndex] || '').trim();
+      if (!nama) return null;
+      const gol = String(golList[memberIndex] || '').trim() || '-';
+      const jabatan = String(jabatanList[memberIndex] || '').trim() || 'ANGGOTA';
+      return { nama, gol, jabatan };
+    }).filter(Boolean);
+
+    if (structured.length) return structured.slice(0, 100);
+
+    const rawText = String(rawReguMembers[index] || '');
+    return rawText
+      .split(/\r?\n/)
+      .map(item => {
+        const line = item.trim();
+        if (!line) return null;
+        const parts = line.split('|').map(part => part.trim());
+        const nama = parts[0] || '';
+        if (!nama) return null;
+        return {
+          nama,
+          gol: parts[1] || '-',
+          jabatan: parts[2] || 'ANGGOTA',
+        };
+      })
+      .filter(Boolean)
+      .slice(0, 100);
+  });
+  const regu1Name = reguNames[0] || defaultReguNames[0];
+  const regu2Name = reguNames[1] || defaultReguNames[1];
+  const regu3Name = reguNames[2] || defaultReguNames[2];
+  const regu4Name = reguNames[3] || defaultReguNames[3];
+
+  db.prepare(`
+    INSERT INTO kamtib_piket_jaga (
+      year, month,
+      regu1_name, regu2_name, regu3_name, regu4_name,
+      regu1_schedule, regu2_schedule, regu3_schedule, regu4_schedule,
+      regu_names_json, regu_schedules_json, regu_members_json, keterangan, updated_at
+    ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, datetime('now','localtime'))
+    ON CONFLICT(year, month) DO UPDATE SET
+      regu1_name=excluded.regu1_name,
+      regu2_name=excluded.regu2_name,
+      regu3_name=excluded.regu3_name,
+      regu4_name=excluded.regu4_name,
+      regu1_schedule=excluded.regu1_schedule,
+      regu2_schedule=excluded.regu2_schedule,
+      regu3_schedule=excluded.regu3_schedule,
+      regu4_schedule=excluded.regu4_schedule,
+      regu_names_json=excluded.regu_names_json,
+      regu_schedules_json=excluded.regu_schedules_json,
+      regu_members_json=excluded.regu_members_json,
+      keterangan=excluded.keterangan,
+      updated_at=datetime('now','localtime')
+  `).run(
+    selectedYear,
+    selectedMonth,
+    regu1Name,
+    regu2Name,
+    regu3Name,
+    regu4Name,
+    JSON.stringify(schedules[0] || Array.from({ length: daysInMonth }, () => '')),
+    JSON.stringify(schedules[1] || Array.from({ length: daysInMonth }, () => '')),
+    JSON.stringify(schedules[2] || Array.from({ length: daysInMonth }, () => '')),
+    JSON.stringify(schedules[3] || Array.from({ length: daysInMonth }, () => '')),
+    JSON.stringify(reguNames),
+    JSON.stringify(schedules),
+    JSON.stringify(reguMembers),
+    ''
+  );
+
+  res.redirect(`/admin/piket-jaga?year=${selectedYear}&month=${selectedMonth}&success=1`);
+});
+
 app.post('/admin/strapsel/add', requireAccess('strapsel'), raziaUpload.single('dokumentasi'), (req, res) => {
   const searchKeyword = String(req.query.search || '').trim();
   const { nama_wbp, blok_hunian, tanggal_masuk_strapsel, ekspirasi, permasalahan, barang_bukti } = req.body;
@@ -2228,6 +2599,7 @@ app.get('/admin/tu-umum/realisasi', requireAccess('tu-umum'), (req, res) => {
     active: 'tu-realisasi',
     success: req.query.success,
     financeSummary: getFinanceSummary(),
+    financeIndicator: getFinanceIndicatorSummary(),
   });
 });
 
@@ -2255,7 +2627,7 @@ app.get('/admin/tu-umum/kepegawaian', requireAccess('tu-umum'), (req, res) => {
   });
 });
 
-app.post('/admin/tu-umum/keuangan/update', requireAccess('tu-umum'), (req, res) => {
+app.post('/admin/tu-umum/keuangan/update', pdfUpload.single('keuangan_pdf'), requireAccess('tu-umum'), (req, res) => {
   const totalPagu = parseMoneyNumber(req.body.total_pagu);
   const realisasiBelanja = parseMoneyNumber(req.body.realisasi_belanja);
   const updatedAtRaw = /^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}$/.test(String(req.body.updated_at || '').trim())
@@ -2279,6 +2651,62 @@ app.post('/admin/tu-umum/keuangan/update', requireAccess('tu-umum'), (req, res) 
     VALUES (?, ?)
     ON CONFLICT(key) DO UPDATE SET value=excluded.value
   `).run('keuangan_updated_at', updatedAtRaw);
+
+  if (req.file) {
+    const pdfPath = `/uploads/pdf/${req.file.filename}`;
+    db.prepare(`
+      INSERT INTO app_settings (key, value)
+      VALUES (?, ?)
+      ON CONFLICT(key) DO UPDATE SET value=excluded.value
+    `).run('keuangan_pdf_path', pdfPath);
+  }
+
+  res.redirect('/admin/tu-umum/realisasi?success=1');
+});
+
+app.post('/admin/tu-umum/keuangan/pdf/update', pdfUpload.single('keuangan_pdf'), requireAccess('tu-umum'), (req, res) => {
+  if (req.file) {
+    const pdfPath = `/uploads/pdf/${req.file.filename}`;
+    db.prepare(`
+      INSERT INTO app_settings (key, value)
+      VALUES (?, ?)
+      ON CONFLICT(key) DO UPDATE SET value=excluded.value
+    `).run('keuangan_pdf_path', pdfPath);
+  }
+
+  res.redirect('/admin/tu-umum/realisasi?success=1');
+});
+
+app.post('/admin/tu-umum/indikator/update', requireAccess('tu-umum'), (req, res) => {
+  const financeIndicator = {
+    no: String(req.body.no || '').trim(),
+    periode: String(req.body.periode || '').trim(),
+    kodeKppn: String(req.body.kode_kppn || '').trim(),
+    kodeBa: String(req.body.kode_ba || '').trim(),
+    kodeSatker: String(req.body.kode_satker || '').trim(),
+    uraianSatker: String(req.body.uraian_satker || '').trim(),
+    keterangan: String(req.body.keterangan || '').trim(),
+    revisiDipa: String(req.body.revisi_dipa || '').trim(),
+    deviasiHalamanIiiDipa: String(req.body.deviasi_halaman_iii_dipa || '').trim(),
+    nilaiAspekPerencanaan: String(req.body.nilai_aspek_perencanaan || '').trim(),
+    penyerapanAnggaran: String(req.body.penyerapan_anggaran || '').trim(),
+    belanjaKontraktual: String(req.body.belanja_kontraktual || '').trim(),
+    penyelesaianTagihan: String(req.body.penyelesaian_tagihan || '').trim(),
+    pengelolaanUpDanTup: String(req.body.pengelolaan_up_dan_tup || '').trim(),
+    nilaiAspekPelaksanaan: String(req.body.nilai_aspek_pelaksanaan || '').trim(),
+    capaianOutput: String(req.body.capaian_output || '').trim(),
+    nilaiAspekHasil: String(req.body.nilai_aspek_hasil || '').trim(),
+    nilaiTotal: String(req.body.nilai_total || '').trim(),
+    konversiBobot: String(req.body.konversi_bobot || '').trim(),
+    dispensasiSpm: String(req.body.dispensasi_spm || '').trim(),
+    nilaiAkhir: String(req.body.nilai_akhir || '').trim(),
+  };
+
+  db.prepare(`
+    INSERT INTO app_settings (key, value)
+    VALUES (?, ?)
+    ON CONFLICT(key) DO UPDATE SET value=excluded.value
+  `).run('keuangan_indikator_data', JSON.stringify(financeIndicator));
 
   res.redirect('/admin/tu-umum/realisasi?success=1');
 });

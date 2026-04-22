@@ -11,6 +11,8 @@
     </div>
   </div>
   <nav class="sidebar-nav">
+    <% const hasAny = (pages) => pages.some(p => allowed.includes(p)); %>
+    <% const isSuperAdmin = user && user.role === 'superadmin'; %>
     <div class="nav-label">Utama</div>
     <a href="/admin/dashboard" class="nav-item <%= active==='dashboard'?'active':'' %>">
       <span class="icon">📊</span><span>Dashboard</span>
@@ -19,7 +21,167 @@
       <span class="icon">🌐</span><span>Lihat Publik</span>
     </a>
 
-    <% if (['statistik','remisi','kata-bijak','menu','video','jadwal','pembinaan-detail','razia','pengawalan','register-f','strapsel','tu-umum','kamar-blok','papan-isi','luar-tembok'].some(p => allowed.includes(p))) { %>
+    <% if (isSuperAdmin) { %>
+    <% if (hasAny(['statistik','remisi','papan-isi'])) { %>
+    <div class="nav-label">Role Registrasi</div>
+    <% } %>
+
+    <% if (allowed.includes('statistik')) { %>
+    <a href="/admin/statistik" class="nav-item <%= active==='statistik'?'active':'' %>">
+      <span class="icon">📈</span><span>Statistik</span>
+    </a>
+    <% } %>
+
+    <% if (allowed.includes('remisi')) { %>
+    <a href="/admin/remisi" class="nav-item <%= active==='remisi'?'active':'' %>">
+      <span class="icon">📋</span><span>Besaran Remisi</span>
+    </a>
+    <% } %>
+
+    <% if (allowed.includes('papan-isi')) { %>
+    <a href="/admin/papan-isi" class="nav-item <%= active==='papan-isi'?'active':'' %>">
+      <span class="icon">📌</span><span>Papan Keadaan Isi</span>
+    </a>
+    <% } %>
+
+    <% if (hasAny(['jadwal','pembinaan-detail'])) { %>
+    <div class="nav-label">Role Pembinaan</div>
+    <% } %>
+
+    <% if (allowed.includes('jadwal')) { %>
+    <a href="/admin/jadwal" class="nav-item <%= active==='jadwal'?'active':'' %>">
+      <span class="icon">📅</span><span>Jadwal Kegiatan</span>
+    </a>
+    <% } %>
+
+    <% if (allowed.includes('pembinaan-detail')) { %>
+    <a href="/admin/pembinaan-detail" class="nav-item <%= active==='pembinaan-detail'?'active':'' %>">
+      <span class="icon">🧭</span><span>Detail Pembinaan</span>
+    </a>
+    <% } %>
+
+    <% if (hasAny(['klinik-medis','klinik-berobat','klinik-oncall','klinik-kontrol','klinik-statistik'])) { %>
+    <div class="nav-label">Role Klinik</div>
+    <% } %>
+
+    <% if (allowed.includes('klinik-medis')) { %>
+    <a href="/admin/klinik-medis" class="nav-item <%= active==='klinik-medis'?'active':'' %>">
+      <span class="icon">🩺</span><span>Tenaga Medis</span>
+    </a>
+    <% } %>
+
+    <% if (allowed.includes('klinik-berobat')) { %>
+    <a href="/admin/klinik-berobat" class="nav-item <%= active==='klinik-berobat'?'active':'' %>">
+      <span class="icon">🏥</span><span>WARGA BINAAN Berobat</span>
+    </a>
+    <% } %>
+
+    <% if (allowed.includes('klinik-oncall')) { %>
+    <a href="/admin/klinik-oncall" class="nav-item <%= active==='klinik-oncall'?'active':'' %>">
+      <span class="icon">📞</span><span>Jadwal On Call</span>
+    </a>
+    <% } %>
+
+    <% if (allowed.includes('klinik-kontrol')) { %>
+    <a href="/admin/klinik-kontrol" class="nav-item <%= active==='klinik-kontrol'?'active':'' %>">
+      <span class="icon">🔍</span><span>Jadwal Kontrol</span>
+    </a>
+    <% } %>
+
+    <% if (allowed.includes('klinik-statistik')) { %>
+    <a href="/admin/klinik-statistik" class="nav-item <%= active==='klinik-statistik'?'active':'' %>">
+      <span class="icon">📊</span><span>Statistik Klinik</span>
+    </a>
+    <% } %>
+
+    <% if (allowed.includes('menu')) { %>
+    <div class="nav-label">Role Dapur</div>
+    <a href="/admin/menu" class="nav-item <%= active==='menu'?'active':'' %>">
+      <span class="icon">🍽</span><span>Menu Makan</span>
+    </a>
+    <% } %>
+
+    <% if (hasAny(['video','kata-bijak'])) { %>
+    <div class="nav-label">Role Humas</div>
+    <% } %>
+
+    <% if (allowed.includes('video')) { %>
+    <a href="/admin/video" class="nav-item <%= typeof active !== 'undefined' && active==='video' ? 'active' : '' %>">
+      <span class="icon">🎥</span><span>Video Dokumentasi</span>
+    </a>
+    <% } %>
+
+    <% if (allowed.includes('kata-bijak')) { %>
+    <a href="/admin/kata-bijak" class="nav-item <%= active==='kata-bijak'?'active':'' %>">
+      <span class="icon">💬</span><span>Kata Bijak</span>
+    </a>
+    <% } %>
+
+    <% if (hasAny(['razia','pengawalan','register-f','strapsel','piket-jaga'])) { %>
+    <div class="nav-label">Role Kamtib</div>
+    <% } %>
+
+    <% if (allowed.includes('razia')) { %>
+    <a href="/admin/razia" class="nav-item <%= active==='razia'?'active':'' %>">
+      <span class="icon">🚨</span><span>Razia</span>
+    </a>
+    <% } %>
+
+    <% if (allowed.includes('pengawalan')) { %>
+    <a href="/admin/pengawalan" class="nav-item <%= active==='pengawalan'?'active':'' %>">
+      <span class="icon">🛡️</span><span>Giat Pengawalan</span>
+    </a>
+    <% } %>
+
+    <% if (allowed.includes('register-f')) { %>
+    <a href="/admin/register-f" class="nav-item <%= active==='register-f'?'active':'' %>">
+      <span class="icon">📘</span><span>Register F</span>
+    </a>
+    <% } %>
+
+    <% if (allowed.includes('strapsel')) { %>
+    <a href="/admin/strapsel" class="nav-item <%= active==='strapsel'?'active':'' %>">
+      <span class="icon">🛡️</span><span>Strapsel</span>
+    </a>
+    <% } %>
+
+    <% if (allowed.includes('piket-jaga')) { %>
+    <a href="/admin/piket-jaga" class="nav-item <%= active==='piket-jaga'?'active':'' %>">
+      <span class="icon">🧷</span><span>Piket Jaga</span>
+    </a>
+    <% } %>
+
+    <% if (allowed.includes('tu-umum')) { %>
+    <div class="nav-label">Role Tata Usaha</div>
+    <a href="/admin/tu-umum/realisasi" class="nav-item <%= active==='tu-realisasi'?'active':'' %>">
+      <span class="icon">💰</span><span>TU Realisasi</span>
+    </a>
+    <a href="/admin/tu-umum/barang" class="nav-item <%= active==='tu-barang'?'active':'' %>">
+      <span class="icon">📦</span><span>TU Daftar Barang</span>
+    </a>
+    <a href="/admin/tu-umum/kepegawaian" class="nav-item <%= active==='tu-kepegawaian'?'active':'' %>">
+      <span class="icon">👥</span><span>TU Kepegawaian</span>
+    </a>
+    <% } %>
+
+    <% if (hasAny(['kamar-blok','luar-tembok'])) { %>
+    <div class="nav-label">Role Pengamanan</div>
+    <% } %>
+
+    <% if (allowed.includes('kamar-blok')) { %>
+    <a href="/admin/kamar-blok" class="nav-item <%= active==='kamar-blok'?'active':'' %>">
+      <span class="icon">🛏️</span><span>Kamar/Blok</span>
+    </a>
+    <% } %>
+
+    <% if (allowed.includes('luar-tembok')) { %>
+    <a href="/admin/luar-tembok" class="nav-item <%= active==='luar-tembok'?'active':'' %>">
+      <span class="icon">🧾</span><span>WBP Luar Tembok</span>
+    </a>
+    <% } %>
+    <% } else { %>
+
+    <% if (hasAny(['statistik','remisi','kata-bijak','menu','video','jadwal','pembinaan-detail','razia','pengawalan','register-f','strapsel','piket-jaga','tu-umum','kamar-blok','papan-isi','luar-tembok'])) { %>
     <div class="nav-label">Kelola Data</div>
     <% } %>
 
@@ -89,6 +251,12 @@
     </a>
     <% } %>
 
+    <% if (allowed.includes('piket-jaga')) { %>
+    <a href="/admin/piket-jaga" class="nav-item <%= active==='piket-jaga'?'active':'' %>">
+      <span class="icon">🧷</span><span>Piket Jaga</span>
+    </a>
+    <% } %>
+
     <% if (allowed.includes('tu-umum')) { %>
     <a href="/admin/tu-umum/realisasi" class="nav-item <%= active==='tu-realisasi'?'active':'' %>">
       <span class="icon">💰</span><span>TU Realisasi</span>
@@ -119,7 +287,7 @@
     </a>
     <% } %>
 
-    <% if (['klinik-medis','klinik-berobat','klinik-oncall','klinik-kontrol','klinik-statistik'].some(p => allowed.includes(p))) { %>
+    <% if (hasAny(['klinik-medis','klinik-berobat','klinik-oncall','klinik-kontrol','klinik-statistik'])) { %>
     <div class="nav-label">Kelola Klinik</div>
     <% } %>
 
@@ -151,6 +319,7 @@
     <a href="/admin/klinik-statistik" class="nav-item <%= active==='klinik-statistik'?'active':'' %>">
       <span class="icon">📊</span><span>Statistik Klinik</span>
     </a>
+    <% } %>
     <% } %>
 
     <% if (allowed.includes('users')) { %>

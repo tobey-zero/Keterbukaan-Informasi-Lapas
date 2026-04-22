@@ -184,6 +184,26 @@ db.exec(`
     keterangan TEXT NOT NULL DEFAULT ''
   );
 
+  CREATE TABLE IF NOT EXISTS kamtib_piket_jaga (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    year TEXT NOT NULL,
+    month TEXT NOT NULL,
+    regu1_name TEXT NOT NULL DEFAULT 'REGU I',
+    regu2_name TEXT NOT NULL DEFAULT 'REGU II',
+    regu3_name TEXT NOT NULL DEFAULT 'REGU III',
+    regu4_name TEXT NOT NULL DEFAULT 'REGU IV',
+    regu1_schedule TEXT NOT NULL DEFAULT '[]',
+    regu2_schedule TEXT NOT NULL DEFAULT '[]',
+    regu3_schedule TEXT NOT NULL DEFAULT '[]',
+    regu4_schedule TEXT NOT NULL DEFAULT '[]',
+    regu_names_json TEXT NOT NULL DEFAULT '[]',
+    regu_schedules_json TEXT NOT NULL DEFAULT '[]',
+    regu_members_json TEXT NOT NULL DEFAULT '[]',
+    keterangan TEXT NOT NULL DEFAULT 'P: PIKET',
+    updated_at TEXT NOT NULL DEFAULT (datetime('now','localtime')),
+    UNIQUE(year, month)
+  );
+
   CREATE TABLE IF NOT EXISTS tu_umum_barang (
     id INTEGER PRIMARY KEY AUTOINCREMENT,
     kode TEXT NOT NULL,
@@ -342,6 +362,12 @@ if (!registerFColumnNames.includes('lama_hukuman')) db.exec("ALTER TABLE registe
 if (!registerFColumnNames.includes('hukuman_mulai')) db.exec("ALTER TABLE register_f ADD COLUMN hukuman_mulai TEXT NOT NULL DEFAULT ''");
 if (!registerFColumnNames.includes('hukuman_selesai')) db.exec("ALTER TABLE register_f ADD COLUMN hukuman_selesai TEXT NOT NULL DEFAULT ''");
 if (!registerFColumnNames.includes('keterangan')) db.exec("ALTER TABLE register_f ADD COLUMN keterangan TEXT NOT NULL DEFAULT ''");
+
+const piketJagaColumns = db.prepare("PRAGMA table_info('kamtib_piket_jaga')").all();
+const piketJagaColumnNames = piketJagaColumns.map(col => col.name);
+if (!piketJagaColumnNames.includes('regu_names_json')) db.exec("ALTER TABLE kamtib_piket_jaga ADD COLUMN regu_names_json TEXT NOT NULL DEFAULT '[]'");
+if (!piketJagaColumnNames.includes('regu_schedules_json')) db.exec("ALTER TABLE kamtib_piket_jaga ADD COLUMN regu_schedules_json TEXT NOT NULL DEFAULT '[]'");
+if (!piketJagaColumnNames.includes('regu_members_json')) db.exec("ALTER TABLE kamtib_piket_jaga ADD COLUMN regu_members_json TEXT NOT NULL DEFAULT '[]'");
 
 const remisiColumns = db.prepare("PRAGMA table_info('besaran_remisi')").all();
 const remisiColumnNames = remisiColumns.map(col => col.name);

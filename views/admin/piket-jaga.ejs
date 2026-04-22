@@ -1,0 +1,373 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+  <meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Piket Jaga – Admin Lapas</title>
+  <link rel="stylesheet" href="/css/admin.css">
+  <style>
+    .piket-grid-wrap { overflow-x: auto; border: 1px solid #dbe4f0; border-radius: 8px; }
+    .piket-grid-table { border-collapse: collapse; min-width: 1400px; width: 100%; }
+    .piket-grid-table th, .piket-grid-table td { border: 1px solid #d1d5db; padding: 6px 5px; text-align: center; font-size: 11px; }
+    .piket-grid-table th { background: #1f3f78; color: #fff; font-weight: 700; }
+    .piket-grid-table .head-day { background: #f8fafc; color: #0f172a; font-weight: 700; }
+    .piket-grid-table .head-day.red { color: #dc2626; }
+    .piket-grid-table .regu-name-cell { background: #f8fafc; min-width: 160px; }
+    .piket-grid-table .shift-cell input { width: 48px; text-align: center; font-weight: 700; text-transform: uppercase; padding: 4px 3px; }
+    .piket-help { font-size: 12px; color: #64748b; margin-top: 8px; }
+    .piket-notes { margin-top: 14px; font-size: 12px; color: #0f172a; }
+    .piket-notes h4 { margin: 0 0 8px; font-size: 13px; }
+    .piket-notes ol { margin: 0; padding-left: 18px; }
+    .piket-notes li { margin-bottom: 4px; }
+    .regu-member-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 10px; margin-bottom: 12px; }
+    .regu-member-card { border: 1px solid #dbe4f0; border-radius: 8px; overflow: hidden; background: #fff; }
+    .regu-member-head { padding: 8px 10px; font-size: 12px; font-weight: 700; color: #0f172a; background: #f8fafc; border-bottom: 1px solid #dbe4f0; }
+    .regu-member-table-wrap { overflow-x: auto; }
+    .regu-member-table { width: 100%; min-width: 360px; border-collapse: collapse; }
+    .regu-member-table th, .regu-member-table td { border: 1px solid #e2e8f0; padding: 6px; font-size: 11px; text-align: left; }
+    .regu-member-table th { background: #f8fafc; font-weight: 700; color: #334155; }
+    .regu-member-table input { width: 100%; }
+    .regu-member-actions { padding: 8px 10px; border-top: 1px solid #dbe4f0; display: flex; gap: 8px; align-items: center; }
+    .btn-mini { border: 1px solid #cbd5e1; border-radius: 6px; background: #fff; color: #0f172a; font-size: 11px; font-weight: 700; padding: 4px 7px; cursor: pointer; }
+    .btn-mini.danger { color: #b91c1c; border-color: #fecaca; background: #fff1f2; }
+  </style>
+</head>
+<body>
+<div class="admin-wrapper">
+  <%- include('_sidebar') %>
+  <div class="main-content">
+    <div class="topbar">
+      <div class="topbar-title"><h2>🧷 Piket Jaga Kamtib</h2><p>Kelola jadwal regu pengamanan per hari</p></div>
+      <div class="topbar-actions"><a href="/kalapas/table/piket-jaga?year=<%= selectedYear %>&month=<%= selectedMonth %>" target="_blank" class="btn-public">🧭 Lihat Publik</a></div>
+    </div>
+
+    <div class="content-area">
+      <% if (success) { %><div class="alert alert-success">✅ Jadwal piket jaga berhasil disimpan.</div><% } %>
+
+      <div class="card">
+        <div class="card-header"><h3>⚙️ Filter Bulan/Tahun</h3></div>
+        <div class="card-body">
+          <form method="GET" action="/admin/piket-jaga" style="display:flex;gap:10px;align-items:end;flex-wrap:wrap;">
+            <div class="form-group" style="min-width:200px;">
+              <label>Bulan</label>
+              <select name="month" required>
+                <% monthOptions.forEach(opt => { %>
+                  <option value="<%= opt.value %>" <%= opt.value === selectedMonth ? 'selected' : '' %>><%= opt.label %></option>
+                <% }) %>
+              </select>
+            </div>
+            <div class="form-group" style="min-width:160px;">
+              <label>Tahun</label>
+              <select name="year" required>
+                <% yearOptions.forEach(year => { %>
+                  <option value="<%= year %>" <%= String(year) === String(selectedYear) ? 'selected' : '' %>><%= year %></option>
+                <% }) %>
+              </select>
+            </div>
+            <button type="submit" class="btn btn-secondary btn-sm">Terapkan</button>
+          </form>
+        </div>
+      </div>
+
+      <div class="card">
+        <div class="card-header"><h3>📝 Editor Jadwal Piket Jaga</h3></div>
+        <div class="card-body">
+          <form method="POST" action="/admin/piket-jaga/update">
+            <input type="hidden" name="year" value="<%= selectedYear %>">
+            <input type="hidden" name="month" value="<%= selectedMonth %>">
+            <input type="hidden" name="regu_count" id="reguCountInput" value="<%= reguNames.length %>">
+
+            <div style="margin-bottom:12px;display:flex;gap:8px;align-items:center;flex-wrap:wrap;">
+              <button type="button" class="btn btn-secondary btn-sm" id="btnTambahRegu">➕ Tambah Regu</button>
+              <button type="button" class="btn btn-warning btn-sm" id="btnKurangiRegu">➖ Kurangi Regu</button>
+              <span style="font-size:12px;color:#64748b;">Jumlah regu saat ini: <strong id="reguCountText"><%= reguNames.length %></strong></span>
+            </div>
+
+            <div id="reguNameContainer" class="form-grid col-4" style="margin-bottom:12px;">
+              <% reguNames.forEach((name, index) => { %>
+                <div class="form-group">
+                  <label>Nama Regu <%= index + 1 %></label>
+                  <input type="text" name="regu_names[]" value="<%= name %>" required>
+                </div>
+              <% }) %>
+            </div>
+
+            <div id="reguMemberContainer" class="regu-member-grid"></div>
+
+            <div class="piket-grid-wrap" style="margin-bottom:12px;">
+              <table class="piket-grid-table">
+                <thead>
+                  <tr>
+                    <th rowspan="2" style="min-width:44px;">NO</th>
+                    <th rowspan="2" style="min-width:180px;">REGU PENGAMANAN</th>
+                    <% days.forEach(day => { %>
+                      <th class="head-day"><%= day.day %></th>
+                    <% }) %>
+                  </tr>
+                  <tr>
+                    <% days.forEach(day => { %>
+                      <th class="head-day <%= day.isWeekend ? 'red' : '' %>"><%= day.dayCode %></th>
+                    <% }) %>
+                  </tr>
+                </thead>
+                <tbody id="scheduleTableBody">
+                  <% reguNames.forEach((name, reguIndex) => { %>
+                    <tr>
+                      <td><%= reguIndex + 1 %></td>
+                      <td class="regu-name-cell"><strong><%= name %></strong></td>
+                      <% days.forEach((_day, dayIndex) => { %>
+                        <td class="shift-cell">
+                          <input type="text" name="shift_r<%= reguIndex + 1 %>_d<%= dayIndex + 1 %>" value="<%= schedules[reguIndex][dayIndex] || '' %>" maxlength="6" placeholder="-">
+                        </td>
+                      <% }) %>
+                    </tr>
+                  <% }) %>
+                </tbody>
+              </table>
+            </div>
+
+            <div class="piket-help">Isi kode jaga sesuai kebutuhan (contoh: S, PM, J1, OFF). Kosongkan jika tidak ada jadwal pada hari tersebut.</div>
+
+            <div class="piket-notes">
+              <h4>CATATAN :</h4>
+              <ol>
+                <% piketNotes.forEach((note) => { %>
+                  <li><%= note %></li>
+                <% }) %>
+              </ol>
+            </div>
+
+            <div style="margin-top:12px;display:flex;gap:8px;align-items:center;flex-wrap:wrap;">
+              <button type="submit" class="btn btn-primary btn-sm">💾 Simpan Jadwal Piket Jaga</button>
+            </div>
+          </form>
+        </div>
+      </div>
+
+    </div>
+  </div>
+</div>
+<div
+  id="piketMeta"
+  data-days-in-month="<%= days.length %>"
+  data-regu-names="<%- encodeURIComponent(JSON.stringify(reguNames)) %>"
+  data-schedules="<%- encodeURIComponent(JSON.stringify(schedules)) %>"
+  data-regu-members="<%- encodeURIComponent(JSON.stringify(reguMembers)) %>"
+></div>
+<script>
+  (() => {
+    const meta = document.getElementById('piketMeta');
+    const maxRegu = 20;
+    const minRegu = 1;
+    const daysInMonth = Number(meta?.dataset.daysInMonth || 0);
+    const reguNamesState = JSON.parse(decodeURIComponent(meta?.dataset.reguNames || '%5B%5D'));
+    const schedulesState = JSON.parse(decodeURIComponent(meta?.dataset.schedules || '%5B%5D'));
+    const reguMembersState = JSON.parse(decodeURIComponent(meta?.dataset.reguMembers || '%5B%5D'));
+
+    const reguNameContainer = document.getElementById('reguNameContainer');
+    const reguMemberContainer = document.getElementById('reguMemberContainer');
+    const scheduleTableBody = document.getElementById('scheduleTableBody');
+    const reguCountInput = document.getElementById('reguCountInput');
+    const reguCountText = document.getElementById('reguCountText');
+    const btnTambahRegu = document.getElementById('btnTambahRegu');
+    const btnKurangiRegu = document.getElementById('btnKurangiRegu');
+
+    const normalizeState = () => {
+      while (schedulesState.length < reguNamesState.length) {
+        schedulesState.push(Array.from({ length: daysInMonth }, () => ''));
+      }
+      while (reguMembersState.length < reguNamesState.length) {
+        reguMembersState.push([]);
+      }
+      schedulesState.forEach((row, rowIndex) => {
+        if (!Array.isArray(row)) schedulesState[rowIndex] = [];
+        schedulesState[rowIndex] = Array.from({ length: daysInMonth }, (_item, index) => String(schedulesState[rowIndex][index] || '').trim().toUpperCase());
+      });
+      reguMembersState.forEach((row, rowIndex) => {
+        if (!Array.isArray(row)) reguMembersState[rowIndex] = [];
+        reguMembersState[rowIndex] = reguMembersState[rowIndex]
+          .map(item => {
+            if (item && typeof item === 'object') {
+              const nama = String(item.nama || '').trim();
+              if (!nama) return null;
+              return {
+                nama,
+                gol: String(item.gol || '-').trim() || '-',
+                jabatan: String(item.jabatan || 'ANGGOTA').trim() || 'ANGGOTA',
+              };
+            }
+            const raw = String(item || '').trim();
+            if (!raw) return null;
+            const parts = raw.split('|').map(part => part.trim());
+            if (!parts[0]) return null;
+            return {
+              nama: parts[0],
+              gol: parts[1] || '-',
+              jabatan: parts[2] || 'ANGGOTA',
+            };
+          })
+          .filter(Boolean);
+      });
+      if (!reguNamesState.length) {
+        reguNamesState.push('REGU I');
+        schedulesState.push(Array.from({ length: daysInMonth }, () => ''));
+        reguMembersState.push([]);
+      }
+    };
+
+    const collectInputValues = () => {
+      const nameInputs = reguNameContainer.querySelectorAll('input[name="regu_names[]"]');
+      nameInputs.forEach((input, index) => {
+        reguNamesState[index] = String(input.value || '').trim() || `REGU ${index + 1}`;
+      });
+      reguMembersState.forEach((_item, index) => {
+        const rows = reguMemberContainer.querySelectorAll(`[data-regu-member-row="${index}"]`);
+        reguMembersState[index] = Array.from(rows).map((row) => {
+          const nama = String(row.querySelector('input[data-field="nama"]')?.value || '').trim();
+          const gol = String(row.querySelector('input[data-field="gol"]')?.value || '').trim() || '-';
+          const jabatan = String(row.querySelector('input[data-field="jabatan"]')?.value || '').trim() || 'ANGGOTA';
+          if (!nama) return null;
+          return { nama, gol, jabatan };
+        }).filter(Boolean);
+      });
+      const shiftInputs = scheduleTableBody.querySelectorAll('input[data-regu-index][data-day-index]');
+      shiftInputs.forEach((input) => {
+        const reguIndex = Number(input.getAttribute('data-regu-index'));
+        const dayIndex = Number(input.getAttribute('data-day-index'));
+        if (!Array.isArray(schedulesState[reguIndex])) {
+          schedulesState[reguIndex] = Array.from({ length: daysInMonth }, () => '');
+        }
+        schedulesState[reguIndex][dayIndex] = String(input.value || '').trim().toUpperCase();
+      });
+    };
+
+    const render = () => {
+      normalizeState();
+      reguCountInput.value = String(reguNamesState.length);
+      reguCountText.textContent = String(reguNamesState.length);
+
+      reguNameContainer.innerHTML = reguNamesState.map((name, index) => `
+        <div class="form-group">
+          <label>Nama Regu ${index + 1}</label>
+          <input type="text" name="regu_names[]" value="${String(name || '').replace(/"/g, '&quot;')}" required>
+        </div>
+      `).join('');
+
+      reguMemberContainer.innerHTML = reguNamesState.map((name, index) => {
+        const members = Array.isArray(reguMembersState[index]) && reguMembersState[index].length
+          ? reguMembersState[index]
+          : [{ nama: '', gol: '', jabatan: '' }];
+        const rows = members.map((member, memberIndex) => `
+          <tr data-regu-member-row="${index}">
+            <td><input type="text" name="member_nama_r${index + 1}[]" value="${String(member.nama || '').replace(/"/g, '&quot;')}" data-field="nama" placeholder="Nama pegawai"></td>
+            <td><input type="text" name="member_gol_r${index + 1}[]" value="${String(member.gol || '').replace(/"/g, '&quot;')}" data-field="gol" placeholder="III/c"></td>
+            <td><input type="text" name="member_jabatan_r${index + 1}[]" value="${String(member.jabatan || '').replace(/"/g, '&quot;')}" data-field="jabatan" placeholder="ANGGOTA"></td>
+            <td style="text-align:center;width:44px;"><button type="button" class="btn-mini danger" data-remove-member="${index}" data-remove-member-row="${memberIndex}">✕</button></td>
+          </tr>
+        `).join('');
+        return `
+        <div class="regu-member-card">
+          <div class="regu-member-head">List Pegawai ${String(name || `REGU ${index + 1}`).replace(/</g, '&lt;').replace(/>/g, '&gt;')}</div>
+          <div class="regu-member-table-wrap">
+            <table class="regu-member-table">
+              <thead>
+                <tr><th>Nama</th><th>Gol</th><th>Jabatan</th><th style="width:44px;">Aksi</th></tr>
+              </thead>
+              <tbody>${rows}</tbody>
+            </table>
+          </div>
+          <div class="regu-member-actions">
+            <button type="button" class="btn-mini" data-add-member="${index}">+ Tambah Pegawai</button>
+          </div>
+        </div>
+      `;
+      }).join('');
+
+      scheduleTableBody.innerHTML = reguNamesState.map((name, reguIndex) => {
+        const dayCells = Array.from({ length: daysInMonth }, (_item, dayIndex) => {
+          const shiftValue = String((schedulesState[reguIndex] || [])[dayIndex] || '').replace(/"/g, '&quot;');
+          return `
+            <td class="shift-cell">
+              <input
+                type="text"
+                name="shift_r${reguIndex + 1}_d${dayIndex + 1}"
+                value="${shiftValue}"
+                maxlength="6"
+                placeholder="-"
+                data-regu-index="${reguIndex}"
+                data-day-index="${dayIndex}"
+              >
+            </td>
+          `;
+        }).join('');
+
+        return `
+          <tr>
+            <td>${reguIndex + 1}</td>
+            <td class="regu-name-cell"><strong>${String(name || '').replace(/</g, '&lt;').replace(/>/g, '&gt;')}</strong></td>
+            ${dayCells}
+          </tr>
+        `;
+      }).join('');
+
+      const allNameInputs = reguNameContainer.querySelectorAll('input[name="regu_names[]"]');
+      allNameInputs.forEach((input, index) => {
+        input.addEventListener('input', () => {
+          reguNamesState[index] = String(input.value || '').trim() || `REGU ${index + 1}`;
+          const titleCell = scheduleTableBody.querySelector(`tr:nth-child(${index + 1}) .regu-name-cell strong`);
+          if (titleCell) titleCell.textContent = reguNamesState[index];
+          const memberLabel = reguMemberContainer.querySelector(`.regu-member-card:nth-child(${index + 1}) .regu-member-head`);
+          if (memberLabel) memberLabel.textContent = `List Pegawai ${reguNamesState[index]}`;
+        });
+      });
+
+      const addButtons = reguMemberContainer.querySelectorAll('[data-add-member]');
+      addButtons.forEach((button) => {
+        button.addEventListener('click', () => {
+          collectInputValues();
+          const reguIndex = Number(button.getAttribute('data-add-member'));
+          if (!Array.isArray(reguMembersState[reguIndex])) reguMembersState[reguIndex] = [];
+          reguMembersState[reguIndex].push({ nama: '', gol: '', jabatan: '' });
+          render();
+        });
+      });
+
+      const removeButtons = reguMemberContainer.querySelectorAll('[data-remove-member]');
+      removeButtons.forEach((button) => {
+        button.addEventListener('click', () => {
+          collectInputValues();
+          const reguIndex = Number(button.getAttribute('data-remove-member'));
+          const memberIndex = Number(button.getAttribute('data-remove-member-row'));
+          if (!Array.isArray(reguMembersState[reguIndex])) return;
+          if (reguMembersState[reguIndex].length <= 1) {
+            reguMembersState[reguIndex] = [{ nama: '', gol: '', jabatan: '' }];
+          } else {
+            reguMembersState[reguIndex].splice(memberIndex, 1);
+          }
+          render();
+        });
+      });
+    };
+
+    btnTambahRegu.addEventListener('click', () => {
+      collectInputValues();
+      if (reguNamesState.length >= maxRegu) return;
+      reguNamesState.push(`REGU ${reguNamesState.length + 1}`);
+      schedulesState.push(Array.from({ length: daysInMonth }, () => ''));
+      reguMembersState.push([]);
+      render();
+    });
+
+    btnKurangiRegu.addEventListener('click', () => {
+      collectInputValues();
+      if (reguNamesState.length <= minRegu) return;
+      reguNamesState.pop();
+      schedulesState.pop();
+      reguMembersState.pop();
+      render();
+    });
+
+    render();
+  })();
+</script>
+</body>
+</html>

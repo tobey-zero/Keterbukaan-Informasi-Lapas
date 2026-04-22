@@ -134,6 +134,61 @@
       background: rgba(30, 64, 175, .25);
     }
 
+    .finance-summary-table tbody tr:hover td {
+      background: rgba(30, 64, 175, .42);
+      color: #fff;
+    }
+
+    .indikator-block {
+      margin-top: 12px;
+      border: 1px solid rgba(191, 219, 254, .35);
+      border-radius: 8px;
+      background: rgba(15, 23, 42, .2);
+      padding: 10px;
+    }
+
+    .indikator-title {
+      text-align: center;
+      font-size: 14px;
+      font-weight: 800;
+      color: #dbeafe;
+      letter-spacing: .2px;
+      margin-bottom: 8px;
+    }
+
+    .indikator-scroll {
+      width: 100%;
+      overflow-x: auto;
+    }
+
+    .indikator-table {
+      min-width: 1400px;
+      width: 100%;
+      border-collapse: collapse;
+      background: rgba(30, 64, 175, .2);
+    }
+
+    .indikator-table th,
+    .indikator-table td {
+      border: 1px solid rgba(191, 219, 254, .45);
+      padding: 6px 7px;
+      font-size: 11px;
+      text-align: center;
+      color: #fff;
+      font-weight: 600;
+      vertical-align: middle;
+    }
+
+    .indikator-table th {
+      background: rgba(15, 23, 42, .55);
+      font-weight: 700;
+    }
+
+    .indikator-table tbody tr:hover td {
+      background: rgba(30, 64, 175, .45);
+      color: #fff;
+    }
+
     @media (max-width: 880px) {
       .finance-hero-top { grid-template-columns: 1fr; }
       .finance-hero-box .value { font-size: 18px; }
@@ -213,7 +268,76 @@
               </tr>
             </tbody>
           </table>
+
+          <div class="indikator-block">
+            <div class="indikator-title">INDIKATOR PELAKSANAAN ANGGARAN SATKER</div>
+            <div class="indikator-scroll">
+              <table class="indikator-table">
+                <thead>
+                  <tr>
+                    <th>NO</th>
+                    <th>Periode</th>
+                    <th>Kode KPPN</th>
+                    <th>Kode BA</th>
+                    <th>Kode Satker</th>
+                    <th>Uraian Satker</th>
+                    <th>Keterangan</th>
+                    <th>Revisi DIPA</th>
+                    <th>Deviasi Halaman III DIPA</th>
+                    <th>Nilai Aspek</th>
+                    <th>Penyerapan Anggaran</th>
+                    <th>Belanja Kontraktual</th>
+                    <th>Penyelesaian Tagihan</th>
+                    <th>Pengelolaan UP dan TUP</th>
+                    <th>Nilai Aspek</th>
+                    <th>Capaian Output</th>
+                    <th>Nilai Aspek</th>
+                    <th>Nilai Total</th>
+                    <th>Konversi Bobot</th>
+                    <th>Dispensasi SPM (Pengurangan)</th>
+                    <th>Nilai Akhir</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  <tr>
+                    <td><%= financeIndicator.no %></td>
+                    <td><%= financeIndicator.periode %></td>
+                    <td><%= financeIndicator.kodeKppn %></td>
+                    <td><%= financeIndicator.kodeBa %></td>
+                    <td><%= financeIndicator.kodeSatker %></td>
+                    <td><%= financeIndicator.uraianSatker %></td>
+                    <td><%= financeIndicator.keterangan %></td>
+                    <td><%= financeIndicator.revisiDipa %></td>
+                    <td><%= financeIndicator.deviasiHalamanIiiDipa %></td>
+                    <td><%= financeIndicator.nilaiAspekPerencanaan %></td>
+                    <td><%= financeIndicator.penyerapanAnggaran %></td>
+                    <td><%= financeIndicator.belanjaKontraktual %></td>
+                    <td><%= financeIndicator.penyelesaianTagihan %></td>
+                    <td><%= financeIndicator.pengelolaanUpDanTup %></td>
+                    <td><%= financeIndicator.nilaiAspekPelaksanaan %></td>
+                    <td><%= financeIndicator.capaianOutput %></td>
+                    <td><%= financeIndicator.nilaiAspekHasil %></td>
+                    <td><%= financeIndicator.nilaiTotal %></td>
+                    <td><%= financeIndicator.konversiBobot %></td>
+                    <td><%= financeIndicator.dispensasiSpm %></td>
+                    <td><%= financeIndicator.nilaiAkhir %></td>
+                  </tr>
+                </tbody>
+              </table>
+            </div>
+          </div>
         </div>
+
+        <% if (financeSummary.pdfPath) { %>
+        <div style="padding:14px 10px 0;border-top:1px solid rgba(191,219,254,.3);">
+          <div style="font-size:13px;font-weight:700;color:#e2e8f0;margin-bottom:8px;">Preview Laporan PDF</div>
+          <iframe
+            src="<%= financeSummary.pdfPath %>#toolbar=1&navpanes=0"
+            title="Preview Laporan PDF Realisasi"
+            style="width:100%;height:720px;border:1px solid rgba(191,219,254,.35);border-radius:6px;background:#fff;"
+          ></iframe>
+        </div>
+        <% } %>
       </div>
     </div>
   </div>
