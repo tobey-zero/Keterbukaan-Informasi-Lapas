@@ -87,21 +87,28 @@
               </tr>
             </thead>
             <tbody>
-              <% kegiatanList.forEach((item, i) => { %>
-              <tr>
-                <td><%= i + 1 %></td>
-                <td><%= item.kategori || '-' %></td>
-                <td class="giiatja-multiline"><%= item.jenisKegiatan || '-' %></td>
-                <td class="giiatja-multiline"><%= item.pesertaKegiatan || '-' %></td>
-                <td class="giiatja-multiline"><%= item.pengawas || '-' %></td>
-                <td>
-                  <% if (item.dokumentasiPath) { %>
-                    <a href="<%= item.dokumentasiPath %>" target="_blank" rel="noopener noreferrer" class="giiatja-preview-btn">🔍 Lihat</a>
-                  <% } else { %>-<% } %>
-                </td>
-              </tr>
+              <% let kategoriNo = 0; %>
+              <% (kegiatanGrouped || []).forEach((category) => { %>
+                <% const details = (category.details && category.details.length) ? category.details : [null]; %>
+                <% kategoriNo += 1; %>
+                <% details.forEach((detail, detailIndex) => { %>
+                <tr>
+                  <% if (detailIndex === 0) { %>
+                  <td rowspan="<%= details.length %>"><%= kategoriNo %></td>
+                  <td rowspan="<%= details.length %>"><%= category.kategori || '-' %></td>
+                  <% } %>
+                  <td><%= detail ? (detail.jenisKegiatan || '-') : '-' %></td>
+                  <td><%= detail ? (detail.pesertaKegiatan || '-') : '-' %></td>
+                  <td><%= detail ? (detail.pengawas || '-') : '-' %></td>
+                  <td>
+                    <% if (detail && detail.dokumentasiPath) { %>
+                      <a href="<%= detail.dokumentasiPath %>" target="_blank" rel="noopener noreferrer" class="giiatja-preview-btn">🔍 Lihat</a>
+                    <% } else { %>-<% } %>
+                  </td>
+                </tr>
+                <% }) %>
               <% }) %>
-              <% if (!kegiatanList.length) { %>
+              <% if (!(kegiatanGrouped || []).length) { %>
               <tr><td colspan="6" class="giiatja-empty">Belum ada data</td></tr>
               <% } %>
             </tbody>

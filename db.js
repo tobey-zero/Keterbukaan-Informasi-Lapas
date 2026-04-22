@@ -249,6 +249,17 @@ db.exec(`
     sort_order INTEGER NOT NULL DEFAULT 1
   );
 
+  CREATE TABLE IF NOT EXISTS giiatja_kegiatan_detail (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    kegiatan_id INTEGER NOT NULL,
+    jenis_kegiatan TEXT NOT NULL DEFAULT '',
+    peserta_kegiatan TEXT NOT NULL DEFAULT '',
+    pengawas TEXT NOT NULL DEFAULT '',
+    dokumentasi_path TEXT,
+    sort_order INTEGER NOT NULL DEFAULT 1,
+    FOREIGN KEY (kegiatan_id) REFERENCES giiatja_kegiatan(id) ON DELETE CASCADE
+  );
+
   CREATE TABLE IF NOT EXISTS giiatja_pelatihan_sertifikat (
     id INTEGER PRIMARY KEY AUTOINCREMENT,
     no_registrasi TEXT NOT NULL DEFAULT '',
@@ -774,11 +785,35 @@ seedIfEmpty('giiatja_kegiatan', () => {
     VALUES (?, ?, ?, ?, ?, ?)
   `);
   const rows = [
-    ['A (AREA DALAM)', 'UMKM DI DALAM\nPANGKAS\nHIDROPONIK\nLAUNDRY\nMENJAHIT\nBONSAI\nPERTUKANGAN\nHADY CRAF\nMABEL\nBENGKEL LAS\nCUSTOM', '-', '-', null, 1],
-    ['B (AREA PERTENGAHAN)', 'IKAN\n- IKAN EMAS\n- IKAN NILA\n- IKAN LELE\n- IKAN PATIN\nAYAM\n- AYAM PEDAGIN\n- AYAM PETELUR\nJAMUR TIRAM\nSABLON\nCUSTOM', '-', '-', null, 2],
-    ['C (AREA LUAR/ASIMILASI)', 'UMKM LUAR\nBODY REPAIR\nCAR WASH\nKETAPANG LUAR', '-', '-', null, 3],
+    ['A (AREA DALAM)', '', '', '', null, 1],
+    ['B (AREA PERTENGAHAN)', '', '', '', null, 2],
+    ['C (AREA LUAR/ASIMILASI)', '', '', '', null, 3],
   ];
   rows.forEach(r => insert.run(...r));
+});
+
+seedIfEmpty('giiatja_kegiatan_detail', () => {
+  const categoryRows = db.prepare('SELECT id, kategori FROM giiatja_kegiatan ORDER BY sort_order ASC, id ASC').all();
+  const categoryByName = Object.fromEntries(categoryRows.map(item => [String(item.kategori || '').trim().toUpperCase(), item.id]));
+
+  const insert = db.prepare(`
+    INSERT INTO giiatja_kegiatan_detail
+      (kegiatan_id, jenis_kegiatan, peserta_kegiatan, pengawas, dokumentasi_path, sort_order)
+    VALUES (?, ?, ?, ?, ?, ?)
+  `);
+
+  const rows = [
+    [categoryByName['A (AREA DALAM)'], 'PANGKAS', 'WBP A.N. L', 'Petugas A', null, 1],
+    [categoryByName['A (AREA DALAM)'], 'PANGKAS', 'WBP A.N. M', 'Petugas A', null, 2],
+    [categoryByName['A (AREA DALAM)'], 'HIDROPONIK', 'WBP A.N. N', 'Petugas B', null, 3],
+    [categoryByName['B (AREA PERTENGAHAN)'], 'IKAN NILA', 'WBP A.N. O', 'Petugas C', null, 1],
+    [categoryByName['B (AREA PERTENGAHAN)'], 'SABLON', 'WBP A.N. P', 'Petugas D', null, 2],
+    [categoryByName['C (AREA LUAR/ASIMILASI)'], 'BODY REPAIR', 'WBP A.N. Q', 'Petugas E', null, 1],
+  ];
+
+  rows.forEach(row => {
+    if (row[0]) insert.run(...row);
+  });
 });
 
 seedIfEmpty('giiatja_pelatihan_sertifikat', () => {

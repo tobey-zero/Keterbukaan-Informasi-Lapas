@@ -1012,18 +1012,37 @@ function getGiiatjaData() {
     return Math.max(0, parsed);
   };
 
-  const kegiatanList = db
+  const kegiatanCategories = db
     .prepare(`SELECT
       id,
       kategori,
-      jenis_kegiatan AS jenisKegiatan,
-      peserta_kegiatan AS pesertaKegiatan,
-      pengawas,
-      dokumentasi_path AS dokumentasiPath,
       sort_order AS sortOrder
     FROM giiatja_kegiatan
     ORDER BY sort_order ASC, id ASC`)
     .all();
+
+  const kegiatanDetails = db
+    .prepare(`SELECT
+      d.id,
+      d.kegiatan_id AS kegiatanId,
+      c.kategori,
+      d.jenis_kegiatan AS jenisKegiatan,
+      d.peserta_kegiatan AS pesertaKegiatan,
+      d.pengawas,
+      d.dokumentasi_path AS dokumentasiPath,
+      d.sort_order AS sortOrder
+    FROM giiatja_kegiatan_detail d
+    INNER JOIN giiatja_kegiatan c ON c.id = d.kegiatan_id
+    ORDER BY c.sort_order ASC, c.id ASC, d.sort_order ASC, d.id ASC`)
+    .all();
+
+  const kegiatanGrouped = kegiatanCategories.map((category) => {
+    const details = kegiatanDetails.filter((detail) => detail.kegiatanId === category.id);
+    return {
+      ...category,
+      details,
+    };
+  });
 
   const pelatihanList = db
     .prepare(`SELECT
@@ -1076,18 +1095,21 @@ function getGiiatjaData() {
     : 0;
 
   return {
-    kegiatanList,
+    kegiatanList: kegiatanDetails,
+    kegiatanCategories,
+    kegiatanDetails,
+    kegiatanGrouped,
     pelatihanList,
     pnbpList,
     premiList,
     pnbpTahun,
     premiPeriodeBulan,
     giiatjaSummary: {
-      kegiatan: kegiatanList.length,
+      kegiatan: kegiatanDetails.length,
       pelatihan: pelatihanList.length,
       pnbp: pnbpList.length,
       premi: premiList.length,
-      total: kegiatanList.length + pelatihanList.length + pnbpList.length + premiList.length,
+      total: kegiatanDetails.length + pelatihanList.length + pnbpList.length + premiList.length,
       pnbpChart: {
         totalJumlahPnbp,
         totalTargetRealisasi,
@@ -1710,6 +1732,27 @@ app.get('/kalapas/table/giiatja', (req, res) => {
     subtitle: `Kegiatan: ${data.kegiatanList.length} | Pelatihan Bersertifikat: ${data.pelatihanList.length} | PNBP: ${data.pnbpList.length} | Premi: ${data.premiList.length}`,
     backUrl: '/kalapas',
     ...data,
+  });
+});
+
+app.get('/kalapas/table/pnbp-giiatja', (req, res) => {
+  const data = getGiiatjaData();
+  const rows = data.pnbpList.map((item, index) => [
+    String(index + 1),
+    item.periodePnbp || '-',
+    `Rp ${formatRupiah(item.jumlahPnbp)}`,
+    `Rp ${formatRupiah(item.targetRealisasi)}`,
+    item.persentase || '-',
+    item.keterangan || '-',
+  ]);
+
+  res.render('kalapas-table', {
+    pageTitle: 'Grafik Pendapatan negara bukan pajak',
+    sectionTitle: 'PENDAPATAN NEGARA BUKAN PAJAK',
+    subtitle: `Total data: ${rows.length}`,
+    columns: ['NO', 'PERIODE PNBP', 'JUMLAH PNBP', 'TARGET REALISASI', 'PERSENTASE', 'KETERANGAN'],
+    rows,
+    backUrl: '/kalapas'
   });
 });
 
@@ -2762,13 +2805,24 @@ app.post('/admin/register-f/:id/delete', requireAccess('register-f'), (req, res)
 
 // ── GIIATJA (Kegiatan Kerja) ─────────────────────────────────────
 app.get('/admin/giiatja', requireAccess('giiatja'), (req, res) => {
-  const kegiatanList = db.prepare('SELECT * FROM giiatja_kegiatan ORDER BY sort_order ASC, id ASC').all();
+  const kegiatanCategories = db.prepare('SELECT * FROM giiatja_kegiatan ORDER BY sort_order ASC, id ASC').all();
+  const kegiatanDetails = db.prepare(`
+    SELECT
+      d.*,
+      c.kategori AS kategori
+    FROM giiatja_kegiatan_detail d
+    INNER JOIN giiatja_kegiatan c ON c.id = d.kegiatan_id
+    ORDER BY c.sort_order ASC, c.id ASC, d.sort_order ASC, d.id ASC
+  `).all();
   const pelatihanList = db.prepare('SELECT * FROM giiatja_pelatihan_sertifikat ORDER BY id ASC').all();
   const pnbpList = db.prepare('SELECT * FROM giiatja_pnbp ORDER BY sort_order ASC, id ASC').all();
   const premiList = db.prepare('SELECT * FROM giiatja_premi_wbp ORDER BY sort_order ASC, id ASC').all();
 
+  const editKategori = req.query.editKategori
+    ? db.prepare('SELECT * FROM giiatja_kegiatan WHERE id=?').get(Number(req.query.editKategori))
+    : null;
   const editKegiatan = req.query.editKegiatan
-    ? db.prepare('SELECT * FROM giiatja_kegiatan WHERE id=?').get(Number(req.query.editKegiatan))
+    ? db.prepare('SELECT * FROM giiatja_kegiatan_detail WHERE id=?').get(Number(req.query.editKegiatan))
     : null;
   const editPelatihan = req.query.editPelatihan
     ? db.prepare('SELECT * FROM giiatja_pelatihan_sertifikat WHERE id=?').get(Number(req.query.editPelatihan))
@@ -2782,10 +2836,12 @@ app.get('/admin/giiatja', requireAccess('giiatja'), (req, res) => {
 
   res.render('admin/giiatja', {
     user: req.session.user,
-    kegiatanList,
+    kegiatanCategories,
+    kegiatanList: kegiatanDetails,
     pelatihanList,
     pnbpList,
     premiList,
+    editKategori,
     editKegiatan,
     editPelatihan,
     editPnbp,
@@ -2816,34 +2872,71 @@ app.post('/admin/giiatja/settings/update', requireAccess('giiatja'), (req, res) 
   res.redirect('/admin/giiatja?success=1');
 });
 
-app.post('/admin/giiatja/kegiatan/add', requireAccess('giiatja'), raziaUpload.single('dokumentasi'), (req, res) => {
+app.post('/admin/giiatja/kategori/add', requireAccess('giiatja'), (req, res) => {
   const kategori = String(req.body.kategori || '').trim().toUpperCase();
-  const jenisKegiatan = String(req.body.jenis_kegiatan || '').trim().toUpperCase();
-  const pesertaKegiatan = String(req.body.peserta_kegiatan || '').trim();
-  const pengawas = String(req.body.pengawas || '').trim();
   const sortOrder = Number(req.body.sort_order || 0) || 1;
   if (!kategori) return res.redirect('/admin/giiatja');
-  const dokumentasiPath = req.file ? `/uploads/razia/${req.file.filename}` : null;
 
   db.prepare(`
     INSERT INTO giiatja_kegiatan
-      (kategori, jenis_kegiatan, peserta_kegiatan, pengawas, dokumentasi_path, sort_order)
+      (kategori, sort_order)
+    VALUES (?, ?)
+  `).run(kategori, sortOrder);
+
+  res.redirect('/admin/giiatja?success=1');
+});
+
+app.post('/admin/giiatja/kategori/:id/update', requireAccess('giiatja'), (req, res) => {
+  const id = Number(req.params.id);
+  const kategori = String(req.body.kategori || '').trim().toUpperCase();
+  const sortOrder = Number(req.body.sort_order || 0) || 1;
+  if (!kategori) return res.redirect('/admin/giiatja');
+
+  db.prepare('UPDATE giiatja_kegiatan SET kategori=?, sort_order=? WHERE id=?')
+    .run(kategori, sortOrder, id);
+
+  res.redirect('/admin/giiatja?success=1');
+});
+
+app.post('/admin/giiatja/kategori/:id/delete', requireAccess('giiatja'), (req, res) => {
+  const id = Number(req.params.id);
+  const details = db.prepare('SELECT dokumentasi_path FROM giiatja_kegiatan_detail WHERE kegiatan_id=?').all(id);
+  details.forEach((item) => {
+    if (item?.dokumentasi_path) removeUploadedFile(item.dokumentasi_path);
+  });
+  db.prepare('DELETE FROM giiatja_kegiatan_detail WHERE kegiatan_id=?').run(id);
+  db.prepare('DELETE FROM giiatja_kegiatan WHERE id=?').run(id);
+  res.redirect('/admin/giiatja?success=1');
+});
+
+app.post('/admin/giiatja/kegiatan/add', requireAccess('giiatja'), raziaUpload.single('dokumentasi'), (req, res) => {
+  const kegiatanId = Number(req.body.kegiatan_id || 0);
+  const jenisKegiatan = String(req.body.jenis_kegiatan || '').trim().toUpperCase();
+  const pesertaKegiatan = String(req.body.peserta_kegiatan || '').trim().toUpperCase();
+  const pengawas = String(req.body.pengawas || '').trim();
+  const sortOrder = Number(req.body.sort_order || 0) || 1;
+  if (!kegiatanId || !jenisKegiatan || !pesertaKegiatan) return res.redirect('/admin/giiatja');
+  const dokumentasiPath = req.file ? `/uploads/razia/${req.file.filename}` : null;
+
+  db.prepare(`
+    INSERT INTO giiatja_kegiatan_detail
+      (kegiatan_id, jenis_kegiatan, peserta_kegiatan, pengawas, dokumentasi_path, sort_order)
     VALUES (?, ?, ?, ?, ?, ?)
-  `).run(kategori, jenisKegiatan, pesertaKegiatan, pengawas, dokumentasiPath, sortOrder);
+  `).run(kegiatanId, jenisKegiatan, pesertaKegiatan, pengawas, dokumentasiPath, sortOrder);
 
   res.redirect('/admin/giiatja?success=1');
 });
 
 app.post('/admin/giiatja/kegiatan/:id/update', requireAccess('giiatja'), raziaUpload.single('dokumentasi'), (req, res) => {
   const id = Number(req.params.id);
-  const kategori = String(req.body.kategori || '').trim().toUpperCase();
+  const kegiatanId = Number(req.body.kegiatan_id || 0);
   const jenisKegiatan = String(req.body.jenis_kegiatan || '').trim().toUpperCase();
-  const pesertaKegiatan = String(req.body.peserta_kegiatan || '').trim();
+  const pesertaKegiatan = String(req.body.peserta_kegiatan || '').trim().toUpperCase();
   const pengawas = String(req.body.pengawas || '').trim();
   const sortOrder = Number(req.body.sort_order || 0) || 1;
-  if (!kategori) return res.redirect('/admin/giiatja');
+  if (!kegiatanId || !jenisKegiatan || !pesertaKegiatan) return res.redirect('/admin/giiatja');
 
-  const existing = db.prepare('SELECT dokumentasi_path FROM giiatja_kegiatan WHERE id=?').get(id);
+  const existing = db.prepare('SELECT dokumentasi_path FROM giiatja_kegiatan_detail WHERE id=?').get(id);
   let nextDokumentasiPath = existing?.dokumentasi_path || null;
   if (req.file) {
     if (nextDokumentasiPath) removeUploadedFile(nextDokumentasiPath);
@@ -2851,19 +2944,19 @@ app.post('/admin/giiatja/kegiatan/:id/update', requireAccess('giiatja'), raziaUp
   }
 
   db.prepare(`
-    UPDATE giiatja_kegiatan
-    SET kategori=?, jenis_kegiatan=?, peserta_kegiatan=?, pengawas=?, dokumentasi_path=?, sort_order=?
+    UPDATE giiatja_kegiatan_detail
+    SET kegiatan_id=?, jenis_kegiatan=?, peserta_kegiatan=?, pengawas=?, dokumentasi_path=?, sort_order=?
     WHERE id=?
-  `).run(kategori, jenisKegiatan, pesertaKegiatan, pengawas, nextDokumentasiPath, sortOrder, id);
+  `).run(kegiatanId, jenisKegiatan, pesertaKegiatan, pengawas, nextDokumentasiPath, sortOrder, id);
 
   res.redirect('/admin/giiatja?success=1');
 });
 
 app.post('/admin/giiatja/kegiatan/:id/delete', requireAccess('giiatja'), (req, res) => {
   const id = Number(req.params.id);
-  const existing = db.prepare('SELECT dokumentasi_path FROM giiatja_kegiatan WHERE id=?').get(id);
+  const existing = db.prepare('SELECT dokumentasi_path FROM giiatja_kegiatan_detail WHERE id=?').get(id);
   if (existing?.dokumentasi_path) removeUploadedFile(existing.dokumentasi_path);
-  db.prepare('DELETE FROM giiatja_kegiatan WHERE id=?').run(id);
+  db.prepare('DELETE FROM giiatja_kegiatan_detail WHERE id=?').run(id);
   res.redirect('/admin/giiatja?success=1');
 });
 

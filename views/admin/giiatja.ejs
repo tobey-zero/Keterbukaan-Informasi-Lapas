@@ -37,33 +37,25 @@
       </div>
 
       <div class="card">
-        <div class="card-header"><h3>➕ Tabel Kegiatan</h3></div>
+        <div class="card-header"><h3>➕ Master Kategori Kegiatan</h3></div>
         <div class="card-body">
-          <form method="POST" action="/admin/giiatja/kegiatan/add" enctype="multipart/form-data">
+          <form method="POST" action="/admin/giiatja/kategori/add">
             <div class="form-grid col-4" style="margin-bottom:12px;">
               <div class="form-group"><label>Kategori</label><input type="text" name="kategori" required placeholder="cth: A (AREA DALAM)"></div>
               <div class="form-group"><label>Urutan</label><input type="number" min="1" name="sort_order" value="1"></div>
-              <div class="form-group" style="grid-column:span 2;"><label>Dokumentasi (opsional)</label><input type="file" name="dokumentasi" accept="image/*"></div>
-              <div class="form-group" style="grid-column:span 2;"><label>Jenis Kegiatan (boleh multi-baris)</label><textarea name="jenis_kegiatan" rows="6" placeholder="Satu baris per kegiatan"></textarea></div>
-              <div class="form-group"><label>Peserta Kegiatan</label><textarea name="peserta_kegiatan" rows="6"></textarea></div>
-              <div class="form-group"><label>Pengawas</label><textarea name="pengawas" rows="6"></textarea></div>
             </div>
-            <button type="submit" class="btn btn-primary btn-sm">➕ Tambah Kegiatan</button>
+            <button type="submit" class="btn btn-primary btn-sm">➕ Tambah Kategori</button>
           </form>
         </div>
       </div>
 
-      <% if (editKegiatan) { %>
+      <% if (editKategori) { %>
       <div class="edit-panel">
-        <h4>✏️ Edit Kegiatan (ID: <%= editKegiatan.id %>)</h4>
-        <form method="POST" action="/admin/giiatja/kegiatan/<%= editKegiatan.id %>/update" enctype="multipart/form-data">
+        <h4>✏️ Edit Kategori (ID: <%= editKategori.id %>)</h4>
+        <form method="POST" action="/admin/giiatja/kategori/<%= editKategori.id %>/update">
           <div class="form-grid col-4" style="margin-bottom:12px;">
-            <div class="form-group"><label>Kategori</label><input type="text" name="kategori" value="<%= editKegiatan.kategori %>" required></div>
-            <div class="form-group"><label>Urutan</label><input type="number" min="1" name="sort_order" value="<%= editKegiatan.sort_order || 1 %>"></div>
-            <div class="form-group" style="grid-column:span 2;"><label>Dokumentasi Baru (opsional)</label><input type="file" name="dokumentasi" accept="image/*"></div>
-            <div class="form-group" style="grid-column:span 2;"><label>Jenis Kegiatan</label><textarea name="jenis_kegiatan" rows="6"><%= editKegiatan.jenis_kegiatan || '' %></textarea></div>
-            <div class="form-group"><label>Peserta Kegiatan</label><textarea name="peserta_kegiatan" rows="6"><%= editKegiatan.peserta_kegiatan || '' %></textarea></div>
-            <div class="form-group"><label>Pengawas</label><textarea name="pengawas" rows="6"><%= editKegiatan.pengawas || '' %></textarea></div>
+            <div class="form-group"><label>Kategori</label><input type="text" name="kategori" value="<%= editKategori.kategori || '' %>" required></div>
+            <div class="form-group"><label>Urutan</label><input type="number" min="1" name="sort_order" value="<%= editKategori.sort_order || 1 %>"></div>
           </div>
           <div style="display:flex;gap:8px;">
             <button type="submit" class="btn btn-success btn-sm">💾 Simpan</button>
@@ -74,19 +66,100 @@
       <% } %>
 
       <div class="card">
-        <div class="card-header"><h3>Daftar Kegiatan (<%= kegiatanList.length %> data)</h3></div>
+        <div class="card-header"><h3>Daftar Kategori (<%= kegiatanCategories.length %> data)</h3></div>
         <div class="card-body" style="padding:0;">
           <div class="table-wrap">
             <table class="admin-table">
-              <thead><tr><th>#</th><th>Kategori</th><th>Jenis Kegiatan</th><th>Peserta</th><th>Pengawas</th><th>Dokumentasi</th><th>Aksi</th></tr></thead>
+              <thead><tr><th>#</th><th>Kategori</th><th>Urutan</th><th>Aksi</th></tr></thead>
+              <tbody>
+                <% kegiatanCategories.forEach((item, i) => { %>
+                <tr>
+                  <td><%= i + 1 %></td>
+                  <td><%= item.kategori || '-' %></td>
+                  <td><%= item.sort_order || '-' %></td>
+                  <td>
+                    <div class="actions">
+                      <a href="/admin/giiatja?editKategori=<%= item.id %>" class="btn btn-warning btn-xs">✏️</a>
+                      <form method="POST" action="/admin/giiatja/kategori/<%= item.id %>/delete" style="display:inline" onsubmit="return confirm('Hapus kategori ini beserta detail kegiatannya?')">
+                        <button class="btn btn-danger btn-xs">🗑</button>
+                      </form>
+                    </div>
+                  </td>
+                </tr>
+                <% }) %>
+                <% if (!kegiatanCategories.length) { %><tr><td colspan="4" style="text-align:center;color:#aaa;padding:20px;">Belum ada data</td></tr><% } %>
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+
+      <div class="card">
+        <div class="card-header"><h3>➕ Detail Kegiatan per Peserta</h3></div>
+        <div class="card-body">
+          <form method="POST" action="/admin/giiatja/kegiatan/add" enctype="multipart/form-data">
+            <div class="form-grid col-4" style="margin-bottom:12px;">
+              <div class="form-group">
+                <label>Kategori</label>
+                <select name="kegiatan_id" required>
+                  <option value="">-- Pilih Kategori --</option>
+                  <% kegiatanCategories.forEach(item => { %>
+                    <option value="<%= item.id %>"><%= item.kategori %></option>
+                  <% }) %>
+                </select>
+              </div>
+              <div class="form-group"><label>Urutan</label><input type="number" min="1" name="sort_order" value="1"></div>
+              <div class="form-group"><label>Jenis Kegiatan</label><input type="text" name="jenis_kegiatan" required placeholder="cth: PANGKAS"></div>
+              <div class="form-group"><label>Nama Peserta</label><input type="text" name="peserta_kegiatan" required placeholder="cth: WBP A.N. A"></div>
+              <div class="form-group"><label>Pengawas</label><input type="text" name="pengawas" placeholder="cth: Petugas A"></div>
+              <div class="form-group"><label>Dokumentasi (opsional)</label><input type="file" name="dokumentasi" accept="image/*"></div>
+            </div>
+            <button type="submit" class="btn btn-primary btn-sm">➕ Tambah Detail</button>
+          </form>
+        </div>
+      </div>
+
+      <% if (editKegiatan) { %>
+      <div class="edit-panel">
+        <h4>✏️ Edit Detail Kegiatan (ID: <%= editKegiatan.id %>)</h4>
+        <form method="POST" action="/admin/giiatja/kegiatan/<%= editKegiatan.id %>/update" enctype="multipart/form-data">
+          <div class="form-grid col-4" style="margin-bottom:12px;">
+            <div class="form-group">
+              <label>Kategori</label>
+              <select name="kegiatan_id" required>
+                <% kegiatanCategories.forEach(item => { %>
+                  <option value="<%= item.id %>" <%= Number(editKegiatan.kegiatan_id)===Number(item.id)?'selected':'' %>><%= item.kategori %></option>
+                <% }) %>
+              </select>
+            </div>
+            <div class="form-group"><label>Urutan</label><input type="number" min="1" name="sort_order" value="<%= editKegiatan.sort_order || 1 %>"></div>
+            <div class="form-group"><label>Jenis Kegiatan</label><input type="text" name="jenis_kegiatan" value="<%= editKegiatan.jenis_kegiatan || '' %>" required></div>
+            <div class="form-group"><label>Nama Peserta</label><input type="text" name="peserta_kegiatan" value="<%= editKegiatan.peserta_kegiatan || '' %>" required></div>
+            <div class="form-group"><label>Pengawas</label><input type="text" name="pengawas" value="<%= editKegiatan.pengawas || '' %>"></div>
+            <div class="form-group"><label>Dokumentasi Baru (opsional)</label><input type="file" name="dokumentasi" accept="image/*"></div>
+          </div>
+          <div style="display:flex;gap:8px;">
+            <button type="submit" class="btn btn-success btn-sm">💾 Simpan</button>
+            <a href="/admin/giiatja" class="btn btn-secondary btn-sm">✕ Batal</a>
+          </div>
+        </form>
+      </div>
+      <% } %>
+
+      <div class="card">
+        <div class="card-header"><h3>Daftar Detail Kegiatan (<%= kegiatanList.length %> data)</h3></div>
+        <div class="card-body" style="padding:0;">
+          <div class="table-wrap">
+            <table class="admin-table">
+              <thead><tr><th>#</th><th>Kategori</th><th>Jenis Kegiatan</th><th>Nama Peserta</th><th>Pengawas</th><th>Dokumentasi</th><th>Aksi</th></tr></thead>
               <tbody>
                 <% kegiatanList.forEach((item, i) => { %>
                 <tr>
                   <td><%= i + 1 %></td>
                   <td><%= item.kategori || '-' %></td>
-                  <td style="white-space:pre-line;"><%= item.jenis_kegiatan || '-' %></td>
-                  <td style="white-space:pre-line;"><%= item.peserta_kegiatan || '-' %></td>
-                  <td style="white-space:pre-line;"><%= item.pengawas || '-' %></td>
+                  <td><%= item.jenis_kegiatan || '-' %></td>
+                  <td><%= item.peserta_kegiatan || '-' %></td>
+                  <td><%= item.pengawas || '-' %></td>
                   <td>
                     <% if (item.dokumentasi_path) { %>
                       <a href="<%= item.dokumentasi_path %>" target="_blank" class="btn btn-secondary btn-xs">🔍 Lihat</a>
@@ -95,7 +168,7 @@
                   <td>
                     <div class="actions">
                       <a href="/admin/giiatja?editKegiatan=<%= item.id %>" class="btn btn-warning btn-xs">✏️</a>
-                      <form method="POST" action="/admin/giiatja/kegiatan/<%= item.id %>/delete" style="display:inline" onsubmit="return confirm('Hapus data ini?')">
+                      <form method="POST" action="/admin/giiatja/kegiatan/<%= item.id %>/delete" style="display:inline" onsubmit="return confirm('Hapus detail ini?')">
                         <button class="btn btn-danger btn-xs">🗑</button>
                       </form>
                     </div>
