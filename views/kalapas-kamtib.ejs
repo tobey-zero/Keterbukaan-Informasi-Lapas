@@ -80,13 +80,14 @@
       display: grid;
       gap: 12px;
       grid-template-columns: 1fr 1fr;
-      grid-template-rows: 1fr 1fr 1fr 1fr;
+      grid-template-rows: auto auto auto auto;
       grid-template-areas:
         'jadwal bukti'
         'pengawalan pengawalan'
         'strapsel strapsel'
         'registerf registerf';
-      min-height: calc(100vh - 190px);
+      min-height: 0;
+      align-content: start;
     }
     .kamtib-panel {
       min-height: 0;
@@ -105,12 +106,13 @@
       align-items: center;
     }
     .kamtib-panel .panel-content {
-      flex: 1;
+      flex: none;
       min-height: 0;
       padding: 0;
     }
     .kamtib-table-scroll {
-      height: 100%;
+      height: auto;
+      max-height: 45vh;
       overflow: auto;
       scrollbar-width: none;
     }
