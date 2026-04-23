@@ -24,6 +24,7 @@
               <div class="form-group"><label>Kode</label><input type="text" name="kode" required></div>
               <div class="form-group"><label>Uraian</label><input type="text" name="uraian" required></div>
               <div class="form-group"><label>Satuan</label><input type="text" name="satuan" required></div>
+              <div class="form-group"><label>Tahun Perolehan</label><input type="text" name="tahun_perolehan" placeholder="cth: 2026"></div>
               <div class="form-group"><label>Saldo Awal Kuantitas</label><input type="text" name="saldo_awal_kuantitas" value="0"></div>
               <div class="form-group"><label>Saldo Awal Nilai</label><input type="text" name="saldo_awal_nilai" value="0"></div>
               <div class="form-group"><label>Bertambah Kuantitas</label><input type="text" name="bertambah_kuantitas" value="0"></div>
@@ -46,6 +47,7 @@
             <div class="form-group"><label>Kode</label><input type="text" name="kode" value="<%= edit.kode %>" required></div>
             <div class="form-group"><label>Uraian</label><input type="text" name="uraian" value="<%= edit.uraian %>" required></div>
             <div class="form-group"><label>Satuan</label><input type="text" name="satuan" value="<%= edit.satuan %>" required></div>
+            <div class="form-group"><label>Tahun Perolehan</label><input type="text" name="tahun_perolehan" value="<%= edit.tahun_perolehan || '' %>" placeholder="cth: 2026"></div>
             <div class="form-group"><label>Saldo Awal Kuantitas</label><input type="text" name="saldo_awal_kuantitas" value="<%= edit.saldo_awal_kuantitas || '0' %>"></div>
             <div class="form-group"><label>Saldo Awal Nilai</label><input type="text" name="saldo_awal_nilai" value="<%= edit.saldo_awal_nilai || '0' %>"></div>
             <div class="form-group"><label>Bertambah Kuantitas</label><input type="text" name="bertambah_kuantitas" value="<%= edit.bertambah_kuantitas || '0' %>"></div>
@@ -70,7 +72,7 @@
             <table class="admin-table">
               <thead>
                 <tr>
-                  <th>#</th><th>Kode</th><th>Uraian</th><th>Satuan</th>
+                  <th>#</th><th>Kode</th><th>Uraian</th><th>Satuan</th><th>Tahun Perolehan</th>
                   <th>Saldo Awal QTY</th><th>Saldo Awal Nilai</th>
                   <th>Bertambah QTY</th><th>Bertambah Nilai</th>
                   <th>Berkurang QTY</th><th>Berkurang Nilai</th>
@@ -84,6 +86,7 @@
                   <td><%= item.kode %></td>
                   <td><%= item.uraian %></td>
                   <td><%= item.satuan %></td>
+                  <td><%= item.tahun_perolehan || '-' %></td>
                   <td><%= item.saldo_awal_kuantitas || '0' %></td>
                   <td><%= item.saldo_awal_nilai || '0' %></td>
                   <td><%= item.bertambah_kuantitas || '0' %></td>
@@ -102,7 +105,7 @@
                   </td>
                 </tr>
                 <% }) %>
-                <% if (!list.length) { %><tr><td colspan="13" style="text-align:center;color:#aaa;padding:20px;">Belum ada data</td></tr><% } %>
+                <% if (!list.length) { %><tr><td colspan="14" style="text-align:center;color:#aaa;padding:20px;">Belum ada data</td></tr><% } %>
               </tbody>
             </table>
           </div>

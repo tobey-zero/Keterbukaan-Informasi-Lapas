@@ -281,8 +281,8 @@
               <tr>
                 <td><%= i + 1 %></td>
                 <td><%= item.periodePnbp || '-' %></td>
-                <td><%= item.jumlahPnbp || '-' %></td>
-                <td><%= item.targetRealisasi || '-' %></td>
+                <td><%= Number(item.jumlahPnbp || 0).toLocaleString('id-ID') %></td>
+                <td><%= Number(String(item.targetRealisasi || '').replace(/\D/g, '') || 0).toLocaleString('id-ID') %></td>
                 <td><%= item.persentase || '-' %></td>
                 <td><%= item.keterangan || '-' %></td>
               </tr>

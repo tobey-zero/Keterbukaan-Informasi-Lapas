@@ -62,8 +62,17 @@
 
     <% if (allowed.includes('giiatja')) { %>
     <div class="nav-label">Role GIIATJA</div>
-    <a href="/admin/giiatja" class="nav-item <%= active==='giiatja'?'active':'' %>">
-      <span class="icon">🏭</span><span>GIIATJA</span>
+    <a href="/admin/giiatja?menu=kegiatan" class="nav-item <%= active==='giiatja-kegiatan'?'active':'' %>">
+      <span class="icon">🏭</span><span>GIIATJA Kegiatan</span>
+    </a>
+    <a href="/admin/giiatja?menu=pelatihan" class="nav-item <%= active==='giiatja-pelatihan'?'active':'' %>">
+      <span class="icon">🎓</span><span>GIIATJA Pelatihan</span>
+    </a>
+    <a href="/admin/giiatja?menu=pnbp" class="nav-item <%= active==='giiatja-pnbp'?'active':'' %>">
+      <span class="icon">💳</span><span>GIIATJA PNBP</span>
+    </a>
+    <a href="/admin/giiatja?menu=premi" class="nav-item <%= active==='giiatja-premi'?'active':'' %>">
+      <span class="icon">💰</span><span>GIIATJA Premi</span>
     </a>
     <% } %>
 
@@ -247,8 +256,17 @@
     <% } %>
 
     <% if (allowed.includes('giiatja')) { %>
-    <a href="/admin/giiatja" class="nav-item <%= active==='giiatja'?'active':'' %>">
-      <span class="icon">🏭</span><span>GIIATJA</span>
+    <a href="/admin/giiatja?menu=kegiatan" class="nav-item <%= active==='giiatja-kegiatan'?'active':'' %>">
+      <span class="icon">🏭</span><span>GIIATJA Kegiatan</span>
+    </a>
+    <a href="/admin/giiatja?menu=pelatihan" class="nav-item <%= active==='giiatja-pelatihan'?'active':'' %>">
+      <span class="icon">🎓</span><span>GIIATJA Pelatihan</span>
+    </a>
+    <a href="/admin/giiatja?menu=pnbp" class="nav-item <%= active==='giiatja-pnbp'?'active':'' %>">
+      <span class="icon">💳</span><span>GIIATJA PNBP</span>
+    </a>
+    <a href="/admin/giiatja?menu=premi" class="nav-item <%= active==='giiatja-premi'?'active':'' %>">
+      <span class="icon">💰</span><span>GIIATJA Premi</span>
     </a>
     <% } %>
 

@@ -258,6 +258,7 @@ db.exec(`
     kode TEXT NOT NULL,
     uraian TEXT NOT NULL,
     satuan TEXT NOT NULL,
+    tahun_perolehan TEXT NOT NULL DEFAULT '',
     saldo_awal_kuantitas TEXT DEFAULT '0',
     saldo_awal_nilai TEXT DEFAULT '0',
     bertambah_kuantitas TEXT DEFAULT '0',
@@ -323,6 +324,16 @@ db.exec(`
     target_realisasi TEXT NOT NULL DEFAULT '',
     persentase TEXT NOT NULL DEFAULT '',
     keterangan TEXT NOT NULL DEFAULT '',
+    sort_order INTEGER NOT NULL DEFAULT 1
+  );
+
+  CREATE TABLE IF NOT EXISTS giiatja_pnbp_pendapatan (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    tahun TEXT NOT NULL DEFAULT '',
+    periode_pnbp TEXT NOT NULL DEFAULT '',
+    kegiatan TEXT NOT NULL DEFAULT '',
+    peserta TEXT NOT NULL DEFAULT '',
+    jumlah TEXT NOT NULL DEFAULT '0',
     sort_order INTEGER NOT NULL DEFAULT 1
   );
 
@@ -543,6 +554,10 @@ if (!strapselColumnNames.includes('permasalahan')) db.exec('ALTER TABLE strapsel
 if (!strapselColumnNames.includes('barang_bukti')) db.exec('ALTER TABLE strapsel_data ADD COLUMN barang_bukti TEXT');
 if (!strapselColumnNames.includes('dokumentasi_path')) db.exec('ALTER TABLE strapsel_data ADD COLUMN dokumentasi_path TEXT');
 
+const tuUmumBarangColumns = db.prepare("PRAGMA table_info('tu_umum_barang')").all();
+const tuUmumBarangColumnNames = tuUmumBarangColumns.map(col => col.name);
+if (!tuUmumBarangColumnNames.includes('tahun_perolehan')) db.exec("ALTER TABLE tu_umum_barang ADD COLUMN tahun_perolehan TEXT NOT NULL DEFAULT ''");
+
 const housingRoomColumns = db.prepare("PRAGMA table_info('housing_rooms')").all();
 const housingRoomColumnNames = housingRoomColumns.map(col => col.name);
 if (!housingRoomColumnNames.includes('kapasitas')) db.exec('ALTER TABLE housing_rooms ADD COLUMN kapasitas INTEGER NOT NULL DEFAULT 0');
@@ -588,6 +603,15 @@ const giiatjaPnbpColumns = db.prepare("PRAGMA table_info('giiatja_pnbp')").all()
 const giiatjaPnbpColumnNames = giiatjaPnbpColumns.map(col => col.name);
 if (!giiatjaPnbpColumnNames.includes('tahun')) db.exec("ALTER TABLE giiatja_pnbp ADD COLUMN tahun TEXT NOT NULL DEFAULT ''");
 
+const giiatjaPnbpPendapatanColumns = db.prepare("PRAGMA table_info('giiatja_pnbp_pendapatan')").all();
+const giiatjaPnbpPendapatanColumnNames = giiatjaPnbpPendapatanColumns.map(col => col.name);
+if (!giiatjaPnbpPendapatanColumnNames.includes('tahun')) db.exec("ALTER TABLE giiatja_pnbp_pendapatan ADD COLUMN tahun TEXT NOT NULL DEFAULT ''");
+if (!giiatjaPnbpPendapatanColumnNames.includes('periode_pnbp')) db.exec("ALTER TABLE giiatja_pnbp_pendapatan ADD COLUMN periode_pnbp TEXT NOT NULL DEFAULT ''");
+if (!giiatjaPnbpPendapatanColumnNames.includes('kegiatan')) db.exec("ALTER TABLE giiatja_pnbp_pendapatan ADD COLUMN kegiatan TEXT NOT NULL DEFAULT ''");
+if (!giiatjaPnbpPendapatanColumnNames.includes('peserta')) db.exec("ALTER TABLE giiatja_pnbp_pendapatan ADD COLUMN peserta TEXT NOT NULL DEFAULT ''");
+if (!giiatjaPnbpPendapatanColumnNames.includes('jumlah')) db.exec("ALTER TABLE giiatja_pnbp_pendapatan ADD COLUMN jumlah TEXT NOT NULL DEFAULT '0'");
+if (!giiatjaPnbpPendapatanColumnNames.includes('sort_order')) db.exec("ALTER TABLE giiatja_pnbp_pendapatan ADD COLUMN sort_order INTEGER NOT NULL DEFAULT 1");
+
 const giiatjaPremiColumns = db.prepare("PRAGMA table_info('giiatja_premi_wbp')").all();
 const giiatjaPremiColumnNames = giiatjaPremiColumns.map(col => col.name);
 if (!giiatjaPremiColumnNames.includes('periode_bulan')) db.exec("ALTER TABLE giiatja_premi_wbp ADD COLUMN periode_bulan TEXT NOT NULL DEFAULT ''");
@@ -598,6 +622,33 @@ db.prepare(`
   UPDATE giiatja_pnbp
   SET tahun = COALESCE(NULLIF(TRIM(tahun), ''), ?)
 `).run(defaultGiiatjaPnbpYear);
+
+const giiatjaPnbpPendapatanCount = db.prepare('SELECT COUNT(*) AS c FROM giiatja_pnbp_pendapatan').get().c;
+if (giiatjaPnbpPendapatanCount === 0) {
+  const legacyPnbpRows = db.prepare(`
+    SELECT tahun, periode_pnbp, jumlah_pnbp
+    FROM giiatja_pnbp
+    ORDER BY id ASC
+  `).all();
+
+  const insertPendapatan = db.prepare(`
+    INSERT INTO giiatja_pnbp_pendapatan
+      (tahun, periode_pnbp, kegiatan, peserta, jumlah, sort_order)
+    VALUES (?, ?, ?, ?, ?, ?)
+  `);
+
+  legacyPnbpRows.forEach((item, index) => {
+    const normalizedJumlah = String(item.jumlah_pnbp ?? '').replace(/[^\d.-]/g, '');
+    insertPendapatan.run(
+      String(item.tahun || '').trim() || defaultGiiatjaPnbpYear,
+      String(item.periode_pnbp || '').trim().toUpperCase(),
+      'PENDAPATAN AWAL',
+      '-',
+      normalizedJumlah || '0',
+      index + 1
+    );
+  });
+}
 
 const defaultGiiatjaPremiMonth = 'APRIL';
 const defaultGiiatjaPremiYear = String(new Date().getFullYear());
@@ -952,13 +1003,13 @@ seedIfEmpty('register_f', () => {
 seedIfEmpty('tu_umum_barang', () => {
   const insert = db.prepare(`
     INSERT INTO tu_umum_barang
-      (kode, uraian, satuan, saldo_awal_kuantitas, saldo_awal_nilai, bertambah_kuantitas, bertambah_nilai, berkurang_kuantitas, berkurang_nilai, saldo_akhir_kuantitas, saldo_akhir_nilai)
-    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+      (kode, uraian, satuan, tahun_perolehan, saldo_awal_kuantitas, saldo_awal_nilai, bertambah_kuantitas, bertambah_nilai, berkurang_kuantitas, berkurang_nilai, saldo_akhir_kuantitas, saldo_akhir_nilai)
+    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
   `);
   const rows = [
-    ['3090101002', 'Pistol', 'Buah', '0', '0', '0', '0', '27', '147,441,806', '(27)', '(147,441,806)'],
-    ['3090103001', 'Senapan Grendel (Bolt Action Figle)', 'Buah', '0', '0', '0', '0', '23', '43,300,013', '(23)', '(43,300,013)'],
-    ['3090103999', 'Senjata Bahu/Senjata Laras Panjang Lainnya', 'dummy', '0', '0', '28', '53,287,513', '28', '62,341,513', '0', '(9,054,000)'],
+    ['3090101002', 'Pistol', 'Buah', '2026', '0', '0', '0', '0', '27', '147,441,806', '(27)', '(147,441,806)'],
+    ['3090103001', 'Senapan Grendel (Bolt Action Figle)', 'Buah', '2026', '0', '0', '0', '0', '23', '43,300,013', '(23)', '(43,300,013)'],
+    ['3090103999', 'Senjata Bahu/Senjata Laras Panjang Lainnya', 'dummy', '2026', '0', '0', '28', '53,287,513', '28', '62,341,513', '0', '(9,054,000)'],
   ];
   rows.forEach(r => insert.run(...r));
 });
@@ -1036,6 +1087,21 @@ seedIfEmpty('giiatja_pnbp', () => {
   const rows = [
     ['2026', 'JANUARI', '10.500.000', '10.000.000', '105%', 'TERCAPAI', 1],
     ['2026', 'FEBRUARI', '8.700.000', '10.000.000', '87%', 'TIDAK TERCAPAI', 2],
+  ];
+  rows.forEach(r => insert.run(...r));
+});
+
+seedIfEmpty('giiatja_pnbp_pendapatan', () => {
+  const insert = db.prepare(`
+    INSERT INTO giiatja_pnbp_pendapatan
+      (tahun, periode_pnbp, kegiatan, peserta, jumlah, sort_order)
+    VALUES (?, ?, ?, ?, ?, ?)
+  `);
+  const rows = [
+    ['2026', 'JANUARI', 'KERAJINAN', '35', '5500000', 1],
+    ['2026', 'JANUARI', 'PANGKAS', '22', '5000000', 2],
+    ['2026', 'FEBRUARI', 'SABLON', '29', '4200000', 1],
+    ['2026', 'FEBRUARI', 'PERTANIAN', '31', '4500000', 2],
   ];
   rows.forEach(r => insert.run(...r));
 });
@@ -1165,7 +1231,5 @@ db.prepare('INSERT OR IGNORE INTO app_settings (key, value) VALUES (?, ?)').run(
 db.prepare('INSERT OR IGNORE INTO app_settings (key, value) VALUES (?, ?)').run('keuangan_total_pagu', '57736940000');
 db.prepare('INSERT OR IGNORE INTO app_settings (key, value) VALUES (?, ?)').run('keuangan_realisasi_belanja', '17819254771');
 db.prepare('INSERT OR IGNORE INTO app_settings (key, value) VALUES (?, ?)').run('keuangan_updated_at', '2026-04-16T13:39');
-db.prepare('INSERT OR IGNORE INTO app_settings (key, value) VALUES (?, ?)').run('giiatja_pnbp_tahun', '2026');
-db.prepare('INSERT OR IGNORE INTO app_settings (key, value) VALUES (?, ?)').run('giiatja_premi_periode_bulan', '-');
 
 module.exports = db;
