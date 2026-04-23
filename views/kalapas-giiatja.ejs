@@ -265,7 +265,7 @@
           <table class="admin-table">
             <thead>
               <tr>
-                <th colspan="6" style="text-align:left;">TAHUN <%= pnbpSelectedYear || pnbpTahun || '-' %></th>
+                <th colspan="7" style="text-align:left;">TAHUN <%= pnbpSelectedYear || pnbpTahun || '-' %></th>
               </tr>
               <tr>
                 <th>NO</th>
@@ -274,6 +274,7 @@
                 <th>TARGET REALISASI</th>
                 <th>PERSETASE</th>
                 <th>KETERANGAN</th>
+                <th>AKSI</th>
               </tr>
             </thead>
             <tbody>
@@ -283,12 +284,18 @@
                 <td><%= item.periodePnbp || '-' %></td>
                 <td><%= Number(item.jumlahPnbp || 0).toLocaleString('id-ID') %></td>
                 <td><%= Number(String(item.targetRealisasi || '').replace(/\D/g, '') || 0).toLocaleString('id-ID') %></td>
-                <td><%= item.persentase || '-' %></td>
-                <td><%= item.keterangan || '-' %></td>
+                <td><%= item.persentaseCalc || '0%' %></td>
+                <td><%= item.keteranganCalc || '-' %></td>
+                <td>
+                  <a
+                    class="giiatja-preview-btn"
+                    href="/kalapas/table/giiatja/pnbp-detail?tahun=<%= encodeURIComponent(item.tahun || pnbpSelectedYear || '') %>&periode=<%= encodeURIComponent(item.periodePnbp || '') %>&ref_tahun=<%= encodeURIComponent(pnbpSelectedYear || '') %>&search=<%= encodeURIComponent(searchKeyword || '') %>&premi_search=<%= encodeURIComponent(premiSearch || '') %>&premi_bulan=<%= encodeURIComponent(premiMonth || '') %>&premi_tahun=<%= encodeURIComponent(premiYear || '') %>"
+                  >Detail</a>
+                </td>
               </tr>
               <% }) %>
               <% if (!pnbpList.length) { %>
-              <tr><td colspan="6" class="giiatja-empty">Belum ada data</td></tr>
+              <tr><td colspan="7" class="giiatja-empty">Belum ada data</td></tr>
               <% } %>
             </tbody>
           </table>

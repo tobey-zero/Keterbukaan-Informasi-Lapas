@@ -506,7 +506,6 @@ NAMA PESERTA 2"></textarea></div>
                   <td><%= item.keterangan || '-' %></td>
                   <td>
                     <div class="actions">
-                      <a href="/admin/giiatja?pnbp_tahun=<%= encodeURIComponent(selectedPnbpYear || item.tahun || pnbpTahun) %>&pendapatan_tahun=<%= encodeURIComponent(item.tahun || selectedPnbpYear || pnbpTahun) %>&pendapatan_periode=<%= encodeURIComponent(item.periode_pnbp || '') %>#pendapatan-pnbp" class="btn btn-primary btn-xs">Detail</a>
                       <a href="/admin/giiatja?editPnbp=<%= item.id %>&pnbp_tahun=<%= encodeURIComponent(selectedPnbpYear || item.tahun || pnbpTahun) %>&pendapatan_tahun=<%= encodeURIComponent(selectedPendapatanYear || item.tahun || pnbpTahun) %>&pendapatan_periode=<%= encodeURIComponent(selectedPendapatanPeriod || '') %>" class="btn btn-warning btn-xs">✏️</a>
                       <form method="POST" action="/admin/giiatja/pnbp/<%= item.id %>/delete" style="display:inline" onsubmit="return confirm('Hapus data ini?')">
                         <input type="hidden" name="pnbp_tahun" value="<%= selectedPnbpYear || item.tahun || '' %>">

@@ -1241,6 +1241,8 @@ function getTuUmumData() {
 function getGiiatjaData(options = {}) {
   const pelatihanSearch = String(options.pelatihanSearch || '').trim();
   const pnbpYearFilter = String(options.pnbpYear || '').trim();
+  const pnbpDetailYearFilter = String(options.pnbpDetailYear || '').trim();
+  const pnbpDetailPeriodFilter = String(options.pnbpDetailPeriod || '').trim();
   const premiSearch = String(options.premiSearch || '').trim();
   const premiMonthFilter = String(options.premiMonth || '').trim().toUpperCase();
   const premiYearFilter = String(options.premiYear || '').trim();
@@ -1427,10 +1429,27 @@ function getGiiatjaData(options = {}) {
       id ASC`)
     .all();
 
-  const pnbpComputedList = pnbpRawList.map((item) => ({
-    ...item,
-    jumlahPnbp: computePnbpPeriodTotal(item.tahun, item.periodePnbp),
-  }));
+  const pnbpComputedList = pnbpRawList.map((item) => {
+    const jumlahPnbp = computePnbpPeriodTotal(item.tahun, item.periodePnbp);
+    const targetNominal = parseNominal(item.targetRealisasi);
+    const percentValue = targetNominal > 0 ? (jumlahPnbp / targetNominal) * 100 : 0;
+    const persentaseCalc = targetNominal > 0
+      ? (Math.abs(percentValue - Math.round(percentValue)) < 0.001
+        ? `${Math.round(percentValue)}%`
+        : `${percentValue.toFixed(2).replace(/\.00$/, '')}%`)
+      : '0%';
+    const keteranganCalc = targetNominal > 0
+      ? (percentValue >= 100 ? 'TERCAPAI' : 'BELUM TERCAPAI')
+      : '-';
+
+    return {
+      ...item,
+      jumlahPnbp,
+      targetRealisasiNominal: targetNominal,
+      persentaseCalc,
+      keteranganCalc,
+    };
+  });
 
   const premiRawList = db
     .prepare(`SELECT
@@ -1466,6 +1485,46 @@ function getGiiatjaData(options = {}) {
   const pnbpList = wantsAllYears
     ? pnbpComputedList
     : pnbpComputedList.filter(item => String(item.tahun || '').trim() === pnbpSelectedYear);
+
+  const pnbpDetailYear = String(pnbpDetailYearFilter || '').trim();
+  const pnbpDetailPeriod = normalizePnbpPeriod(pnbpDetailPeriodFilter || '');
+  const hasPnbpDetailSelection = Boolean(pnbpDetailYear && pnbpDetailPeriod);
+  const pnbpPendapatanAll = db.prepare(`
+    SELECT
+      id,
+      tahun,
+      periode_pnbp AS periodePnbp,
+      kegiatan,
+      peserta,
+      jumlah
+    FROM giiatja_pnbp_pendapatan
+    ORDER BY tahun DESC,
+      CASE UPPER(TRIM(periode_pnbp))
+        WHEN 'JANUARI' THEN 1
+        WHEN 'FEBRUARI' THEN 2
+        WHEN 'MARET' THEN 3
+        WHEN 'APRIL' THEN 4
+        WHEN 'MEI' THEN 5
+        WHEN 'JUNI' THEN 6
+        WHEN 'JULI' THEN 7
+        WHEN 'AGUSTUS' THEN 8
+        WHEN 'SEPTEMBER' THEN 9
+        WHEN 'OKTOBER' THEN 10
+        WHEN 'NOVEMBER' THEN 11
+        WHEN 'DESEMBER' THEN 12
+        ELSE 99
+      END ASC,
+      sort_order ASC,
+      id ASC
+  `).all();
+  const pnbpDetailPendapatanList = hasPnbpDetailSelection
+    ? pnbpPendapatanAll.filter((item) => {
+      return String(item.tahun || '').trim() === pnbpDetailYear
+        && normalizePnbpPeriod(item.periodePnbp || '') === pnbpDetailPeriod;
+    })
+    : [];
+  const pnbpDetailPendapatanTotal = pnbpDetailPendapatanList
+    .reduce((sum, item) => sum + parseMoneyNumber(item.jumlah), 0);
 
   const pnbpTahun = pnbpSelectedYear;
   const premiMonths = Array.from(new Set(
@@ -1531,6 +1590,11 @@ function getGiiatjaData(options = {}) {
     pnbpYears,
     pnbpSelectedYear,
     pnbpList,
+    pnbpDetailYear,
+    pnbpDetailPeriod,
+    hasPnbpDetailSelection,
+    pnbpDetailPendapatanList,
+    pnbpDetailPendapatanTotal,
     premiMonths,
     premiYears,
     premiSelectedMonth,
@@ -2406,6 +2470,47 @@ app.get('/kalapas/table/giiatja', (req, res) => {
   });
 });
 
+app.get('/kalapas/table/giiatja/pnbp-detail', (req, res) => {
+  const tahun = String(req.query.tahun || '').trim();
+  const periode = String(req.query.periode || '').trim();
+  const searchKeyword = String(req.query.search || '').trim();
+  const pnbpYear = String(req.query.ref_tahun || tahun || '').trim();
+  const premiSearch = String(req.query.premi_search || '').trim();
+  const premiMonth = String(req.query.premi_bulan || '').trim();
+  const premiYear = String(req.query.premi_tahun || '').trim();
+
+  if (!tahun || !periode) {
+    const fallbackQuery = new URLSearchParams();
+    if (searchKeyword) fallbackQuery.set('search', searchKeyword);
+    if (pnbpYear) fallbackQuery.set('tahun', pnbpYear);
+    if (premiSearch) fallbackQuery.set('premi_search', premiSearch);
+    if (premiMonth) fallbackQuery.set('premi_bulan', premiMonth);
+    if (premiYear) fallbackQuery.set('premi_tahun', premiYear);
+    const fallbackSuffix = fallbackQuery.toString();
+    return res.redirect(`/kalapas/table/giiatja${fallbackSuffix ? `?${fallbackSuffix}` : ''}`);
+  }
+
+  const data = getGiiatjaData({
+    pnbpDetailYear: tahun,
+    pnbpDetailPeriod: periode,
+  });
+
+  res.render('kalapas-giiatja-pnbp-detail', {
+    pageTitle: 'Detail Pendapatan PNBP',
+    subtitle: `Periode: ${data.pnbpDetailPeriod || '-'} ${data.pnbpDetailYear || '-'} | Total: Rp ${formatRupiah(data.pnbpDetailPendapatanTotal || 0)}`,
+    backUrl: '/kalapas/table/giiatja',
+    searchKeyword,
+    pnbpYear,
+    premiSearch,
+    premiMonth,
+    premiYear,
+    pnbpDetailYear: data.pnbpDetailYear,
+    pnbpDetailPeriod: data.pnbpDetailPeriod,
+    pnbpDetailPendapatanList: data.pnbpDetailPendapatanList,
+    pnbpDetailPendapatanTotal: data.pnbpDetailPendapatanTotal,
+  });
+});
+
 app.get('/kalapas/table/pnbp-giiatja', (req, res) => {
   const pnbpYear = String(req.query.tahun || '').trim();
   const data = getGiiatjaData({ pnbpYear });
@@ -2415,8 +2520,8 @@ app.get('/kalapas/table/pnbp-giiatja', (req, res) => {
     item.periodePnbp || '-',
     `Rp ${formatRupiah(item.jumlahPnbp)}`,
     `Rp ${formatRupiah(item.targetRealisasi)}`,
-    item.persentase || '-',
-    item.keterangan || '-',
+    item.persentaseCalc || '0%',
+    item.keteranganCalc || '-',
   ]);
 
   res.render('kalapas-table', {

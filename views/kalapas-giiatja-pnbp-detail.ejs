@@ -1,0 +1,113 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title><%= pageTitle %> - Kalapas</title>
+  <link rel="stylesheet" href="/css/style.css?v=<%= Date.now() %>">
+  <style>
+    .detail-wrap { padding: 14px 15px; }
+    .detail-toolbar {
+      display: flex;
+      gap: 8px;
+      flex-wrap: wrap;
+      align-items: center;
+      margin-bottom: 10px;
+    }
+    .detail-toolbar a {
+      text-decoration: none;
+      color: #fff;
+      background: #1a4bb8;
+      border: 1px solid rgba(255,255,255,.3);
+      border-radius: 6px;
+      padding: 7px 11px;
+      font-size: 12px;
+      font-weight: bold;
+    }
+    .detail-panel .panel-content { padding: 0; }
+    .detail-info {
+      padding: 10px 12px;
+      font-size: 12px;
+      color: #1e3a8a;
+      font-weight: 700;
+      border-bottom: 1px solid #dbe3f1;
+      background: #eff6ff;
+    }
+    .detail-scroll { overflow: auto; max-height: 62vh; }
+    .detail-scroll thead th { position: sticky; top: 0; z-index: 2; }
+    .detail-panel table th,
+    .detail-panel table td { font-size: 12px; padding: 8px 9px; }
+    .detail-empty { text-align: center; color: #64748b; padding: 14px; font-weight: bold; }
+  </style>
+</head>
+<body class="page-umum">
+  <header class="header">
+    <div class="header-content">
+      <div class="logo-section">
+        <div class="logo kalapas-logo">
+          <img src="/images/Logo.png" alt="Logo SIMWASPIM" class="kalapas-logo-img">
+        </div>
+        <div class="header-info">
+          <h2>DETAIL PENDAPATAN PNBP</h2>
+          <h3>Rincian pendapatan per periode</h3>
+          <p class="address"><%= subtitle %></p>
+        </div>
+      </div>
+    </div>
+  </header>
+
+  <div class="detail-wrap">
+    <% 
+      const backParams = new URLSearchParams();
+      if (searchKeyword) backParams.set('search', searchKeyword);
+      if (pnbpYear) backParams.set('tahun', pnbpYear);
+      if (premiSearch) backParams.set('premi_search', premiSearch);
+      if (premiMonth) backParams.set('premi_bulan', premiMonth);
+      if (premiYear) backParams.set('premi_tahun', premiYear);
+      const backHref = backParams.toString() ? `${backUrl}?${backParams.toString()}` : backUrl;
+    %>
+    <div class="detail-toolbar">
+      <a href="<%= backHref %>">⬅ Kembali ke GIIATJA</a>
+      <a href="/kalapas">⬅ Kembali ke Kalapas</a>
+    </div>
+
+    <div class="panel detail-panel">
+      <div class="panel-header red">
+        <span>DETAIL PENDAPATAN PNBP</span>
+        <span><%= pnbpDetailPendapatanList.length %> data</span>
+      </div>
+      <div class="panel-content">
+        <div class="detail-info">
+          Periode: <%= pnbpDetailPeriod || '-' %> <%= pnbpDetailYear || '-' %> | Total: Rp <%= Number(pnbpDetailPendapatanTotal || 0).toLocaleString('id-ID') %>
+        </div>
+        <div class="detail-scroll table-wrap">
+          <table class="admin-table">
+            <thead>
+              <tr>
+                <th>NO</th>
+                <th>KEGIATAN</th>
+                <th>WBP PESERTA KEGIATAN</th>
+                <th>JUMLAH</th>
+              </tr>
+            </thead>
+            <tbody>
+              <% pnbpDetailPendapatanList.forEach((item, i) => { %>
+              <% const jumlahNominal = Number(String(item.jumlah || '').replace(/[^\d-]/g, '')); %>
+              <tr>
+                <td><%= i + 1 %></td>
+                <td><%= item.kegiatan || '-' %></td>
+                <td><%= item.peserta || '-' %></td>
+                <td>Rp <%= (Number.isFinite(jumlahNominal) ? jumlahNominal : 0).toLocaleString('id-ID') %></td>
+              </tr>
+              <% }) %>
+              <% if (!pnbpDetailPendapatanList.length) { %>
+              <tr><td colspan="4" class="detail-empty">Belum ada rincian pendapatan untuk periode ini</td></tr>
+              <% } %>
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+  </div>
+</body>
+</html>
