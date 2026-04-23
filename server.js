@@ -2243,18 +2243,64 @@ app.get('/kalapas/table/pidana-umum', (req, res) => {
 });
 
 app.get('/kalapas/table/luar-tembok', (req, res) => {
+  const todayYmd = getTodayYmd();
+  const searchKeyword = String(req.query.search || '').trim();
+  const normalizeSearchText = (value) => String(value || '')
+    .toLowerCase()
+    .replace(/[^a-z0-9\s]/g, ' ')
+    .replace(/\s+/g, ' ')
+    .trim();
+
   const board = getBoardData();
-  const rows = board.luarTembokDetail.map(item => [
+  const filtered = board.luarTembokDetail.filter((item) => {
+    if (searchKeyword) {
+      const normalizedDate = normalizeDateToYmd(item.tanggal);
+      const dateSlash = normalizedDate
+        ? `${normalizedDate.slice(8, 10)}/${normalizedDate.slice(5, 7)}/${normalizedDate.slice(0, 4)}`
+        : '';
+      const dateDash = normalizedDate
+        ? `${normalizedDate.slice(8, 10)}-${normalizedDate.slice(5, 7)}-${normalizedDate.slice(0, 4)}`
+        : '';
+      const searchBlob = normalizeSearchText([
+        item.noRegistrasi,
+        item.nama,
+        item.tanggal,
+        normalizedDate,
+        dateSlash,
+        dateDash,
+        formatDateIndo(item.tanggal),
+        item.pendamping,
+        item.keterangan,
+      ].join(' '));
+      return searchBlob.includes(normalizeSearchText(searchKeyword));
+    }
+
+    return normalizeDateToYmd(item.tanggal) === todayYmd;
+  });
+
+  const rows = filtered.map(item => [
     item.noRegistrasi || '-',
     item.nama || '-',
-    item.tanggal || '-',
+    formatDateIndo(item.tanggal || '-'),
     item.pendamping || '-',
     item.keterangan || '-'
   ]);
+
   res.render('kalapas-table', {
     pageTitle: 'WBP di Luar Tembok',
     sectionTitle: 'WBP DI LUAR TEMBOK',
-    subtitle: `Total data: ${rows.length}`,
+    subtitle: searchKeyword
+      ? `Pencarian: "${searchKeyword}" | Total riwayat ditemukan: ${rows.length}`
+      : `Data tanggal hari ini: ${rows.length}`,
+    dateFilter: {
+      action: '/kalapas/table/luar-tembok',
+      dateEnabled: false,
+      resetUrl: '/kalapas/table/luar-tembok',
+      searchEnabled: true,
+      searchLabel: 'Pencarian riwayat WBP luar tembok',
+      searchPlaceholder: 'Cari no registrasi, nama, tanggal, pendamping, keterangan...',
+      searchValue: searchKeyword,
+    },
     columns: ['NO REGISTRASI', 'NAMA', 'TANGGAL', 'PENDAMPING', 'KETERANGAN'],
     rows,
     backUrl: '/kalapas'
