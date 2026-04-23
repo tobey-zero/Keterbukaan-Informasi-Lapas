@@ -904,10 +904,18 @@
         label: 'Barang Bukti Razia' , value: raziaSummary.totalBarangBukti, link: '/kalapas/table/razia-barang-bukti' },
         { label: 'Data Stapsel' , value: securitySummary.totalStrapsel, link: '/kalapas/table/strapsel' }, {
         label: 'Laporan BMN' , value: tuUmumSummary.totalTuUmum, link: '/kalapas/table/tu-bmn' }, { label: 'Kepegawaian'
-        , value: tuUmumSummary.totalPegawai, link: '/kalapas/table/kepegawaian' } ]; const
+        , value: tuUmumSummary.totalPegawai, link: '/kalapas/table/kepegawaian' },
+        { label: 'Pengaduan Masyarakat', value: totalPengaduanMasyarakat, link: '/kalapas/table/pengaduan' },
+        { label: 'Kegiatan GIIATJA', value: giiatjaSummary.kegiatan, link: '/kalapas/table/giiatja' },
+        { label: 'WBP Bersertifikat', value: giiatjaSummary.pelatihan, link: '/kalapas/table/giiatja' },
+        { label: 'WBP Mendapat Premi', value: giiatjaSummary.premi, link: '/kalapas/table/giiatja' } ]; const
         summaryIconFor = (label) => {
         const key = String(label || '').toLowerCase();
         if (key.includes('remisi')) return '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 5h10l6 6v8a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2z"></path><path d="M14 5v6h6"></path></svg>';
+        if (key.includes('pengaduan')) return '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 5h16v10H7l-3 3z"></path><path d="M8 9h8M8 12h6"></path></svg>';
+        if (key.includes('giiatja') || key === 'kegiatan') return '<svg viewBox="0 0 24 24" aria-hidden="true"><rect x="3" y="5" width="18" height="14" rx="2"></rect><path d="M8 3v4M16 3v4M7 11h10M7 15h6"></path></svg>';
+        if (key.includes('sertifikat')) return '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 3l8 3v6c0 5-3.5 8-8 9-4.5-1-8-4-8-9V6z"></path><path d="M9 12l2 2 4-4"></path></svg>';
+        if (key.includes('premi')) return '<svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="9"></circle><path d="M12 7v10M8 10h8M8 14h8"></path></svg>';
         if (key.includes('pembinaan')) return '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 4h16v16H4z"></path><path d="M8 2v4M16 2v4M8 10h8M8 14h8M8 18h5"></path></svg>';
         if (key.includes('jadwal')) return '<svg viewBox="0 0 24 24" aria-hidden="true"><rect x="3" y="4" width="18" height="17" rx="2"></rect><path d="M8 2v4M16 2v4M3 10h18M9 14l2 2 4-4"></path></svg>';
         if (key.includes('sakit') || key.includes('medis')) return '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M3 8a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2v10a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"></path><path d="M12 9v6M9 12h6"></path></svg>';

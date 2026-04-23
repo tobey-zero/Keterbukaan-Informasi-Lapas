@@ -440,8 +440,11 @@
                   <% row.forEach(cell => { %>
                     <% const cellValue = (cell && typeof cell === 'object' && !Array.isArray(cell)) ? cell.value : cell; %>
                     <% const cellClass = (cell && typeof cell === 'object' && !Array.isArray(cell)) ? (cell.className || '') : ''; %>
+                    <% const cellHref = (cell && typeof cell === 'object' && !Array.isArray(cell)) ? (cell.href || '') : ''; %>
                     <td class="<%= cellClass %>">
-                      <% if (typeof cellValue === 'string' && cellValue.startsWith('/uploads/') && /\.(png|jpg|jpeg|webp|gif)$/i.test(cellValue)) { %>
+                      <% if (cellHref) { %>
+                        <a href="<%= cellHref %>" class="kalapas-preview-btn"><%= cellValue || 'Detail' %></a>
+                      <% } else if (typeof cellValue === 'string' && cellValue.startsWith('/uploads/') && /\.(png|jpg|jpeg|webp|gif)$/i.test(cellValue)) { %>
                         <a href="<%= cellValue %>" target="_blank" rel="noopener noreferrer" class="kalapas-preview-btn">🔍 Preview</a>
                       <% } else { %>
                         <%= formatDateIndo(cellValue) %>

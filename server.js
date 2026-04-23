@@ -1905,6 +1905,10 @@ function getKalapasData() {
     FROM pengaduan_masyarakat
     WHERE UPPER(TRIM(status)) = 'DITERIMA'
   `).get()?.c || 0);
+  const totalPengaduanMasyarakat = Number(db.prepare(`
+    SELECT COUNT(*) AS c
+    FROM pengaduan_masyarakat
+  `).get()?.c || 0);
 
   return {
     ...umum,
@@ -1947,6 +1951,7 @@ function getKalapasData() {
     hasKamtibMonthlyPengawalanUpdate,
     hasGiiatjaMonthlyUpdate,
     pengaduanDiterimaCount,
+    totalPengaduanMasyarakat,
     okupansi,
   };
 }
@@ -2571,13 +2576,17 @@ app.get('/kalapas/table/pnbp-giiatja', (req, res) => {
     `Rp ${formatRupiah(item.targetRealisasi)}`,
     item.persentaseCalc || '0%',
     item.keteranganCalc || '-',
+    {
+      value: 'Detail',
+      href: `/kalapas/table/giiatja/pnbp-detail?tahun=${encodeURIComponent(item.tahun || '')}&periode=${encodeURIComponent(item.periodePnbp || '')}&ref_tahun=${encodeURIComponent(data.pnbpSelectedYear || '')}`,
+    },
   ]);
 
   res.render('kalapas-table', {
     pageTitle: 'Grafik Pendapatan negara bukan pajak',
     sectionTitle: 'PENDAPATAN NEGARA BUKAN PAJAK',
     subtitle: `Tahun: ${data.pnbpSelectedYear || '-'} | Total data: ${rows.length}`,
-    columns: ['NO', 'TAHUN', 'PERIODE PNBP', 'JUMLAH PNBP', 'TARGET REALISASI', 'PERSENTASE', 'KETERANGAN'],
+    columns: ['NO', 'TAHUN', 'PERIODE PNBP', 'JUMLAH PNBP', 'TARGET REALISASI', 'PERSENTASE', 'KETERANGAN', 'AKSI'],
     rows,
     backUrl: '/kalapas'
   });
