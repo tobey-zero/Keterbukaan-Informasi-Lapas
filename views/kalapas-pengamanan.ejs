@@ -61,6 +61,25 @@
       font-size: 12px;
       font-weight: 700;
     }
+    .pengamanan-card.alert-empty {
+      border-color: #ef4444;
+      background: #fef2f2;
+      box-shadow: inset 0 0 0 1px #fecaca;
+    }
+    .pengamanan-card.alert-empty h3 {
+      color: #b91c1c;
+    }
+    .pengamanan-card.alert-empty .pengamanan-link {
+      background: #dc2626;
+    }
+    .pengamanan-empty-note {
+      margin: 0 0 10px;
+      color: #b91c1c;
+      font-size: 11px;
+      font-weight: 800;
+      text-transform: uppercase;
+      letter-spacing: .2px;
+    }
     @media (max-width: 900px) {
       .pengamanan-grid { grid-template-columns: 1fr; }
     }
@@ -99,8 +118,11 @@
         <a class="pengamanan-link" href="/kalapas/papan-isi">Buka Tabel Papan Keadaan Isi</a>
       </div>
 
-      <div class="pengamanan-card">
+      <div class="pengamanan-card <%= !hasLuarTembokToday ? 'alert-empty' : '' %>">
         <h3>WBP di Luar Tembok</h3>
+        <% if (!hasLuarTembokToday) { %>
+          <p class="pengamanan-empty-note">WBP Luar Tembok Hari ini Kosong</p>
+        <% } %>
         <p>Menampilkan tabel WBP yang berada di luar tembok.</p>
         <a class="pengamanan-link" href="/kalapas/table/luar-tembok">Buka Tabel WBP di Luar Tembok</a>
       </div>

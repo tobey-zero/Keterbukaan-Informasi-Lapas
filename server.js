@@ -1518,8 +1518,9 @@ function getBoardData() {
 }
 
 function getKalapasData() {
+  const todayYmd = getTodayYmd();
   const umum = getPublicData();
-  const klinik = getClinicData({ tanggal: getTodayYmd() });
+  const klinik = getClinicData({ tanggal: todayYmd });
   const razia = getRaziaData();
   const security = getSecurityData();
   const pengawalan = getPengawalanData();
@@ -1531,6 +1532,9 @@ function getKalapasData() {
   const okupansi = umum.kapasitas > 0
     ? ((umum.totalPenghuni / umum.kapasitas) * 100).toFixed(1)
     : '0.0';
+  const hasLuarTembokToday = (board.luarTembokDetail || []).some((item) => {
+    return normalizeDateToYmd(item.tanggal) === todayYmd;
+  });
 
   return {
     ...umum,
@@ -1566,6 +1570,7 @@ function getKalapasData() {
     agama: board.agama,
     wnaNegara: board.wnaNegara,
     boardSummary: board.boardSummary,
+    hasLuarTembokToday,
     okupansi,
   };
 }
@@ -1655,8 +1660,15 @@ app.get('/kalapas/table/dapur', (req, res) => {
 });
 
 app.get('/kalapas/table/pengamanan', (req, res) => {
+  const todayYmd = getTodayYmd();
+  const board = getBoardData();
+  const hasLuarTembokToday = (board.luarTembokDetail || []).some((item) => {
+    return normalizeDateToYmd(item.tanggal) === todayYmd;
+  });
+
   res.render('kalapas-pengamanan', {
-    activePage: 'kalapas'
+    activePage: 'kalapas',
+    hasLuarTembokToday,
   });
 });
 

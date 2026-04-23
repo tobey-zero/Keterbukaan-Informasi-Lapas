@@ -90,6 +90,49 @@
             font-size: 11px;
             font-weight: bold;
             letter-spacing: .2px;
+            position: relative;
+        }
+
+        .quick-nav-alert {
+            position: absolute;
+            top: -6px;
+            right: -6px;
+            min-width: 16px;
+            height: 16px;
+            border-radius: 999px;
+            background: #ef4444;
+            color: #fff;
+            font-size: 10px;
+            line-height: 16px;
+            text-align: center;
+            font-weight: 800;
+            border: 1px solid #fff;
+            box-shadow: 0 1px 4px rgba(15, 23, 42, 0.35);
+        }
+
+        .quick-nav-tooltip {
+            position: absolute;
+            left: 50%;
+            transform: translateX(-50%);
+            top: calc(100% + 7px);
+            background: #dc2626;
+            color: #fff;
+            border-radius: 6px;
+            padding: 5px 8px;
+            font-size: 10px;
+            font-weight: 700;
+            line-height: 1.25;
+            white-space: nowrap;
+            box-shadow: 0 4px 10px rgba(15, 23, 42, 0.35);
+            opacity: 0;
+            pointer-events: none;
+            transition: opacity .12s ease;
+            z-index: 10;
+        }
+
+        .quick-nav-warning:hover .quick-nav-tooltip,
+        .quick-nav-warning:focus-visible .quick-nav-tooltip {
+            opacity: 1;
         }
 
         .summary-grid {
@@ -808,7 +851,12 @@
             <a href="/">🏢 Krisna</a>
             <a href="/klinik">🏥 Klinik</a>
             <a href="/kalapas/table/dapur">🍽️ Dapur</a>
-            <a href="/kalapas/table/pengamanan">🔒 Pengamanan</a>
+            <a href="/kalapas/table/pengamanan" class="<%= !hasLuarTembokToday ? 'quick-nav-warning' : '' %>">🔒 Pengamanan
+                <% if (!hasLuarTembokToday) { %>
+                    <span class="quick-nav-alert" title="WBP Luar Tembok Hari ini Kosong">!</span>
+                    <span class="quick-nav-tooltip">WBP Luar Tembok Hari ini Kosong</span>
+                <% } %>
+            </a>
             <a href="/kalapas/table/kamtib">🛡️ Kamtib</a>
             <a href="/kalapas/table/giiatja">🏭 GIIATJA</a>
             <a href="/kalapas/table/tu-umum">📑 Tata Usaha</a>
