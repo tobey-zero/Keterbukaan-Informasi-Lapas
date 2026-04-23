@@ -1388,12 +1388,29 @@ function getHousingData() {
 }
 
 function getBoardData() {
-  const pidanaKhusus = db
-    .prepare("SELECT id, kategori, jenis, jumlah FROM board_pidana WHERE kategori='khusus' ORDER BY id")
+  const normalizePidanaJenis = (value) => String(value || '').replace(/\s+/g, ' ').trim();
+  const rawPidana = db
+    .prepare('SELECT id, kategori, jenis, jumlah FROM board_pidana ORDER BY id DESC')
     .all();
-  const pidanaUmum = db
-    .prepare("SELECT id, kategori, jenis, jumlah FROM board_pidana WHERE kategori='umum' ORDER BY id")
-    .all();
+
+  const dedupePidanaByKategori = (kategori) => {
+    const map = new Map();
+    rawPidana
+      .filter(item => item.kategori === kategori)
+      .forEach((item) => {
+        const jenis = normalizePidanaJenis(item.jenis);
+        const key = jenis.toLowerCase();
+        if (!key || map.has(key)) return;
+        map.set(key, {
+          ...item,
+          jenis,
+        });
+      });
+    return Array.from(map.values()).sort((a, b) => a.id - b.id);
+  };
+
+  const pidanaKhusus = dedupePidanaByKategori('khusus');
+  const pidanaUmum = dedupePidanaByKategori('umum');
 
   const luarTembok = db
     .prepare(`SELECT id, status,
@@ -4067,19 +4084,66 @@ app.get('/admin/papan-isi', requireAccess('papan-isi'), (req, res) => {
 
 app.post('/admin/papan-isi/pidana/add', requireAccess('papan-isi'), (req, res) => {
   const kategori = req.body.kategori === 'umum' ? 'umum' : 'khusus';
-  const jenis = (req.body.jenis || '').trim();
+  const jenis = String(req.body.jenis || '').replace(/\s+/g, ' ').trim();
   const jumlah = Number(req.body.jumlah || 0);
   if (!jenis) return res.redirect('/admin/papan-isi');
-  db.prepare('INSERT INTO board_pidana (kategori, jenis, jumlah) VALUES (?, ?, ?)').run(kategori, jenis, jumlah);
+
+  const existing = db.prepare(`
+    SELECT id
+    FROM board_pidana
+    WHERE kategori = ?
+      AND LOWER(TRIM(jenis)) = LOWER(TRIM(?))
+    ORDER BY id DESC
+    LIMIT 1
+  `).get(kategori, jenis);
+
+  if (existing?.id) {
+    db.prepare('UPDATE board_pidana SET jenis=?, jumlah=? WHERE id=?')
+      .run(jenis, jumlah, Number(existing.id));
+    db.prepare(`
+      DELETE FROM board_pidana
+      WHERE kategori = ?
+        AND LOWER(TRIM(jenis)) = LOWER(TRIM(?))
+        AND id <> ?
+    `).run(kategori, jenis, Number(existing.id));
+  } else {
+    db.prepare('INSERT INTO board_pidana (kategori, jenis, jumlah) VALUES (?, ?, ?)').run(kategori, jenis, jumlah);
+  }
+
   res.redirect('/admin/papan-isi?success=1');
 });
 
 app.post('/admin/papan-isi/pidana/:id/update', requireAccess('papan-isi'), (req, res) => {
+  const id = Number(req.params.id);
   const kategori = req.body.kategori === 'umum' ? 'umum' : 'khusus';
-  const jenis = (req.body.jenis || '').trim();
+  const jenis = String(req.body.jenis || '').replace(/\s+/g, ' ').trim();
   const jumlah = Number(req.body.jumlah || 0);
   if (!jenis) return res.redirect('/admin/papan-isi');
-  db.prepare('UPDATE board_pidana SET kategori=?, jenis=?, jumlah=? WHERE id=?').run(kategori, jenis, jumlah, Number(req.params.id));
+
+  const duplicate = db.prepare(`
+    SELECT id
+    FROM board_pidana
+    WHERE kategori = ?
+      AND LOWER(TRIM(jenis)) = LOWER(TRIM(?))
+      AND id <> ?
+    ORDER BY id DESC
+    LIMIT 1
+  `).get(kategori, jenis, id);
+
+  if (duplicate?.id) {
+    db.prepare('UPDATE board_pidana SET kategori=?, jenis=?, jumlah=? WHERE id=?')
+      .run(kategori, jenis, jumlah, Number(duplicate.id));
+    db.prepare('DELETE FROM board_pidana WHERE id=?').run(id);
+    db.prepare(`
+      DELETE FROM board_pidana
+      WHERE kategori = ?
+        AND LOWER(TRIM(jenis)) = LOWER(TRIM(?))
+        AND id <> ?
+    `).run(kategori, jenis, Number(duplicate.id));
+  } else {
+    db.prepare('UPDATE board_pidana SET kategori=?, jenis=?, jumlah=? WHERE id=?').run(kategori, jenis, jumlah, id);
+  }
+
   res.redirect('/admin/papan-isi?success=1');
 });
 
