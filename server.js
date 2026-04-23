@@ -180,6 +180,14 @@ function getAppSetting(settingKey, fallbackValue = '') {
   return row?.value || fallbackValue;
 }
 
+function setAppSetting(settingKey, settingValue) {
+  db.prepare(`
+    INSERT INTO app_settings (key, value)
+    VALUES (?, ?)
+    ON CONFLICT(key) DO UPDATE SET value=excluded.value
+  `).run(settingKey, String(settingValue ?? ''));
+}
+
 function getTodayYmd() {
   const parts = new Intl.DateTimeFormat('en-CA', {
     timeZone: 'Asia/Jakarta',
@@ -279,6 +287,36 @@ function normalizeDateToYmd(value) {
   }
 
   return null;
+}
+
+function ensureDailyOperationalResets() {
+  const todayYmd = getTodayYmd();
+  const lastResetDate = normalizeDateToYmd(getAppSetting('daily_operational_reset_date', ''));
+  if (lastResetDate === todayYmd) return;
+
+  db.exec('BEGIN');
+  try {
+    db.prepare(`
+      UPDATE board_registrasi_hunian
+      SET wni_isi=0,
+          wni_tambah=0,
+          wni_kurang=0,
+          wna_isi=0,
+          wna_tambah=0,
+          wna_kurang=0
+    `).run();
+
+    db.prepare('UPDATE statistik SET pengunjung_hari_ini=0 WHERE id=1').run();
+
+    setAppSetting('daily_operational_reset_date', todayYmd);
+    setAppSetting('board_registrasi_hunian_last_input_date', '');
+    setAppSetting('statistik_kunjungan_last_input_date', '');
+
+    db.exec('COMMIT');
+  } catch (err) {
+    db.exec('ROLLBACK');
+    throw err;
+  }
 }
 
 function formatDateIndo(value) {
@@ -824,6 +862,11 @@ app.use(session({
   saveUninitialized: false,
   cookie: { maxAge: 8 * 60 * 60 * 1000 } // 8 jam
 }));
+
+app.use((req, res, next) => {
+  ensureDailyOperationalResets();
+  next();
+});
 
 app.use((req, res, next) => {
   res.locals.formatDateIndo = formatDateIndo;
@@ -1815,10 +1858,15 @@ function getKalapasData() {
   const okupansi = umum.kapasitas > 0
     ? ((umum.totalPenghuni / umum.kapasitas) * 100).toFixed(1)
     : '0.0';
+  const statistikInputDate = normalizeDateToYmd(getAppSetting('statistik_kunjungan_last_input_date', ''));
+  const statistikTanggalYmd = normalizeDateToYmd(umum.tanggal);
+  const hasStatistikKunjunganTodayUpdate = statistikInputDate === todayYmd
+    || (!statistikInputDate && statistikTanggalYmd === todayYmd);
   const hasLuarTembokToday = (board.luarTembokDetail || []).some((item) => {
     return normalizeDateToYmd(item.tanggal) === todayYmd;
   });
-  const hasPapanIsiTodayUpdate = hasLuarTembokToday;
+  const papanIsiInputDate = normalizeDateToYmd(getAppSetting('board_registrasi_hunian_last_input_date', ''));
+  const hasPapanIsiTodayUpdate = papanIsiInputDate === todayYmd;
   const hasDapurTodayUpdate = Number(db.prepare(`
     SELECT COUNT(*) AS c
     FROM menu_harian_set
@@ -1892,6 +1940,7 @@ function getKalapasData() {
     agama: board.agama,
     wnaNegara: board.wnaNegara,
     boardSummary: board.boardSummary,
+    hasStatistikKunjunganTodayUpdate,
     hasLuarTembokToday,
     hasPapanIsiTodayUpdate,
     hasDapurTodayUpdate,
@@ -2973,14 +3022,24 @@ app.post('/admin/pengaduan/:id/status', requireAccess('pengaduan'), pengaduanUpl
 
 // ── Statistik ────────────────────────────────────────────────────
 app.get('/admin/statistik', requireAccess('statistik'), (req, res) => {
+  const todayYmd = getTodayYmd();
+  const statistikInputDate = normalizeDateToYmd(getAppSetting('statistik_kunjungan_last_input_date', ''));
+  const hasStatistikKunjunganTodayUpdate = statistikInputDate === todayYmd;
   const data = db.prepare('SELECT * FROM statistik WHERE id = 1').get();
-  res.render('admin/statistik', { user: req.session.user, data, active: 'statistik', success: req.query.success });
+  res.render('admin/statistik', {
+    user: req.session.user,
+    data,
+    active: 'statistik',
+    success: req.query.success,
+    hasStatistikKunjunganTodayUpdate,
+  });
 });
 
 app.post('/admin/statistik/update', requireAccess('statistik'), (req, res) => {
   const { total_penghuni, kapasitas, bebas_hari_ini, pengunjung_hari_ini, tanggal } = req.body;
   db.prepare(`UPDATE statistik SET total_penghuni=?, kapasitas=?, bebas_hari_ini=?, pengunjung_hari_ini=?, tanggal=? WHERE id=1`)
     .run(Number(total_penghuni), Number(kapasitas), Number(bebas_hari_ini), Number(pengunjung_hari_ini), tanggal);
+  setAppSetting('statistik_kunjungan_last_input_date', getTodayYmd());
   res.redirect('/admin/statistik?success=1');
 });
 
@@ -4850,6 +4909,9 @@ app.post('/admin/kamar-blok/room/:id/delete', requireAccess('kamar-blok'), (req,
 
 // ── Papan Keadaan Isi Lapas ─────────────────────────────────────
 app.get('/admin/papan-isi', requireAccess('papan-isi'), (req, res) => {
+  const todayYmd = getTodayYmd();
+  const papanIsiInputDate = normalizeDateToYmd(getAppSetting('board_registrasi_hunian_last_input_date', ''));
+  const hasPapanIsiTodayUpdate = papanIsiInputDate === todayYmd;
   const data = getBoardData();
   const editPidana = req.query.editPidana ? db.prepare('SELECT * FROM board_pidana WHERE id=?').get(Number(req.query.editPidana)) : null;
   const editLuar = req.query.editLuar ? db.prepare('SELECT * FROM board_luar_tembok WHERE id=?').get(Number(req.query.editLuar)) : null;
@@ -4868,6 +4930,7 @@ app.get('/admin/papan-isi', requireAccess('papan-isi'), (req, res) => {
     editAgama,
     editRegistrasi,
     editWnaNegara,
+    hasPapanIsiTodayUpdate,
   });
 });
 
@@ -5077,6 +5140,7 @@ app.post('/admin/papan-isi/registrasi/add', requireAccess('papan-isi'), (req, re
     Number(req.body.wna_tambah || 0),
     Number(req.body.wna_kurang || 0)
   );
+  setAppSetting('board_registrasi_hunian_last_input_date', getTodayYmd());
   res.redirect('/admin/papan-isi?success=1');
 });
 
@@ -5102,6 +5166,7 @@ app.post('/admin/papan-isi/registrasi/:id/update', requireAccess('papan-isi'), (
     Number(req.body.wna_kurang || 0),
     Number(req.params.id)
   );
+  setAppSetting('board_registrasi_hunian_last_input_date', getTodayYmd());
   res.redirect('/admin/papan-isi?success=1');
 });
 

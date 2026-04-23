@@ -832,7 +832,16 @@
                     </div>
                 </div>
                 <div class="stat-item">
-                    <div class="stat-label">Pengunjung Hari Ini</div>
+                    <div class="stat-label">
+                        Pengunjung Hari Ini
+                        <% if (!hasStatistikKunjunganTodayUpdate) { %>
+                            <span
+                                title="Belum update hari ini"
+                                aria-label="Belum update hari ini"
+                                style="display:inline-flex;align-items:center;justify-content:center;width:14px;height:14px;margin-left:4px;border-radius:999px;background:#dc2626;color:#fff;font-size:10px;font-weight:700;line-height:1;vertical-align:middle;"
+                            >!</span>
+                        <% } %>
+                    </div>
                     <div class="stat-value">
                         <%= pengunjungHariIni %> Orang
                     </div>

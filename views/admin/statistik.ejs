@@ -17,6 +17,11 @@
       <% if (success) { %>
       <div class="alert alert-success">✅ Data statistik berhasil diperbarui.</div>
       <% } %>
+      <% if (!hasStatistikKunjunganTodayUpdate) { %>
+      <div class="alert" style="background:#fff4e5;color:#9a3412;border:1px solid #fdba74;">
+        ⚠️ Nilai Pengunjung Hari Ini sudah direset ke 0 untuk hari ini. Silakan isi jumlah kunjungan terbaru.
+      </div>
+      <% } %>
       <div class="card">
         <div class="card-header"><h3>Edit Data Statistik</h3><p>Data ini ditampilkan di bagian header halaman publik</p></div>
         <div class="card-body">
