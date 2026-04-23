@@ -17,6 +17,7 @@ db.exec(`
     total_penghuni INTEGER NOT NULL DEFAULT 0,
     kapasitas INTEGER NOT NULL DEFAULT 0,
     bebas_hari_ini INTEGER NOT NULL DEFAULT 0,
+    pengunjung_hari_ini INTEGER NOT NULL DEFAULT 0,
     tanggal TEXT NOT NULL DEFAULT ''
   );
 
@@ -648,6 +649,10 @@ if (!pengaduanColumnNames.includes('lampiran_admin_path')) db.exec('ALTER TABLE 
 if (!pengaduanColumnNames.includes('tanggal_pengaduan')) db.exec("ALTER TABLE pengaduan_masyarakat ADD COLUMN tanggal_pengaduan TEXT NOT NULL DEFAULT (date('now','localtime'))");
 if (!pengaduanColumnNames.includes('created_at')) db.exec("ALTER TABLE pengaduan_masyarakat ADD COLUMN created_at TEXT NOT NULL DEFAULT (datetime('now','localtime'))");
 
+const statistikColumns = db.prepare("PRAGMA table_info('statistik')").all();
+const statistikColumnNames = statistikColumns.map(col => col.name);
+if (!statistikColumnNames.includes('pengunjung_hari_ini')) db.exec("ALTER TABLE statistik ADD COLUMN pengunjung_hari_ini INTEGER NOT NULL DEFAULT 0");
+
 const defaultGiiatjaPnbpYear = String(new Date().getFullYear());
 db.prepare(`
   UPDATE giiatja_pnbp
@@ -791,8 +796,8 @@ const seedIfEmpty = (table, insertFn) => {
 
 seedIfEmpty('statistik', () => {
   db.prepare(`
-    INSERT INTO statistik (id, total_penghuni, kapasitas, bebas_hari_ini, tanggal)
-    VALUES (1, 3022, 1084, 6, 'Kamis, 14 September 2023')
+    INSERT INTO statistik (id, total_penghuni, kapasitas, bebas_hari_ini, pengunjung_hari_ini, tanggal)
+    VALUES (1, 3022, 1084, 6, 0, 'Kamis, 14 September 2023')
   `).run();
 });
 

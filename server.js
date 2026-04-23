@@ -180,23 +180,6 @@ function getAppSetting(settingKey, fallbackValue = '') {
   return row?.value || fallbackValue;
 }
 
-function getPengaduanVisitorTodayCount() {
-  const visitorKey = `pengaduan_visitors_${getTodayYmd()}`;
-  const currentValue = Number.parseInt(String(getAppSetting(visitorKey, '0')), 10);
-  return Number.isFinite(currentValue) && currentValue > 0 ? currentValue : 0;
-}
-
-function incrementPengaduanVisitorTodayCount() {
-  const visitorKey = `pengaduan_visitors_${getTodayYmd()}`;
-  const nextValue = getPengaduanVisitorTodayCount() + 1;
-  db.prepare(`
-    INSERT INTO app_settings (key, value)
-    VALUES (?, ?)
-    ON CONFLICT(key) DO UPDATE SET value=excluded.value
-  `).run(visitorKey, String(nextValue));
-  return nextValue;
-}
-
 function getTodayYmd() {
   const parts = new Intl.DateTimeFormat('en-CA', {
     timeZone: 'Asia/Jakarta',
@@ -996,6 +979,7 @@ function getPublicData() {
     totalPenghuni: statistik.total_penghuni,
     kapasitas: statistik.kapasitas,
     bebasHariIni: statistik.bebas_hari_ini,
+    pengunjungHariIni: statistik.pengunjung_hari_ini,
     tanggal: new Intl.DateTimeFormat('id-ID', { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' }).format(new Date()),
     remisiTitle,
     menuTitle,
@@ -1769,7 +1753,6 @@ function getKalapasData() {
     FROM pengaduan_masyarakat
     WHERE UPPER(TRIM(status)) = 'DITERIMA'
   `).get()?.c || 0);
-  const pengunjungHariIni = getPengaduanVisitorTodayCount();
 
   return {
     ...umum,
@@ -1807,7 +1790,6 @@ function getKalapasData() {
     boardSummary: board.boardSummary,
     hasLuarTembokToday,
     pengaduanDiterimaCount,
-    pengunjungHariIni,
     okupansi,
   };
 }
@@ -1842,12 +1824,6 @@ app.get('/klinik', (req, res) => {
 });
 
 app.get('/pengaduan-masyarakat', (req, res) => {
-  const todayYmd = getTodayYmd();
-  if (req.session?.pengaduanVisitorDate !== todayYmd) {
-    incrementPengaduanVisitorTodayCount();
-    req.session.pengaduanVisitorDate = todayYmd;
-  }
-
   const nik = String(req.query.nik || '').replace(/\D/g, '').slice(0, 16);
   const pengaduanList = nik
     ? db.prepare(`
@@ -2853,9 +2829,9 @@ app.get('/admin/statistik', requireAccess('statistik'), (req, res) => {
 });
 
 app.post('/admin/statistik/update', requireAccess('statistik'), (req, res) => {
-  const { total_penghuni, kapasitas, bebas_hari_ini, tanggal } = req.body;
-  db.prepare(`UPDATE statistik SET total_penghuni=?, kapasitas=?, bebas_hari_ini=?, tanggal=? WHERE id=1`)
-    .run(Number(total_penghuni), Number(kapasitas), Number(bebas_hari_ini), tanggal);
+  const { total_penghuni, kapasitas, bebas_hari_ini, pengunjung_hari_ini, tanggal } = req.body;
+  db.prepare(`UPDATE statistik SET total_penghuni=?, kapasitas=?, bebas_hari_ini=?, pengunjung_hari_ini=?, tanggal=? WHERE id=1`)
+    .run(Number(total_penghuni), Number(kapasitas), Number(bebas_hari_ini), Number(pengunjung_hari_ini), tanggal);
   res.redirect('/admin/statistik?success=1');
 });
 

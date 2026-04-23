@@ -34,6 +34,10 @@
                 <label>Bebas Hari Ini (Orang)</label>
                 <input type="text" name="bebas_hari_ini" value="<%= data.bebas_hari_ini %>" required>
               </div>
+              <div class="form-group">
+                <label>Pengunjung Hari Ini (Orang)</label>
+                <input type="text" name="pengunjung_hari_ini" value="<%= data.pengunjung_hari_ini || 0 %>" required>
+              </div>
               <!--
               <div class="form-group">
                 <label>Tanggal (tampil di header)</label>
@@ -61,6 +65,10 @@
             <div style="background:#2563eb;color:#fff;padding:12px 20px;border-radius:5px;border:2px solid #fff;text-align:center;min-width:130px;">
               <div style="font-size:11px;font-weight:bold;margin-bottom:4px;">Bebas Hari Ini</div>
               <div style="font-size:24px;font-weight:bold;"><%= data.bebas_hari_ini %> Orang</div>
+            </div>
+            <div style="background:#1d4ed8;color:#fff;padding:12px 20px;border-radius:5px;border:2px solid #fff;text-align:center;min-width:130px;">
+              <div style="font-size:11px;font-weight:bold;margin-bottom:4px;">Pengunjung Hari Ini</div>
+              <div style="font-size:24px;font-weight:bold;"><%= data.pengunjung_hari_ini || 0 %> Orang</div>
             </div>
           </div>
           <p style="font-size:11px;color:#888;margin-top:12px;">Tanggal tampil: <strong><%= data.tanggal %></strong></p>
