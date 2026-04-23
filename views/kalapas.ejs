@@ -834,7 +834,7 @@
                 <div class="stat-item">
                     <div class="stat-label">Pengunjung Hari Ini</div>
                     <div class="stat-value">
-                        25 Orang
+                        <%= pengunjungHariIni %> Orang
                     </div>
                 </div>
                 <div class="stat-item bebas">
@@ -850,6 +850,7 @@
             <a href="/kalapas">📊 Dashboard Kalapas</a>
             <a href="/">🏢 Krisna</a>
             <a href="/klinik">🏥 Klinik</a>
+            <a href="/kalapas/papan-isi">📋 Papan Isi</a>
             <a href="/kalapas/table/dapur">🍽️ Dapur</a>
             <a href="/kalapas/table/pengamanan" class="<%= !hasLuarTembokToday ? 'quick-nav-warning' : '' %>">🔒 Pengamanan
                 <% if (!hasLuarTembokToday) { %>
@@ -857,7 +858,12 @@
                     <span class="quick-nav-tooltip">WBP Luar Tembok Hari ini Kosong</span>
                 <% } %>
             </a>
-            <a href="/kalapas/table/kamtib">🛡️ Kamtib</a>
+            <a href="/kalapas/table/kamtib" class="<%= pengaduanDiterimaCount > 0 ? 'quick-nav-warning' : '' %>">🛡️ Kamtib
+                <% if (pengaduanDiterimaCount > 0) { %>
+                    <span class="quick-nav-alert" title="Ada pengaduan baru berstatus diterima">!</span>
+                    <span class="quick-nav-tooltip">Ada <%= pengaduanDiterimaCount %> pengaduan berstatus diterima</span>
+                <% } %>
+            </a>
             <a href="/kalapas/table/giiatja">🏭 GIIATJA</a>
             <a href="/kalapas/table/tu-umum">📑 Tata Usaha</a>
         </div>

@@ -1,0 +1,165 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Pengaduan Masyarakat</title>
+  <link rel="stylesheet" href="/css/style.css?v=<%= Date.now() %>">
+  <style>
+    .pengaduan-wrap { max-width: 980px; margin: 18px auto; padding: 0 12px; }
+    .pengaduan-card { background:#fff; border:1px solid #e2e8f0; border-radius:10px; margin-bottom:12px; overflow:hidden; }
+    .pengaduan-head { background:#1e3a8a; color:#fff; padding:10px 14px; font-weight:700; }
+    .pengaduan-body { padding:14px; }
+    .pengaduan-grid { display:grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap:10px; }
+    .pengaduan-group label { display:block; font-size:12px; color:#334155; margin-bottom:6px; font-weight:700; }
+    .pengaduan-group input, .pengaduan-group select, .pengaduan-group textarea {
+      width:100%; border:1px solid #cbd5e1; border-radius:8px; padding:9px 10px; font-size:13px; font-family:inherit;
+    }
+    .pengaduan-group textarea { min-height:100px; resize:vertical; }
+    .jenis-grid { display:grid; grid-template-columns:repeat(auto-fit, minmax(190px, 1fr)); gap:6px 14px; }
+    .jenis-item { display:flex; align-items:center; gap:8px; font-size:13px; color:#0f172a; }
+    .jenis-item input { width:auto; margin:0; }
+    .pengaduan-actions { margin-top:12px; display:flex; gap:8px; flex-wrap:wrap; }
+    .btn-main { border:0; border-radius:8px; padding:9px 12px; background:#2563eb; color:#fff; font-weight:700; cursor:pointer; text-decoration:none; display:inline-block; }
+    .btn-alt { border:0; border-radius:8px; padding:9px 12px; background:#64748b; color:#fff; font-weight:700; cursor:pointer; text-decoration:none; display:inline-block; }
+    .alert-ok { background:#ecfdf3; color:#065f46; border:1px solid #6ee7b7; border-radius:8px; padding:10px 12px; margin-bottom:10px; }
+    .alert-err { background:#fef2f2; color:#991b1b; border:1px solid #fca5a5; border-radius:8px; padding:10px 12px; margin-bottom:10px; }
+    .pengaduan-table-wrap { overflow:auto; }
+    .pengaduan-table { width:100%; border-collapse:collapse; min-width:760px; }
+    .pengaduan-table th, .pengaduan-table td { border:1px solid #dbe3ef; padding:8px; font-size:12px; vertical-align:top; }
+    .pengaduan-table th { background:#1e3a8a; color:#ffffff; text-align:left; }
+    .badge-status { display:inline-block; padding:3px 8px; border-radius:999px; background:#e2e8f0; color:#0f172a; font-size:11px; font-weight:700; }
+    .pengaduan-help { margin-top:6px; font-size:12px; color:#475569; line-height:1.45; }
+  </style>
+</head>
+<body class="page-umum">
+  <div class="pengaduan-wrap">
+    <% if (success) { %>
+      <div class="alert-ok">Pengaduan berhasil dikirim. No Pengaduan: <strong><%= noPengaduan || '-' %></strong></div>
+    <% } %>
+    <% if (error) { %>
+      <div class="alert-err"><%= error %></div>
+    <% } %>
+
+    <div class="pengaduan-card">
+      <div class="pengaduan-head">Form Pengaduan Masyarakat</div>
+      <div class="pengaduan-body">
+        <form id="pengaduan-form" method="POST" action="/pengaduan-masyarakat/add" enctype="multipart/form-data">
+          <div class="pengaduan-grid">
+            <div class="pengaduan-group">
+              <label>NIK</label>
+              <input type="text" name="nik" required maxlength="16" inputmode="numeric" placeholder="16 digit NIK">
+            </div>
+            <div class="pengaduan-group">
+              <label>Nama</label>
+              <input type="text" name="nama" required placeholder="Nama pelapor">
+            </div>
+            <div class="pengaduan-group">
+              <label>No Whatsapp</label>
+              <input type="text" name="no_whatsapp" required maxlength="15" inputmode="numeric" placeholder="Contoh: 081234567890">
+            </div>
+            <div class="pengaduan-group" style="grid-column:1 / -1;">
+              <label>Jenis Pengaduan</label>
+              <div class="jenis-grid">
+                <% ['Narkoba','Penyalahgunaan Wewenang','Diskriminasi','Pemerasan','Perselingkuhan','Penganiayaan','Penggunaan HP','Mal Administrasi','Pengeluaran Napi/Tahanan','Asusila','Lain-lain'].forEach((jenis, index) => { %>
+                  <label class="jenis-item">
+                    <input type="checkbox" name="jenis_pengaduan" value="<%= jenis %>">
+                    <span><%= jenis %></span>
+                  </label>
+                <% }) %>
+              </div>
+            </div>
+            <div class="pengaduan-group">
+              <label>Dokumentasi (opsional)</label>
+              <input type="file" name="dokumentasi" accept="image/*,application/pdf">
+              <div class="pengaduan-help">
+                Lampiran dokumentasi tidak wajib diisi. Jika melampirkan dokumen, file yang diperbolehkan adalah gambar/foto (JPG, JPEG, PNG, WEBP, dan sejenisnya) atau PDF dengan ukuran maksimal 8 MB.
+              </div>
+            </div>
+            <div class="pengaduan-group" style="grid-column:1 / -1;">
+              <label>Materi Pengaduan</label>
+              <textarea name="materi_pengaduan" required placeholder="Isi materi pengaduan..."></textarea>
+            </div>
+          </div>
+          <div class="pengaduan-actions">
+            <button type="submit" class="btn-main">Kirim Pengaduan</button>
+            <a href="/" class="btn-alt">Kembali</a>
+          </div>
+        </form>
+      </div>
+    </div>
+
+    <div class="pengaduan-card">
+      <div class="pengaduan-head">Cek Pengaduan Berdasarkan NIK</div>
+      <div class="pengaduan-body">
+        <form method="GET" action="/pengaduan-masyarakat" style="display:flex;gap:8px;flex-wrap:wrap;align-items:flex-end;">
+          <div class="pengaduan-group" style="min-width:260px; margin:0;">
+            <label>NIK</label>
+            <input type="text" name="nik" value="<%= nik || '' %>" maxlength="16" inputmode="numeric" placeholder="Masukkan NIK">
+          </div>
+          <button type="submit" class="btn-main">Cek Pengaduan</button>
+          <a href="/pengaduan-masyarakat" class="btn-alt">Reset</a>
+        </form>
+
+        <% if (nik) { %>
+          <div style="margin-top:12px; font-size:12px; color:#334155;">Hasil pencarian NIK: <strong><%= nik %></strong> (<%= pengaduanList.length %> data)</div>
+        <% } %>
+
+        <div class="pengaduan-table-wrap" style="margin-top:10px;">
+          <table class="pengaduan-table">
+            <thead>
+              <tr>
+                <th>No Pengaduan</th>
+                <th>Tanggal</th>
+                <th>No Whatsapp</th>
+                <th>Jenis Pengaduan</th>
+                <th>Materi Pengaduan</th>
+                <th>Status</th>
+                <th>Tindak Lanjut</th>
+              </tr>
+            </thead>
+            <tbody>
+              <% pengaduanList.forEach((item) => { %>
+                <tr>
+                  <td><%= item.noPengaduan || '-' %></td>
+                  <td><%= formatDateIndo(item.tanggalPengaduan || '-') %></td>
+                  <td><%= item.noWhatsapp || '-' %></td>
+                  <td><%= item.jenisPengaduan || '-' %></td>
+                  <td style="white-space:pre-line;"><%= item.materiPengaduan || '-' %></td>
+                  <td><span class="badge-status"><%= item.status || '-' %></span></td>
+                  <td style="white-space:pre-line;">
+                    <% if (String(item.status || '').toUpperCase() === 'DITOLAK') { %>
+                      <%= item.alasanPenolakan || 'Belum ada alasan' %>
+                    <% } else if ((String(item.status || '').toUpperCase() === 'DIPROSES' || String(item.status || '').toUpperCase() === 'SELESAI') && item.lampiranAdminPath) { %>
+                      <a href="<%= item.lampiranAdminPath %>" target="_blank" rel="noopener noreferrer">Lihat berkas</a>
+                    <% } else { %>
+                      -
+                    <% } %>
+                  </td>
+                </tr>
+              <% }) %>
+              <% if (!pengaduanList.length) { %>
+                <tr><td colspan="7" style="text-align:center;color:#64748b;">Belum ada data pengaduan untuk NIK ini.</td></tr>
+              <% } %>
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+  </div>
+  <script>
+    (function () {
+      const form = document.getElementById('pengaduan-form');
+      if (!form) return;
+
+      form.addEventListener('submit', function (event) {
+        const checked = form.querySelectorAll('input[name="jenis_pengaduan"]:checked').length;
+        if (checked > 0) return;
+
+        event.preventDefault();
+        alert('Pilih minimal satu Jenis Pengaduan.');
+      });
+    })();
+  </script>
+</body>
+</html>

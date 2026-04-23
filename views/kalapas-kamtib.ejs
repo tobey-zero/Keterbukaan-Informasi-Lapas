@@ -25,6 +25,47 @@
       font-weight: bold;
       cursor: pointer;
     }
+    .kamtib-toolbar a.with-alert {
+      position: relative;
+      padding-right: 28px;
+    }
+    .kamtib-toolbar-alert {
+      display: inline-flex;
+      width: 15px;
+      height: 15px;
+      align-items: center;
+      justify-content: center;
+      border-radius: 999px;
+      background: #ef4444;
+      color: #ffffff;
+      font-size: 10px;
+      font-weight: 800;
+      line-height: 1;
+      position: absolute;
+      right: 7px;
+      top: 6px;
+      box-shadow: 0 0 0 2px rgba(255, 255, 255, 0.25);
+    }
+    .kamtib-toolbar-tooltip {
+      position: absolute;
+      left: 50%;
+      top: calc(100% + 8px);
+      transform: translateX(-50%);
+      background: rgba(15, 23, 42, 0.95);
+      color: #f8fafc;
+      border-radius: 6px;
+      padding: 5px 8px;
+      font-size: 11px;
+      white-space: nowrap;
+      opacity: 0;
+      pointer-events: none;
+      transition: opacity .18s ease;
+      z-index: 20;
+    }
+    .kamtib-toolbar a.with-alert:hover .kamtib-toolbar-tooltip,
+    .kamtib-toolbar a.with-alert:focus-visible .kamtib-toolbar-tooltip {
+      opacity: 1;
+    }
     .kamtib-panel-filter {
       display: flex;
       gap: 6px;
@@ -196,6 +237,12 @@
     <div class="kamtib-toolbar">
       <a href="<%= backUrl %>">⬅ Kembali ke Kalapas</a>
       <a href="<%= piketHref %>">🧷 Piket Jaga</a>
+      <a href="<%= pengaduanHref %>" class="<%= pengaduanDiterimaCount > 0 ? 'with-alert' : '' %>">📢 Pengaduan
+        <% if (pengaduanDiterimaCount > 0) { %>
+          <span class="kamtib-toolbar-alert" title="Ada pengaduan baru berstatus diterima">!</span>
+          <span class="kamtib-toolbar-tooltip">Ada <%= pengaduanDiterimaCount %> pengaduan berstatus diterima</span>
+        <% } %>
+      </a>
     </div>
 
     <div class="kamtib-grid">

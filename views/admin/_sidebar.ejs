@@ -139,7 +139,7 @@
     </a>
     <% } %>
 
-    <% if (hasAny(['razia','pengawalan','register-f','strapsel','piket-jaga'])) { %>
+    <% if (hasAny(['razia','pengawalan','register-f','strapsel','piket-jaga','pengaduan'])) { %>
     <div class="nav-label">Role Kamtib</div>
     <% } %>
 
@@ -170,6 +170,12 @@
     <% if (allowed.includes('piket-jaga')) { %>
     <a href="/admin/piket-jaga" class="nav-item <%= active==='piket-jaga'?'active':'' %>">
       <span class="icon">🧷</span><span>Piket Jaga</span>
+    </a>
+    <% } %>
+
+    <% if (allowed.includes('pengaduan')) { %>
+    <a href="/admin/pengaduan" class="nav-item <%= active==='pengaduan'?'active':'' %>">
+      <span class="icon">📢</span><span>Pengaduan Masyarakat</span>
     </a>
     <% } %>
 
@@ -240,6 +246,12 @@
     <% if (allowed.includes('video')) { %>
     <a href="/admin/video" class="nav-item <%= typeof active !== 'undefined' && active==='video' ? 'active' : '' %>">
       <span class="icon">🎥</span><span>Video Dokumentasi</span>
+    </a>
+    <% } %>
+
+    <% if (allowed.includes('pengaduan')) { %>
+    <a href="/admin/pengaduan" class="nav-item <%= active==='pengaduan'?'active':'' %>">
+      <span class="icon">📢</span><span>Pengaduan Masyarakat</span>
     </a>
     <% } %>
 

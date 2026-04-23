@@ -1,0 +1,133 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+  <meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Pengaduan Masyarakat – Admin Lapas</title>
+  <link rel="stylesheet" href="/css/admin.css">
+</head>
+<body>
+<div class="admin-wrapper">
+  <%- include('_sidebar') %>
+  <div class="main-content">
+    <div class="topbar">
+      <div class="topbar-title"><h2>📢 Pengaduan Masyarakat</h2><p>Kelola data laporan pengaduan masyarakat</p></div>
+      <div class="topbar-actions"><a href="/pengaduan-masyarakat" target="_blank" class="btn-public">🌐 Buka Form Publik</a></div>
+    </div>
+
+    <div class="content-area">
+      <% if (success) { %><div class="alert alert-success">✅ Data pengaduan berhasil diperbarui.</div><% } %>
+      <% if (error) { %><div class="alert alert-danger">❌ <%= error %></div><% } %>
+
+      <div class="card">
+        <div class="card-header"><h3>Filter Pengaduan</h3></div>
+        <div class="card-body">
+          <form method="GET" action="/admin/pengaduan" style="display:flex;gap:8px;align-items:flex-end;flex-wrap:wrap;">
+            <div class="form-group" style="min-width:260px;margin:0;">
+              <label>Cari berdasarkan NIK</label>
+              <input type="text" name="nik" value="<%= nik || '' %>" placeholder="Masukkan NIK" maxlength="16">
+            </div>
+            <button type="submit" class="btn btn-primary btn-sm">🔎 Cek</button>
+            <a href="/admin/pengaduan" class="btn btn-secondary btn-sm">↺ Reset</a>
+          </form>
+        </div>
+      </div>
+
+      <div class="card">
+        <div class="card-header"><h3>Daftar Pengaduan (<%= list.length %> data)</h3></div>
+        <div class="card-body" style="padding:0;">
+          <div class="table-wrap">
+            <table class="admin-table">
+              <thead>
+                <tr>
+                  <th>No Pengaduan</th>
+                  <th>NIK</th>
+                  <th>Nama</th>
+                  <th>No Whatsapp</th>
+                  <th>Jenis Pengaduan</th>
+                  <th>Tanggal Pengaduan</th>
+                  <th>Materi Pengaduan</th>
+                  <th>Dokumentasi</th>
+                  <th>Status</th>
+                </tr>
+              </thead>
+              <tbody>
+                <% list.forEach((item) => { %>
+                <tr>
+                  <td><%= item.no_pengaduan || '-' %></td>
+                  <td><%= item.nik || '-' %></td>
+                  <td><%= item.nama || '-' %></td>
+                  <td><%= item.no_whatsapp || '-' %></td>
+                  <td><%= item.jenis_pengaduan || '-' %></td>
+                  <td><%= formatDateIndo(item.tanggal_pengaduan || '-') %></td>
+                  <td style="white-space:pre-line;"><%= item.materi_pengaduan || '-' %></td>
+                  <td>
+                    <% if (item.dokumentasi_path) { %>
+                      <a href="<%= item.dokumentasi_path %>" target="_blank" rel="noopener noreferrer" class="btn btn-secondary btn-xs">🔍 View</a>
+                    <% } else { %>
+                      -
+                    <% } %>
+                  </td>
+                  <td>
+                    <form method="POST" action="/admin/pengaduan/<%= item.id %>/status" class="pengaduan-status-form" enctype="multipart/form-data" style="display:flex;flex-direction:column;gap:6px;align-items:flex-start;">
+                      <input type="hidden" name="nik" value="<%= nik || '' %>">
+                      <select name="status" class="status-select" style="min-width:160px;">
+                        <% ['DITERIMA', 'DIPROSES', 'SELESAI', 'DITOLAK'].forEach((statusItem) => { %>
+                          <option value="<%= statusItem %>" <%= String(item.status || '').toUpperCase() === statusItem ? 'selected' : '' %>><%= statusItem %></option>
+                        <% }) %>
+                      </select>
+
+                      <div class="lampiran-admin-wrap" style="display:none;">
+                        <div style="font-size:11px;color:#475569;font-weight:600;margin-bottom:4px;">Lampiran Berkas Admin (gambar/PDF, max 8MB)</div>
+                        <% if (item.lampiran_admin_path) { %>
+                          <a href="<%= item.lampiran_admin_path %>" target="_blank" rel="noopener noreferrer" class="btn btn-secondary btn-xs" style="margin-bottom:4px;">🔍 View Lampiran</a>
+                        <% } %>
+                        <input type="file" name="lampiran_admin" accept="image/*,application/pdf">
+                      </div>
+
+                      <div class="alasan-wrap" style="display:none; width:100%;">
+                        <div style="font-size:11px;color:#475569;font-weight:600;margin-bottom:4px;">Alasan Penolakan</div>
+                        <textarea name="alasan_penolakan" class="alasan-input" rows="2" style="width:100%;min-width:220px;" placeholder="Tulis alasan penolakan..."><%= item.alasan_penolakan || '' %></textarea>
+                      </div>
+
+                      <button type="submit" class="btn btn-primary btn-xs">Simpan</button>
+                    </form>
+                  </td>
+                </tr>
+                <% }) %>
+                <% if (!list.length) { %>
+                  <tr><td colspan="9" style="text-align:center;color:#aaa;padding:20px;">Belum ada data pengaduan</td></tr>
+                <% } %>
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+<script>
+  (function () {
+    const forms = document.querySelectorAll('.pengaduan-status-form');
+    forms.forEach((form) => {
+      const select = form.querySelector('.status-select');
+      const lampiranWrap = form.querySelector('.lampiran-admin-wrap');
+      const alasanWrap = form.querySelector('.alasan-wrap');
+      const alasanInput = form.querySelector('.alasan-input');
+
+      const updateVisibility = () => {
+        const status = String(select.value || '').toUpperCase();
+        const showLampiran = status === 'DIPROSES' || status === 'SELESAI';
+        const showAlasan = status === 'DITOLAK';
+
+        lampiranWrap.style.display = showLampiran ? 'block' : 'none';
+        alasanWrap.style.display = showAlasan ? 'block' : 'none';
+        alasanInput.required = showAlasan;
+      };
+
+      select.addEventListener('change', updateVisibility);
+      updateVisibility();
+    });
+  })();
+</script>
+</body>
+</html>

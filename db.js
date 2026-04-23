@@ -221,6 +221,22 @@ db.exec(`
     created_at TEXT NOT NULL DEFAULT (datetime('now','localtime'))
   );
 
+  CREATE TABLE IF NOT EXISTS pengaduan_masyarakat (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    no_pengaduan TEXT NOT NULL DEFAULT '',
+    nik TEXT NOT NULL,
+    nama TEXT NOT NULL,
+    no_whatsapp TEXT NOT NULL DEFAULT '',
+    jenis_pengaduan TEXT NOT NULL,
+    materi_pengaduan TEXT NOT NULL,
+    dokumentasi_path TEXT,
+    status TEXT NOT NULL DEFAULT 'DITERIMA',
+    alasan_penolakan TEXT NOT NULL DEFAULT '',
+    lampiran_admin_path TEXT,
+    tanggal_pengaduan TEXT NOT NULL DEFAULT (date('now','localtime')),
+    created_at TEXT NOT NULL DEFAULT (datetime('now','localtime'))
+  );
+
   CREATE TABLE IF NOT EXISTS register_f (
     id INTEGER PRIMARY KEY AUTOINCREMENT,
     no_register TEXT NOT NULL,
@@ -616,6 +632,21 @@ const giiatjaPremiColumns = db.prepare("PRAGMA table_info('giiatja_premi_wbp')")
 const giiatjaPremiColumnNames = giiatjaPremiColumns.map(col => col.name);
 if (!giiatjaPremiColumnNames.includes('periode_bulan')) db.exec("ALTER TABLE giiatja_premi_wbp ADD COLUMN periode_bulan TEXT NOT NULL DEFAULT ''");
 if (!giiatjaPremiColumnNames.includes('periode_tahun')) db.exec("ALTER TABLE giiatja_premi_wbp ADD COLUMN periode_tahun TEXT NOT NULL DEFAULT ''");
+
+const pengaduanColumns = db.prepare("PRAGMA table_info('pengaduan_masyarakat')").all();
+const pengaduanColumnNames = pengaduanColumns.map(col => col.name);
+if (!pengaduanColumnNames.includes('no_pengaduan')) db.exec("ALTER TABLE pengaduan_masyarakat ADD COLUMN no_pengaduan TEXT NOT NULL DEFAULT ''");
+if (!pengaduanColumnNames.includes('nik')) db.exec("ALTER TABLE pengaduan_masyarakat ADD COLUMN nik TEXT NOT NULL DEFAULT ''");
+if (!pengaduanColumnNames.includes('nama')) db.exec("ALTER TABLE pengaduan_masyarakat ADD COLUMN nama TEXT NOT NULL DEFAULT ''");
+if (!pengaduanColumnNames.includes('no_whatsapp')) db.exec("ALTER TABLE pengaduan_masyarakat ADD COLUMN no_whatsapp TEXT NOT NULL DEFAULT ''");
+if (!pengaduanColumnNames.includes('jenis_pengaduan')) db.exec("ALTER TABLE pengaduan_masyarakat ADD COLUMN jenis_pengaduan TEXT NOT NULL DEFAULT ''");
+if (!pengaduanColumnNames.includes('materi_pengaduan')) db.exec("ALTER TABLE pengaduan_masyarakat ADD COLUMN materi_pengaduan TEXT NOT NULL DEFAULT ''");
+if (!pengaduanColumnNames.includes('dokumentasi_path')) db.exec('ALTER TABLE pengaduan_masyarakat ADD COLUMN dokumentasi_path TEXT');
+if (!pengaduanColumnNames.includes('status')) db.exec("ALTER TABLE pengaduan_masyarakat ADD COLUMN status TEXT NOT NULL DEFAULT 'DITERIMA'");
+if (!pengaduanColumnNames.includes('alasan_penolakan')) db.exec("ALTER TABLE pengaduan_masyarakat ADD COLUMN alasan_penolakan TEXT NOT NULL DEFAULT ''");
+if (!pengaduanColumnNames.includes('lampiran_admin_path')) db.exec('ALTER TABLE pengaduan_masyarakat ADD COLUMN lampiran_admin_path TEXT');
+if (!pengaduanColumnNames.includes('tanggal_pengaduan')) db.exec("ALTER TABLE pengaduan_masyarakat ADD COLUMN tanggal_pengaduan TEXT NOT NULL DEFAULT (date('now','localtime'))");
+if (!pengaduanColumnNames.includes('created_at')) db.exec("ALTER TABLE pengaduan_masyarakat ADD COLUMN created_at TEXT NOT NULL DEFAULT (datetime('now','localtime'))");
 
 const defaultGiiatjaPnbpYear = String(new Date().getFullYear());
 db.prepare(`

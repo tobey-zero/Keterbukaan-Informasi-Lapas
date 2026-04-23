@@ -8,6 +8,7 @@ const db = require('./db');
 
 const app = express();
 const PORT = 3000;
+const PENGADUAN_PORT = 3001;
 const DB_FILE_PATH = path.join(__dirname, 'data.db');
 
 function getPublicDataVersion() {
@@ -140,6 +141,32 @@ const raziaUpload = multer({
   }
 });
 
+const PENGADUAN_UPLOAD_DIR = path.join(__dirname, 'public', 'uploads', 'pengaduan');
+if (!fs.existsSync(PENGADUAN_UPLOAD_DIR)) {
+  fs.mkdirSync(PENGADUAN_UPLOAD_DIR, { recursive: true });
+}
+
+const pengaduanStorage = multer.diskStorage({
+  destination: (_req, _file, cb) => cb(null, PENGADUAN_UPLOAD_DIR),
+  filename: (_req, file, cb) => {
+    const safeBase = path.basename(file.originalname, path.extname(file.originalname))
+      .toLowerCase()
+      .replace(/[^a-z0-9]+/g, '-')
+      .replace(/(^-|-$)/g, '')
+      .slice(0, 40) || 'dokumen-pengaduan';
+    cb(null, `${Date.now()}-${safeBase}${path.extname(file.originalname).toLowerCase()}`);
+  }
+});
+
+const pengaduanUpload = multer({
+  storage: pengaduanStorage,
+  limits: { fileSize: 8 * 1024 * 1024 },
+  fileFilter: (_req, file, cb) => {
+    if (file.mimetype.startsWith('image/') || file.mimetype === 'application/pdf') return cb(null, true);
+    cb(new Error('File harus berupa gambar atau PDF.'));
+  }
+});
+
 function removeUploadedFile(photoPath) {
   if (!photoPath) return;
   const fullPath = path.join(__dirname, 'public', photoPath.replace(/^\/+/, ''));
@@ -151,6 +178,23 @@ function removeUploadedFile(photoPath) {
 function getAppSetting(settingKey, fallbackValue = '') {
   const row = db.prepare('SELECT value FROM app_settings WHERE key = ?').get(settingKey);
   return row?.value || fallbackValue;
+}
+
+function getPengaduanVisitorTodayCount() {
+  const visitorKey = `pengaduan_visitors_${getTodayYmd()}`;
+  const currentValue = Number.parseInt(String(getAppSetting(visitorKey, '0')), 10);
+  return Number.isFinite(currentValue) && currentValue > 0 ? currentValue : 0;
+}
+
+function incrementPengaduanVisitorTodayCount() {
+  const visitorKey = `pengaduan_visitors_${getTodayYmd()}`;
+  const nextValue = getPengaduanVisitorTodayCount() + 1;
+  db.prepare(`
+    INSERT INTO app_settings (key, value)
+    VALUES (?, ?)
+    ON CONFLICT(key) DO UPDATE SET value=excluded.value
+  `).run(visitorKey, String(nextValue));
+  return nextValue;
 }
 
 function getTodayYmd() {
@@ -676,6 +720,92 @@ function getPiketJagaData(filter = {}) {
   };
 }
 
+function getKamtibPengaduanData(filter = {}) {
+  const [defaultYear, defaultMonth] = getTodayYmd().split('-');
+  const selectedYear = /^\d{4}$/.test(String(filter.year || '')) ? String(filter.year) : defaultYear;
+  const selectedMonth = /^(0[1-9]|1[0-2])$/.test(String(filter.month || '')) ? String(filter.month) : defaultMonth;
+  const searchKeyword = String(filter.search || '').trim();
+
+  const normalizeSearchText = (value) => String(value || '')
+    .toLowerCase()
+    .replace(/[^a-z0-9\s]/g, ' ')
+    .replace(/\s+/g, ' ')
+    .trim();
+
+  const pengaduanRows = db.prepare(`
+    SELECT
+      no_pengaduan AS noPengaduan,
+      nik,
+      nama,
+      no_whatsapp AS noWhatsapp,
+      jenis_pengaduan AS jenisPengaduan,
+      materi_pengaduan AS materiPengaduan,
+      dokumentasi_path AS dokumentasiPath,
+      status,
+      alasan_penolakan AS alasanPenolakan,
+      lampiran_admin_path AS lampiranAdminPath,
+      tanggal_pengaduan AS tanggalPengaduan
+    FROM pengaduan_masyarakat
+    ORDER BY tanggal_pengaduan DESC, id DESC
+  `).all();
+
+  const statusPengecualian = new Set(['DITERIMA', 'DIPROSES', 'DITOLAK']);
+  const list = pengaduanRows.filter((item) => {
+    const status = String(item.status || '').trim().toUpperCase();
+    const tanggalYmd = normalizeDateToYmd(item.tanggalPengaduan);
+    const isSameMonth = Boolean(tanggalYmd)
+      && tanggalYmd.slice(0, 4) === selectedYear
+      && tanggalYmd.slice(5, 7) === selectedMonth;
+    const passMonthRule = isSameMonth || statusPengecualian.has(status);
+    if (!passMonthRule) return false;
+
+    if (!searchKeyword) return true;
+
+    const dateSlash = tanggalYmd
+      ? `${tanggalYmd.slice(8, 10)}/${tanggalYmd.slice(5, 7)}/${tanggalYmd.slice(0, 4)}`
+      : '';
+    const dateDash = tanggalYmd
+      ? `${tanggalYmd.slice(8, 10)}-${tanggalYmd.slice(5, 7)}-${tanggalYmd.slice(0, 4)}`
+      : '';
+    const searchBlob = normalizeSearchText([
+      item.noPengaduan,
+      item.nik,
+      item.nama,
+      item.noWhatsapp,
+      item.jenisPengaduan,
+      item.materiPengaduan,
+      item.status,
+      item.alasanPenolakan,
+      item.tanggalPengaduan,
+      tanggalYmd,
+      dateSlash,
+      dateDash,
+    ].join(' '));
+    return searchBlob.includes(normalizeSearchText(searchKeyword));
+  });
+
+  const monthOptions = getMonthOptions();
+  const yearRows = db.prepare(`
+    SELECT DISTINCT SUBSTR(COALESCE(tanggal_pengaduan, ''), 1, 4) AS year
+    FROM pengaduan_masyarakat
+    WHERE LENGTH(COALESCE(tanggal_pengaduan, '')) >= 7
+    ORDER BY year DESC
+  `).all();
+  const yearOptions = Array.from(new Set([
+    ...yearRows.map((item) => String(item.year || '')).filter((item) => /^\d{4}$/.test(item)),
+    defaultYear,
+  ])).sort((a, b) => Number(b) - Number(a));
+
+  return {
+    list,
+    selectedYear,
+    selectedMonth,
+    searchKeyword,
+    monthOptions,
+    yearOptions,
+  };
+}
+
 function syncPembinaanMasterByName(namaWbp, statusIntegrasi) {
   const normalizedName = (namaWbp || '').trim().toUpperCase();
   if (!normalizedName) return;
@@ -721,13 +851,13 @@ app.use((req, res, next) => {
 const ROLES = ['superadmin', 'registrasi', 'pembinaan', 'klinik', 'dapur', 'humas', 'kamtib', 'tata_usaha', 'pengamanan', 'giiatja'];
 
 const roleAccess = {
-  superadmin: ['dashboard', 'statistik', 'remisi', 'kata-bijak', 'menu', 'jadwal', 'pembinaan-detail', 'razia', 'pengawalan', 'register-f', 'strapsel', 'piket-jaga', 'tu-umum', 'kamar-blok', 'papan-isi', 'luar-tembok', 'giiatja', 'users', 'video', 'klinik-medis', 'klinik-berobat', 'klinik-oncall', 'klinik-kontrol', 'klinik-statistik'],
+  superadmin: ['dashboard', 'statistik', 'remisi', 'kata-bijak', 'menu', 'jadwal', 'pembinaan-detail', 'razia', 'pengawalan', 'register-f', 'strapsel', 'piket-jaga', 'tu-umum', 'kamar-blok', 'papan-isi', 'luar-tembok', 'giiatja', 'users', 'video', 'klinik-medis', 'klinik-berobat', 'klinik-oncall', 'klinik-kontrol', 'klinik-statistik', 'pengaduan'],
   registrasi: ['dashboard', 'statistik', 'remisi', 'papan-isi'],
   pembinaan: ['dashboard', 'jadwal', 'pembinaan-detail'],
   klinik: ['dashboard', 'klinik-medis', 'klinik-berobat', 'klinik-oncall', 'klinik-kontrol', 'klinik-statistik'],
   dapur: ['dashboard', 'menu'],
   humas: ['dashboard', 'video', 'kata-bijak'],
-  kamtib: ['dashboard',  'razia', 'pengawalan', 'register-f', 'strapsel', 'piket-jaga'],
+  kamtib: ['dashboard',  'razia', 'pengawalan', 'register-f', 'strapsel', 'piket-jaga', 'pengaduan'],
   tata_usaha: ['dashboard', 'tu-umum'],
   pengamanan: ['dashboard', 'kamar-blok', 'luar-tembok'],
   giiatja: ['dashboard', 'giiatja'],
@@ -1634,6 +1764,12 @@ function getKalapasData() {
   const hasLuarTembokToday = (board.luarTembokDetail || []).some((item) => {
     return normalizeDateToYmd(item.tanggal) === todayYmd;
   });
+  const pengaduanDiterimaCount = Number(db.prepare(`
+    SELECT COUNT(*) AS c
+    FROM pengaduan_masyarakat
+    WHERE UPPER(TRIM(status)) = 'DITERIMA'
+  `).get()?.c || 0);
+  const pengunjungHariIni = getPengaduanVisitorTodayCount();
 
   return {
     ...umum,
@@ -1670,6 +1806,8 @@ function getKalapasData() {
     wnaNegara: board.wnaNegara,
     boardSummary: board.boardSummary,
     hasLuarTembokToday,
+    pengaduanDiterimaCount,
+    pengunjungHariIni,
     okupansi,
   };
 }
@@ -1701,6 +1839,78 @@ app.get('/klinik', (req, res) => {
   const kataBijak = getAppSetting('kata_bijak_text', 'KRISNA adalah sistem Keterbukaan Informasi Warga Binaan di Lapas Kelas I Medan.');
   const tanggal = new Intl.DateTimeFormat('id-ID', { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' }).format(new Date());
   res.render('klinik', { ...getClinicData({ tanggal: getTodayYmd() }), kataBijak, tanggal, activePage: 'klinik' });
+});
+
+app.get('/pengaduan-masyarakat', (req, res) => {
+  const todayYmd = getTodayYmd();
+  if (req.session?.pengaduanVisitorDate !== todayYmd) {
+    incrementPengaduanVisitorTodayCount();
+    req.session.pengaduanVisitorDate = todayYmd;
+  }
+
+  const nik = String(req.query.nik || '').replace(/\D/g, '').slice(0, 16);
+  const pengaduanList = nik
+    ? db.prepare(`
+      SELECT no_pengaduan AS noPengaduan, nik, nama, no_whatsapp AS noWhatsapp, jenis_pengaduan AS jenisPengaduan, tanggal_pengaduan AS tanggalPengaduan, materi_pengaduan AS materiPengaduan, dokumentasi_path AS dokumentasiPath, status, alasan_penolakan AS alasanPenolakan, lampiran_admin_path AS lampiranAdminPath
+      FROM pengaduan_masyarakat
+      WHERE nik = ?
+      ORDER BY id DESC
+    `).all(nik)
+    : [];
+
+  res.render('pengaduan', {
+    activePage: 'pengaduan',
+    nik,
+    pengaduanList,
+    success: req.query.success,
+    error: req.query.error,
+    noPengaduan: req.query.no_pengaduan || '',
+  });
+});
+
+app.post('/pengaduan-masyarakat/add', pengaduanUpload.single('dokumentasi'), (req, res) => {
+  const nik = String(req.body.nik || '').replace(/\D/g, '').slice(0, 16);
+  const nama = String(req.body.nama || '').trim().toUpperCase();
+  const noWhatsapp = String(req.body.no_whatsapp || '').replace(/\D/g, '').slice(0, 15);
+  const allowedJenisPengaduan = [
+    'NARKOBA',
+    'PENYALAHGUNAAN WEWENANG',
+    'DISKRIMINASI',
+    'PEMERASAN',
+    'PERSELINGKUHAN',
+    'PENGANIAYAAN',
+    'PENGGUNAAN HP',
+    'MAL ADMINISTRASI',
+    'PENGELUARAN NAPI/TAHANAN',
+    'ASUSILA',
+    'LAIN-LAIN',
+  ];
+  const jenisRaw = Array.isArray(req.body.jenis_pengaduan)
+    ? req.body.jenis_pengaduan
+    : [req.body.jenis_pengaduan];
+  const jenisList = jenisRaw
+    .map((item) => String(item || '').trim().toUpperCase())
+    .filter(Boolean)
+    .filter((item) => allowedJenisPengaduan.includes(item));
+  const jenisPengaduan = Array.from(new Set(jenisList)).join(', ');
+  const materiPengaduan = String(req.body.materi_pengaduan || '').trim();
+  if (nik.length !== 16 || !nama || noWhatsapp.length < 10 || !jenisPengaduan || !materiPengaduan) {
+    return res.redirect('/pengaduan-masyarakat?error=Data+pengaduan+belum+lengkap+(NIK+16+digit+dan+No+Whatsapp+valid)');
+  }
+
+  const dokumentasiPath = req.file ? `/uploads/pengaduan/${req.file.filename}` : null;
+  const tanggalPengaduan = getTodayYmd();
+  const result = db.prepare(`
+    INSERT INTO pengaduan_masyarakat
+      (nik, nama, no_whatsapp, jenis_pengaduan, materi_pengaduan, dokumentasi_path, status, tanggal_pengaduan)
+    VALUES (?, ?, ?, ?, ?, ?, 'DITERIMA', ?)
+  `).run(nik, nama, noWhatsapp, jenisPengaduan, materiPengaduan, dokumentasiPath, tanggalPengaduan);
+
+  const insertedId = Number(result.lastInsertRowid || 0);
+  const noPengaduan = `PGD-${tanggalPengaduan.replace(/-/g, '')}-${String(insertedId).padStart(4, '0')}`;
+  db.prepare('UPDATE pengaduan_masyarakat SET no_pengaduan=? WHERE id=?').run(noPengaduan, insertedId);
+
+  return res.redirect(`/pengaduan-masyarakat?success=1&no_pengaduan=${encodeURIComponent(noPengaduan)}`);
 });
 
 app.get('/kalapas', (req, res) => {
@@ -2070,10 +2280,16 @@ app.get('/kalapas/table/kamtib', (req, res) => {
   const selectedYear = /^\d{4}$/.test(String(req.query.year || '')) ? String(req.query.year) : defaultYear;
   const selectedMonth = /^(0[1-9]|1[0-2])$/.test(String(req.query.month || '')) ? String(req.query.month) : defaultMonth;
   const pengawalan = getPengawalanData({ month: selectedMonth, year: selectedYear });
+  const pengaduanDiterimaCount = Number(db.prepare(`
+    SELECT COUNT(*) AS c
+    FROM pengaduan_masyarakat
+    WHERE UPPER(TRIM(status)) = 'DITERIMA'
+  `).get()?.c || 0);
 
   const monthOptions = getMonthOptions();
   const activeMonthLabel = monthOptions.find(item => item.value === selectedMonth)?.label || '-';
   const piketJaga = getPiketJagaData({ year: selectedYear, month: selectedMonth });
+  const yearOptions = pengawalan.years.length ? pengawalan.years : [defaultYear];
 
   res.render('kalapas-kamtib', {
     pageTitle: 'Kamtib',
@@ -2086,10 +2302,12 @@ app.get('/kalapas/table/kamtib', (req, res) => {
     strapselSearch,
     registerFSearch,
     monthOptions,
-    yearOptions: pengawalan.years.length ? pengawalan.years : [defaultYear],
+    yearOptions,
     strapselList: strapselSecurity.strapselList,
     registerFList: registerFSecurity.registerFList,
+    pengaduanDiterimaCount,
     piketHref: `/kalapas/table/piket-jaga?month=${selectedMonth}&year=${selectedYear}`,
+    pengaduanHref: `/kalapas/table/pengaduan?month=${selectedMonth}&year=${selectedYear}`,
     backUrl: '/kalapas'
   });
 });
@@ -2103,6 +2321,22 @@ app.get('/kalapas/table/piket-jaga', (req, res) => {
     subtitle: `${activeMonthLabel} ${piket.selectedYear}`,
     backUrl: '/kalapas/table/kamtib',
     ...piket,
+  });
+});
+
+app.get('/kalapas/table/pengaduan', (req, res) => {
+  const data = getKamtibPengaduanData({
+    month: req.query.month,
+    year: req.query.year,
+    search: req.query.search,
+  });
+  const activeMonthLabel = data.monthOptions.find(item => item.value === data.selectedMonth)?.label || '-';
+
+  res.render('kalapas-pengaduan', {
+    pageTitle: 'Pengaduan Kamtib',
+    subtitle: `${activeMonthLabel} ${data.selectedYear} | Total data: ${data.list.length}`,
+    backUrl: '/kalapas/table/kamtib',
+    ...data,
   });
 });
 
@@ -2526,9 +2760,90 @@ app.get('/admin/dashboard', requireAccess('dashboard'), (req, res) => {
     kamarBlok: db.prepare('SELECT COUNT(*) AS c FROM housing_blocks').get().c,
     papanIsi: db.prepare('SELECT COUNT(*) AS c FROM board_pidana').get().c + db.prepare('SELECT COUNT(*) AS c FROM board_luar_tembok').get().c + db.prepare('SELECT COUNT(*) AS c FROM board_agama').get().c,
     users: db.prepare('SELECT COUNT(*) AS c FROM users').get().c,
+    pengaduan: db.prepare('SELECT COUNT(*) AS c FROM pengaduan_masyarakat').get().c,
   };
   const allowed = roleAccess[req.session.user.role] || [];
   res.render('admin/dashboard', { user: req.session.user, stats, active: 'dashboard', allowed });
+});
+
+app.get('/admin/pengaduan', requireAccess('pengaduan'), (req, res) => {
+  const nik = String(req.query.nik || '').replace(/\D/g, '').slice(0, 16);
+  const list = nik
+    ? db.prepare(`
+      SELECT *
+      FROM pengaduan_masyarakat
+      WHERE nik = ?
+      ORDER BY id DESC
+    `).all(nik)
+    : db.prepare('SELECT * FROM pengaduan_masyarakat ORDER BY id DESC').all();
+
+  res.render('admin/pengaduan', {
+    user: req.session.user,
+    list,
+    nik,
+    active: 'pengaduan',
+    success: req.query.success,
+    error: req.query.error,
+  });
+});
+
+app.post('/admin/pengaduan/:id/status', requireAccess('pengaduan'), pengaduanUpload.single('lampiran_admin'), (req, res) => {
+  const id = Number(req.params.id);
+  const nik = String(req.body.nik || '').replace(/\D/g, '').slice(0, 16);
+  const statusRaw = String(req.body.status || '').trim().toUpperCase();
+  const alasanPenolakan = String(req.body.alasan_penolakan || '').trim();
+  const allowedStatus = ['DITERIMA', 'DIPROSES', 'SELESAI', 'DITOLAK'];
+  const status = allowedStatus.includes(statusRaw) ? statusRaw : 'DITERIMA';
+  const uploadedLampiranPath = req.file ? `/uploads/pengaduan/${req.file.filename}` : null;
+
+  const existing = db.prepare(`
+    SELECT lampiran_admin_path AS lampiranAdminPath
+    FROM pengaduan_masyarakat
+    WHERE id=?
+    LIMIT 1
+  `).get(id);
+
+  if (!existing) {
+    if (uploadedLampiranPath) removeUploadedFile(uploadedLampiranPath);
+    const queryMissing = new URLSearchParams({ error: 'Data+pengaduan+tidak+ditemukan' });
+    if (nik) queryMissing.set('nik', nik);
+    return res.redirect(`/admin/pengaduan?${queryMissing.toString()}`);
+  }
+
+  const existingLampiranPath = existing.lampiranAdminPath || null;
+  const lampiranCandidatePath = uploadedLampiranPath || existingLampiranPath;
+
+  if (status === 'DITOLAK' && !alasanPenolakan) {
+    if (uploadedLampiranPath) removeUploadedFile(uploadedLampiranPath);
+    const queryRejected = new URLSearchParams({ error: 'Alasan+penolakan+wajib+diisi+saat+status+DITOLAK' });
+    if (nik) queryRejected.set('nik', nik);
+    return res.redirect(`/admin/pengaduan?${queryRejected.toString()}`);
+  }
+
+  if ((status === 'DIPROSES' || status === 'SELESAI') && !lampiranCandidatePath) {
+    if (uploadedLampiranPath) removeUploadedFile(uploadedLampiranPath);
+    const queryLampiran = new URLSearchParams({ error: 'Lampiran+berkas+admin+wajib+diisi+saat+status+DIPROSES+atau+SELESAI' });
+    if (nik) queryLampiran.set('nik', nik);
+    return res.redirect(`/admin/pengaduan?${queryLampiran.toString()}`);
+  }
+
+  let finalAlasanPenolakan = '';
+  let finalLampiranAdminPath = lampiranCandidatePath;
+
+  if (status === 'DITOLAK') {
+    finalAlasanPenolakan = alasanPenolakan;
+    finalLampiranAdminPath = null;
+    if (uploadedLampiranPath) removeUploadedFile(uploadedLampiranPath);
+    if (existingLampiranPath) removeUploadedFile(existingLampiranPath);
+  } else if (uploadedLampiranPath && existingLampiranPath && uploadedLampiranPath !== existingLampiranPath) {
+    removeUploadedFile(existingLampiranPath);
+  }
+
+  db.prepare('UPDATE pengaduan_masyarakat SET status=?, alasan_penolakan=?, lampiran_admin_path=? WHERE id=?')
+    .run(status, finalAlasanPenolakan, finalLampiranAdminPath, id);
+  const query = new URLSearchParams({ success: '1' });
+  if (nik) query.set('nik', nik);
+  return res.redirect(`/admin/pengaduan?${query.toString()}`);
 });
 
 // ── Statistik ────────────────────────────────────────────────────
@@ -5021,6 +5336,26 @@ app.use((err, req, res, next) => {
     return res.redirect('/admin/strapsel?error=Gagal+upload+foto');
   }
 
+  if (req.path.startsWith('/pengaduan-masyarakat')) {
+    if (err instanceof multer.MulterError && err.code === 'LIMIT_FILE_SIZE') {
+      return res.redirect('/pengaduan-masyarakat?error=Ukuran+dokumentasi+maksimal+8MB');
+    }
+    if (err.message && err.message.includes('File harus berupa gambar atau PDF')) {
+      return res.redirect('/pengaduan-masyarakat?error=Dokumentasi+harus+berupa+gambar+atau+PDF');
+    }
+    return res.redirect('/pengaduan-masyarakat?error=Gagal+upload+dokumentasi');
+  }
+
+  if (req.path.startsWith('/admin/pengaduan')) {
+    if (err instanceof multer.MulterError && err.code === 'LIMIT_FILE_SIZE') {
+      return res.redirect('/admin/pengaduan?error=Ukuran+dokumentasi+maksimal+8MB');
+    }
+    if (err.message && err.message.includes('File harus berupa gambar atau PDF')) {
+      return res.redirect('/admin/pengaduan?error=Dokumentasi+harus+berupa+gambar+atau+PDF');
+    }
+    return res.redirect('/admin/pengaduan?error=Gagal+proses+data+pengaduan');
+  }
+
   return next(err);
 });
 
@@ -5029,4 +5364,20 @@ app.listen(PORT, () => {
   console.log(`✅ Server berjalan di http://localhost:${PORT}`);
   console.log(`🔐 Admin panel  : http://localhost:${PORT}/admin/login`);
   console.log(`   Default login: admin / admin123`);
+});
+
+const pengaduanOnlyApp = express();
+pengaduanOnlyApp.use(express.static(path.join(__dirname, 'public')));
+pengaduanOnlyApp.use((req, res, next) => {
+  if (req.path === '/' || req.path === '') {
+    return res.redirect('/pengaduan-masyarakat');
+  }
+  if (req.path.startsWith('/pengaduan-masyarakat')) {
+    return app(req, res, next);
+  }
+  return res.status(404).send('Halaman tidak tersedia pada port pengaduan.');
+});
+
+pengaduanOnlyApp.listen(PENGADUAN_PORT, () => {
+  console.log(`📢 Port pengaduan aktif di http://localhost:${PENGADUAN_PORT}/pengaduan-masyarakat`);
 });
