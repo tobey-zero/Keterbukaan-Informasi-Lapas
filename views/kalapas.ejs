@@ -850,21 +850,36 @@
             <a href="/kalapas">📊 Dashboard Kalapas</a>
             <a href="/">🏢 Krisna</a>
             <a href="/klinik">🏥 Klinik</a>
-            <a href="/kalapas/papan-isi">📋 Papan Isi</a>
-            <a href="/kalapas/table/dapur">🍽️ Dapur</a>
+            <a href="/kalapas/papan-isi" class="<%= !hasPapanIsiTodayUpdate ? 'quick-nav-warning' : '' %>">📋 Papan Isi
+                <% if (!hasPapanIsiTodayUpdate) { %>
+                    <span class="quick-nav-alert" title="Papan isi belum ada update hari ini">!</span>
+                    <span class="quick-nav-tooltip">Papan Isi belum ada update hari ini</span>
+                <% } %>
+            </a>
+            <a href="/kalapas/table/dapur" class="<%= !hasDapurTodayUpdate ? 'quick-nav-warning' : '' %>">🍽️ Dapur
+                <% if (!hasDapurTodayUpdate) { %>
+                    <span class="quick-nav-alert" title="Menu dapur hari ini belum diupdate">!</span>
+                    <span class="quick-nav-tooltip">Menu dapur hari ini belum diupdate</span>
+                <% } %>
+            </a>
             <a href="/kalapas/table/pengamanan" class="<%= !hasLuarTembokToday ? 'quick-nav-warning' : '' %>">🔒 Pengamanan
                 <% if (!hasLuarTembokToday) { %>
                     <span class="quick-nav-alert" title="WBP Luar Tembok Hari ini Kosong">!</span>
                     <span class="quick-nav-tooltip">WBP Luar Tembok Hari ini Kosong</span>
                 <% } %>
             </a>
-            <a href="/kalapas/table/kamtib" class="<%= pengaduanDiterimaCount > 0 ? 'quick-nav-warning' : '' %>">🛡️ Kamtib
-                <% if (pengaduanDiterimaCount > 0) { %>
-                    <span class="quick-nav-alert" title="Ada pengaduan baru berstatus diterima">!</span>
-                    <span class="quick-nav-tooltip">Ada <%= pengaduanDiterimaCount %> pengaduan berstatus diterima</span>
+            <a href="/kalapas/table/kamtib" class="<%= (!hasKamtibMonthlyPengawalanUpdate || pengaduanDiterimaCount > 0) ? 'quick-nav-warning' : '' %>">🛡️ Kamtib
+                <% if (!hasKamtibMonthlyPengawalanUpdate || pengaduanDiterimaCount > 0) { %>
+                    <span class="quick-nav-alert" title="Notifikasi Kamtib">!</span>
+                    <span class="quick-nav-tooltip"><%= !hasKamtibMonthlyPengawalanUpdate ? 'Bulan ini belum ada update Giat Pengawalan' : (`Ada ${pengaduanDiterimaCount} pengaduan berstatus diterima`) %></span>
                 <% } %>
             </a>
-            <a href="/kalapas/table/giiatja">🏭 GIIATJA</a>
+            <a href="/kalapas/table/giiatja" class="<%= !hasGiiatjaMonthlyUpdate ? 'quick-nav-warning' : '' %>">🏭 GIIATJA
+                <% if (!hasGiiatjaMonthlyUpdate) { %>
+                    <span class="quick-nav-alert" title="Bulan ini GIIATJA belum ada update">!</span>
+                    <span class="quick-nav-tooltip">Bulan ini GIIATJA belum ada update</span>
+                <% } %>
+            </a>
             <a href="/kalapas/table/tu-umum">📑 Tata Usaha</a>
         </div>
     </header>

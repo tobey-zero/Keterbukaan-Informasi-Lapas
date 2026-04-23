@@ -1732,6 +1732,12 @@ function getBoardData() {
 
 function getKalapasData() {
   const todayYmd = getTodayYmd();
+  const currentYear = todayYmd.slice(0, 4);
+  const currentMonth = todayYmd.slice(5, 7);
+  const currentMonthLabel = new Intl.DateTimeFormat('id-ID', {
+    timeZone: 'Asia/Jakarta',
+    month: 'long'
+  }).format(new Date(`${todayYmd}T00:00:00`)).toUpperCase();
   const umum = getPublicData();
   const klinik = getClinicData({ tanggal: todayYmd });
   const razia = getRaziaData();
@@ -1748,6 +1754,40 @@ function getKalapasData() {
   const hasLuarTembokToday = (board.luarTembokDetail || []).some((item) => {
     return normalizeDateToYmd(item.tanggal) === todayYmd;
   });
+  const hasPapanIsiTodayUpdate = hasLuarTembokToday;
+  const hasDapurTodayUpdate = Number(db.prepare(`
+    SELECT COUNT(*) AS c
+    FROM menu_harian_set
+    WHERE tanggal = ?
+  `).get(todayYmd)?.c || 0) > 0;
+  const hasKamtibMonthlyPengawalanUpdate = Number(db.prepare(`
+    SELECT COUNT(*) AS c
+    FROM giat_pengawalan
+    WHERE substr(tanggal, 1, 4) = ?
+      AND substr(tanggal, 6, 2) = ?
+  `).get(currentYear, currentMonth)?.c || 0) > 0;
+
+  const hasGiiatjaPelatihanThisMonth = db.prepare(`
+    SELECT tanggal_pelaksanaan AS tanggalPelaksanaan
+    FROM giiatja_pelatihan_sertifikat
+  `).all().some((item) => {
+    const normalized = normalizeDateToYmd(item.tanggalPelaksanaan);
+    return Boolean(normalized && normalized.startsWith(`${currentYear}-${currentMonth}`));
+  });
+  const hasGiiatjaPnbpThisMonth = Number(db.prepare(`
+    SELECT COUNT(*) AS c
+    FROM giiatja_pnbp
+    WHERE TRIM(tahun) = ?
+      AND UPPER(TRIM(periode_pnbp)) = ?
+  `).get(currentYear, currentMonthLabel)?.c || 0) > 0;
+  const hasGiiatjaPremiThisMonth = Number(db.prepare(`
+    SELECT COUNT(*) AS c
+    FROM giiatja_premi_wbp
+    WHERE TRIM(periode_tahun) = ?
+      AND UPPER(TRIM(periode_bulan)) = ?
+  `).get(currentYear, currentMonthLabel)?.c || 0) > 0;
+  const hasGiiatjaMonthlyUpdate = hasGiiatjaPelatihanThisMonth || hasGiiatjaPnbpThisMonth || hasGiiatjaPremiThisMonth;
+
   const pengaduanDiterimaCount = Number(db.prepare(`
     SELECT COUNT(*) AS c
     FROM pengaduan_masyarakat
@@ -1789,6 +1829,10 @@ function getKalapasData() {
     wnaNegara: board.wnaNegara,
     boardSummary: board.boardSummary,
     hasLuarTembokToday,
+    hasPapanIsiTodayUpdate,
+    hasDapurTodayUpdate,
+    hasKamtibMonthlyPengawalanUpdate,
+    hasGiiatjaMonthlyUpdate,
     pengaduanDiterimaCount,
     okupansi,
   };
