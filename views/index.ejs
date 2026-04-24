@@ -267,9 +267,7 @@
                                         <td><%= item.waktu %></td>
                                         <td><%= item.kegiatan %></td>
                                         <td><%= item.lokasi %></td>
-                                        <% if (item.showPenanggungJawab) { %>
-                                            <td rowspan="<%= item.penanggungJawabRowspan %>"><%= item.penanggungJawab %></td>
-                                        <% } %>
+                                        <td><%= item.penanggungJawab %></td>
                                     </tr>
                                 <% }) %>
                                 <% if (!jadwalKegiatan.length) { %>

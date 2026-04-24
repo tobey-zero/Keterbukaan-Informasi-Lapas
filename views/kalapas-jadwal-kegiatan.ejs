@@ -160,9 +160,7 @@
                   <td><%= row.waktu %></td>
                   <td><%= row.kegiatan %></td>
                   <td><%= row.lokasi %></td>
-                  <% if (row.showPenanggungJawab) { %>
-                    <td rowspan="<%= row.penanggungJawabRowspan %>"><%= row.penanggungJawab %></td>
-                  <% } %>
+                  <td><%= row.penanggungJawab %></td>
                 </tr>
               <% }) %>
               <% if (!rows.length) { %>
