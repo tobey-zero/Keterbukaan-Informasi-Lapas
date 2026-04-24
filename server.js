@@ -4,6 +4,7 @@ const bcrypt = require('bcryptjs');
 const path = require('path');
 const fs = require('fs');
 const multer = require('multer');
+const XLSX = require('xlsx');
 const db = require('./db');
 
 const app = express();
@@ -167,6 +168,19 @@ const pengaduanUpload = multer({
   }
 });
 
+const remisiExcelUpload = multer({
+  storage: multer.memoryStorage(),
+  limits: { fileSize: 3 * 1024 * 1024 },
+  fileFilter: (_req, file, cb) => {
+    const name = String(file.originalname || '').toLowerCase();
+    const mime = String(file.mimetype || '').toLowerCase();
+    const isExcelName = name.endsWith('.xlsx') || name.endsWith('.xls');
+    const isExcelMime = mime.includes('spreadsheetml') || mime.includes('excel') || mime === 'application/octet-stream';
+    if (isExcelName || isExcelMime) return cb(null, true);
+    cb(new Error('File harus berupa Excel (.xlsx atau .xls).'));
+  }
+});
+
 function removeUploadedFile(photoPath) {
   if (!photoPath) return;
   const fullPath = path.join(__dirname, 'public', photoPath.replace(/^\/+/, ''));
@@ -186,6 +200,72 @@ function setAppSetting(settingKey, settingValue) {
     VALUES (?, ?)
     ON CONFLICT(key) DO UPDATE SET value=excluded.value
   `).run(settingKey, String(settingValue ?? ''));
+}
+
+function getActiveRemisiBatch() {
+  const activeBatchIdFromSetting = Number(getAppSetting('remisi_active_batch_id', '0')) || 0;
+  let batch = null;
+
+  if (activeBatchIdFromSetting > 0) {
+    batch = db.prepare(`
+      SELECT id, label, periode_bulan AS periodeBulan, periode_tahun AS periodeTahun,
+        notes, source_type AS sourceType, is_active AS isActive, created_at AS createdAt
+      FROM remisi_batches
+      WHERE id = ?
+      LIMIT 1
+    `).get(activeBatchIdFromSetting);
+  }
+
+  if (!batch) {
+    batch = db.prepare(`
+      SELECT id, label, periode_bulan AS periodeBulan, periode_tahun AS periodeTahun,
+        notes, source_type AS sourceType, is_active AS isActive, created_at AS createdAt
+      FROM remisi_batches
+      WHERE is_active = 1
+      ORDER BY id DESC
+      LIMIT 1
+    `).get();
+  }
+
+  if (!batch) {
+    batch = db.prepare(`
+      SELECT id, label, periode_bulan AS periodeBulan, periode_tahun AS periodeTahun,
+        notes, source_type AS sourceType, is_active AS isActive, created_at AS createdAt
+      FROM remisi_batches
+      ORDER BY id DESC
+      LIMIT 1
+    `).get();
+  }
+
+  return batch || null;
+}
+
+function setActiveRemisiBatch(batchId) {
+  const normalizedBatchId = Number(batchId) || 0;
+  if (!normalizedBatchId) return false;
+  const exists = db.prepare('SELECT id FROM remisi_batches WHERE id = ?').get(normalizedBatchId);
+  if (!exists) return false;
+
+  db.exec('BEGIN');
+  try {
+    db.prepare('UPDATE remisi_batches SET is_active = 0').run();
+    db.prepare('UPDATE remisi_batches SET is_active = 1 WHERE id = ?').run(normalizedBatchId);
+    setAppSetting('remisi_active_batch_id', String(normalizedBatchId));
+    db.exec('COMMIT');
+    return true;
+  } catch (err) {
+    db.exec('ROLLBACK');
+    throw err;
+  }
+}
+
+function normalizeExcelHeaderKey(value) {
+  return String(value || '')
+    .toLowerCase()
+    .normalize('NFD')
+    .replace(/[\u0300-\u036f]/g, '')
+    .replace(/[^a-z0-9]+/g, '')
+    .trim();
 }
 
 function getTodayYmd() {
@@ -919,9 +999,16 @@ function getPublicData() {
     year: 'numeric'
   }).format(new Date());
 
+  const activeRemisiBatch = getActiveRemisiBatch();
+
   const besaranRemisi = db
-    .prepare('SELECT jenis, nama, besaran, remisi_total AS remisiTotal FROM besaran_remisi ORDER BY nama COLLATE NOCASE ASC')
-    .all();
+    .prepare(`
+      SELECT jenis, nama, besaran, remisi_total AS remisiTotal
+      FROM besaran_remisi
+      WHERE (? = 0 OR batch_id = ?)
+      ORDER BY nama COLLATE NOCASE ASC
+    `)
+    .all(Number(activeRemisiBatch?.id || 0), Number(activeRemisiBatch?.id || 0));
 
   const menuMakan = db
     .prepare(`SELECT
@@ -3229,17 +3316,60 @@ app.post('/admin/statistik/update', requireAccess('statistik'), (req, res) => {
 
 // ── Besaran Remisi ────────────────────────────────────────────────
 app.get('/admin/remisi', requireAccess('remisi'), (req, res) => {
-  const list = db.prepare('SELECT * FROM besaran_remisi ORDER BY id').all();
-  const edit = req.query.edit ? db.prepare('SELECT * FROM besaran_remisi WHERE id=?').get(Number(req.query.edit)) : null;
   const remisiTitle = getAppSetting('remisi_title', 'BESARAN REMISI');
+  const activeBatch = getActiveRemisiBatch();
+  const batches = db.prepare(`
+    SELECT
+      b.id,
+      b.label,
+      b.periode_bulan AS periodeBulan,
+      b.periode_tahun AS periodeTahun,
+      b.notes,
+      b.source_type AS sourceType,
+      b.is_active AS isActive,
+      b.created_at AS createdAt,
+      COUNT(r.id) AS totalData
+    FROM remisi_batches b
+    LEFT JOIN besaran_remisi r ON r.batch_id = b.id
+    GROUP BY b.id, b.label, b.periode_bulan, b.periode_tahun, b.notes, b.source_type, b.is_active, b.created_at
+    ORDER BY b.created_at DESC, b.id DESC
+  `).all();
+
+  const selectedBatchIdParam = Number(req.query.batch || 0);
+  const selectedBatchId = selectedBatchIdParam > 0
+    ? selectedBatchIdParam
+    : Number(activeBatch?.id || batches[0]?.id || 0);
+
+  const list = db.prepare(`
+    SELECT *
+    FROM besaran_remisi
+    WHERE (? = 0 OR batch_id = ?)
+    ORDER BY id ASC
+  `).all(selectedBatchId, selectedBatchId);
+
+  const editId = Number(req.query.edit || 0);
+  const edit = editId
+    ? db.prepare('SELECT * FROM besaran_remisi WHERE id = ?').get(editId)
+    : null;
+
+  const selectedBatch = batches.find((item) => Number(item.id) === Number(selectedBatchId)) || null;
+
   res.render('admin/remisi', {
     user: req.session.user,
     list,
     edit,
     remisiTitle,
+    batches,
+    selectedBatch,
+    selectedBatchId,
+    activeBatchId: Number(activeBatch?.id || 0),
     active: 'remisi',
     success: req.query.success,
-    titleSuccess: req.query.titleSuccess
+    titleSuccess: req.query.titleSuccess,
+    batchSuccess: req.query.batchSuccess,
+    batchDeleteSuccess: req.query.batchDeleteSuccess,
+    importSuccess: req.query.importSuccess,
+    error: req.query.error,
   });
 });
 
@@ -3253,25 +3383,195 @@ app.post('/admin/remisi/title/update', requireAccess('remisi'), (req, res) => {
   res.redirect('/admin/remisi?titleSuccess=1');
 });
 
+app.get('/admin/remisi/template.xlsx', requireAccess('remisi'), (_req, res) => {
+  const worksheet = XLSX.utils.aoa_to_sheet([
+    ['KETERANGAN', 'NAMA WBP', 'BESARAN REMISI', 'REMISI TOTAL'],
+    ['REMISI UMUM', 'NAMA WBP CONTOH', '4 BULAN', '12 BULAN'],
+  ]);
+  const workbook = XLSX.utils.book_new();
+  XLSX.utils.book_append_sheet(workbook, worksheet, 'Template Remisi');
+  const fileBuffer = XLSX.write(workbook, { bookType: 'xlsx', type: 'buffer' });
+
+  res.setHeader('Content-Disposition', 'attachment; filename="template-remisi.xlsx"');
+  res.setHeader('Content-Type', 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet');
+  return res.send(fileBuffer);
+});
+
+app.post('/admin/remisi/import-excel', requireAccess('remisi'), remisiExcelUpload.single('excel_file'), (req, res) => {
+  if (!req.file?.buffer) {
+    return res.redirect('/admin/remisi?error=File+Excel+belum+dipilih');
+  }
+
+  const batchLabel = (req.body.batch_label || '').trim() || `Batch Remisi ${new Date().toISOString().slice(0, 10)}`;
+  const periodeBulan = (req.body.periode_bulan || '').trim().toUpperCase();
+  const periodeTahun = (req.body.periode_tahun || '').trim();
+  const notes = (req.body.batch_notes || '').trim();
+  const setActive = String(req.body.set_active || '') === '1';
+
+  let workbook;
+  try {
+    workbook = XLSX.read(req.file.buffer, { type: 'buffer' });
+  } catch (_err) {
+    return res.redirect('/admin/remisi?error=File+Excel+tidak+valid');
+  }
+
+  const firstSheetName = workbook.SheetNames[0];
+  if (!firstSheetName) {
+    return res.redirect('/admin/remisi?error=Sheet+Excel+tidak+ditemukan');
+  }
+
+  const rows = XLSX.utils.sheet_to_json(workbook.Sheets[firstSheetName], { defval: '' });
+  if (!rows.length) {
+    return res.redirect('/admin/remisi?error=Data+Excel+kosong');
+  }
+
+  const normalizeRowValue = (row, aliases) => {
+    for (const key of Object.keys(row)) {
+      const normalizedKey = normalizeExcelHeaderKey(key);
+      if (aliases.includes(normalizedKey)) return String(row[key] || '').trim();
+    }
+    return '';
+  };
+
+  const parsedRows = rows.map((row) => {
+    const jenis = normalizeRowValue(row, ['keterangan', 'jenis', 'jenisremisi']).toUpperCase();
+    const nama = normalizeRowValue(row, ['namawbp', 'nama']).toUpperCase();
+    const besaran = normalizeRowValue(row, ['besaranremisi', 'besaran']);
+    const remisiTotal = normalizeRowValue(row, ['remisitotal', 'totalremisi', 'remisitot']) || besaran;
+    return {
+      jenis: jenis || 'REMISI UMUM',
+      nama,
+      besaran,
+      remisiTotal,
+    };
+  }).filter((row) => row.nama && row.besaran);
+
+  if (!parsedRows.length) {
+    return res.redirect('/admin/remisi?error=Tidak+ada+baris+valid+di+Excel.+Pastikan+kolom+NAMA+WBP+dan+BESARAN+REMISI+terisi');
+  }
+
+  db.exec('BEGIN');
+  try {
+    const batchInsert = db.prepare(`
+      INSERT INTO remisi_batches (label, periode_bulan, periode_tahun, notes, source_type, is_active)
+      VALUES (?, ?, ?, ?, 'excel', 0)
+    `).run(batchLabel, periodeBulan, periodeTahun, notes);
+    const batchId = Number(batchInsert.lastInsertRowid);
+
+    const insertRemisi = db.prepare(`
+      INSERT INTO besaran_remisi (jenis, nama, besaran, remisi_total, batch_id)
+      VALUES (?, ?, ?, ?, ?)
+    `);
+    parsedRows.forEach((row) => {
+      insertRemisi.run(row.jenis, row.nama, row.besaran, row.remisiTotal, batchId);
+    });
+
+    if (setActive || !getActiveRemisiBatch()) {
+      db.prepare('UPDATE remisi_batches SET is_active = 0').run();
+      db.prepare('UPDATE remisi_batches SET is_active = 1 WHERE id = ?').run(batchId);
+      setAppSetting('remisi_active_batch_id', String(batchId));
+    }
+
+    db.exec('COMMIT');
+    return res.redirect(`/admin/remisi?batch=${batchId}&importSuccess=1`);
+  } catch (_err) {
+    db.exec('ROLLBACK');
+    return res.redirect('/admin/remisi?error=Gagal+import+data+remisi+dari+Excel');
+  }
+});
+
+app.post('/admin/remisi/batch/:id/activate', requireAccess('remisi'), (req, res) => {
+  const batchId = Number(req.params.id || 0);
+  if (!batchId) return res.redirect('/admin/remisi?error=Batch+tidak+valid');
+  const ok = setActiveRemisiBatch(batchId);
+  if (!ok) return res.redirect('/admin/remisi?error=Batch+tidak+ditemukan');
+  return res.redirect(`/admin/remisi?batch=${batchId}&batchSuccess=1`);
+});
+
+app.post('/admin/remisi/batch/:id/delete', requireAccess('remisi'), (req, res) => {
+  const batchId = Number(req.params.id || 0);
+  if (!batchId) return res.redirect('/admin/remisi?error=Batch+tidak+valid');
+
+  const batch = db.prepare(`
+    SELECT id, label, is_active AS isActive
+    FROM remisi_batches
+    WHERE id = ?
+    LIMIT 1
+  `).get(batchId);
+  if (!batch) return res.redirect('/admin/remisi?error=Batch+tidak+ditemukan');
+
+  const normalizeStrict = (value) => String(value || '')
+    .toLowerCase()
+    .replace(/\s+/g, ' ')
+    .trim();
+
+  const expectedText = `hapus ${String(batch.label || '').trim()}`;
+  const verifyInput = String(req.body.verification_text || '');
+  if (normalizeStrict(verifyInput) !== normalizeStrict(expectedText)) {
+    return res.redirect(`/admin/remisi?batch=${batchId}&error=${encodeURIComponent(`Verifikasi salah. Ketik tepat: ${expectedText}`)}`);
+  }
+
+  const totalBatch = Number(db.prepare('SELECT COUNT(*) AS c FROM remisi_batches').get()?.c || 0);
+  if (totalBatch <= 1) {
+    return res.redirect('/admin/remisi?error=Minimal+harus+ada+1+batch.+Batch+terakhir+tidak+bisa+dihapus');
+  }
+
+  const fallbackBatch = db.prepare(`
+    SELECT id
+    FROM remisi_batches
+    WHERE id <> ?
+    ORDER BY is_active DESC, created_at DESC, id DESC
+    LIMIT 1
+  `).get(batchId);
+
+  if (!fallbackBatch?.id) {
+    return res.redirect('/admin/remisi?error=Tidak+ada+batch+pengganti+untuk+menjadi+aktif');
+  }
+
+  db.exec('BEGIN');
+  try {
+    db.prepare('DELETE FROM besaran_remisi WHERE batch_id = ?').run(batchId);
+    db.prepare('DELETE FROM remisi_batches WHERE id = ?').run(batchId);
+
+    if (Number(batch.isActive) === 1) {
+      db.prepare('UPDATE remisi_batches SET is_active = 0').run();
+      db.prepare('UPDATE remisi_batches SET is_active = 1 WHERE id = ?').run(Number(fallbackBatch.id));
+      setAppSetting('remisi_active_batch_id', String(fallbackBatch.id));
+    }
+
+    db.exec('COMMIT');
+    return res.redirect(`/admin/remisi?batch=${Number(fallbackBatch.id)}&batchDeleteSuccess=1`);
+  } catch (_err) {
+    db.exec('ROLLBACK');
+    return res.redirect('/admin/remisi?error=Gagal+menghapus+batch+remisi');
+  }
+});
+
 app.post('/admin/remisi/add', requireAccess('remisi'), (req, res) => {
+  const batchId = Number(req.body.batch_id || 0);
+  if (!batchId) return res.redirect('/admin/remisi?error=Pilih+batch+remisi+terlebih+dahulu');
+
   const { jenis, besaran, remisi_total } = req.body;
   const nama = (req.body.nama || '').toUpperCase();
-  db.prepare('INSERT INTO besaran_remisi (jenis, nama, besaran, remisi_total) VALUES (?, ?, ?, ?)')
-    .run(jenis, nama, besaran, remisi_total || besaran || '');
-  res.redirect('/admin/remisi?success=1');
+  db.prepare('INSERT INTO besaran_remisi (jenis, nama, besaran, remisi_total, batch_id) VALUES (?, ?, ?, ?, ?)')
+    .run(jenis, nama, besaran, remisi_total || besaran || '', batchId);
+  res.redirect(`/admin/remisi?success=1&batch=${batchId}`);
 });
 
 app.post('/admin/remisi/:id/update', requireAccess('remisi'), (req, res) => {
+  const batchId = Number(req.body.batch_id || 0);
+  if (!batchId) return res.redirect('/admin/remisi?error=Batch+remisi+tidak+valid');
   const { jenis, besaran, remisi_total } = req.body;
   const nama = (req.body.nama || '').toUpperCase();
-  db.prepare('UPDATE besaran_remisi SET jenis=?, nama=?, besaran=?, remisi_total=? WHERE id=?')
-    .run(jenis, nama, besaran, remisi_total || besaran || '', Number(req.params.id));
-  res.redirect('/admin/remisi?success=1');
+  db.prepare('UPDATE besaran_remisi SET jenis=?, nama=?, besaran=?, remisi_total=?, batch_id=? WHERE id=?')
+    .run(jenis, nama, besaran, remisi_total || besaran || '', batchId, Number(req.params.id));
+  res.redirect(`/admin/remisi?success=1${batchId ? `&batch=${batchId}` : ''}`);
 });
 
 app.post('/admin/remisi/:id/delete', requireAccess('remisi'), (req, res) => {
+  const batchId = Number(req.body.batch_id || 0);
   db.prepare('DELETE FROM besaran_remisi WHERE id=?').run(Number(req.params.id));
-  res.redirect('/admin/remisi');
+  res.redirect(`/admin/remisi${batchId ? `?batch=${batchId}` : ''}`);
 });
 
 // ── Kata Bijak ────────────────────────────────────────────────────
@@ -5728,6 +6028,16 @@ app.use((err, req, res, next) => {
       return res.redirect('/admin/pengaduan?error=Dokumentasi+harus+berupa+gambar+atau+PDF');
     }
     return res.redirect('/admin/pengaduan?error=Gagal+proses+data+pengaduan');
+  }
+
+  if (req.path.startsWith('/admin/remisi')) {
+    if (err instanceof multer.MulterError && err.code === 'LIMIT_FILE_SIZE') {
+      return res.redirect('/admin/remisi?error=Ukuran+file+Excel+maksimal+5MB');
+    }
+    if (err.message && err.message.includes('File harus berupa Excel')) {
+      return res.redirect('/admin/remisi?error=File+harus+berupa+Excel');
+    }
+    return res.redirect('/admin/remisi?error=Gagal+memproses+import+remisi');
   }
 
   return next(err);

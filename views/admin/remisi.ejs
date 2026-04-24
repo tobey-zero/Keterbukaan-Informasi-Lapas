@@ -10,12 +10,16 @@
   <%- include('_sidebar') %>
   <div class="main-content">
     <div class="topbar">
-      <div class="topbar-title"><h2>📋 Besaran Remisi</h2><p>Kelola data besaran remisi WBP</p></div>
+      <div class="topbar-title"><h2>📋 Besaran Remisi</h2><p>Kelola batch/history dan import data dari Excel</p></div>
       <div class="topbar-actions"><a href="/" target="_blank" class="btn-public">🌐 Lihat Publik</a></div>
     </div>
     <div class="content-area">
       <% if (success) { %><div class="alert alert-success">✅ Data berhasil disimpan.</div><% } %>
       <% if (titleSuccess) { %><div class="alert alert-success">✅ Judul remisi berhasil diperbarui.</div><% } %>
+      <% if (batchSuccess) { %><div class="alert alert-success">✅ Batch aktif berhasil diubah.</div><% } %>
+      <% if (batchDeleteSuccess) { %><div class="alert alert-success">✅ Batch berhasil dihapus.</div><% } %>
+      <% if (importSuccess) { %><div class="alert alert-success">✅ Import Excel remisi berhasil.</div><% } %>
+      <% if (error) { %><div class="alert alert-error">⚠️ <%= error %></div><% } %>
 
       <div class="card">
         <div class="card-header"><h3>📝 Judul Remisi (Publik)</h3></div>
@@ -30,12 +34,144 @@
         </div>
       </div>
 
-      <!-- Form Tambah -->
       <div class="card">
-        <div class="card-header"><h3>➕ Tambah Data Remisi</h3></div>
+        <div class="card-header"><h3>📥 Import Excel Remisi</h3></div>
+        <div class="card-body">
+          <form method="POST" action="/admin/remisi/import-excel" enctype="multipart/form-data">
+            <div style="margin-bottom:12px; display:flex; gap:8px; flex-wrap:wrap;">
+              <a href="/admin/remisi/template.xlsx" class="btn btn-secondary btn-sm">⬇️ Download Template Excel</a>
+            </div>
+            <div class="form-grid col-4" style="margin-bottom:12px;">
+              <div class="form-group">
+                <label>Label Batch</label>
+                <input type="text" name="batch_label" placeholder="Contoh: Remisi Semester 1 2026" required>
+              </div>
+              <div class="form-group">
+                <label>Periode Bulan</label>
+                <input type="text" name="periode_bulan" placeholder="Contoh: JANUARI - JUNI">
+              </div>
+              <div class="form-group">
+                <label>Periode Tahun</label>
+                <input type="text" name="periode_tahun" placeholder="Contoh: 2026">
+              </div>
+              <div class="form-group">
+                <label>Catatan</label>
+                <input type="text" name="batch_notes" placeholder="Opsional">
+              </div>
+            </div>
+            <div class="form-grid col-2" style="margin-bottom:12px;">
+              <div class="form-group">
+                <label>File Excel (.xlsx / .xls)</label>
+                <input type="file" name="excel_file" accept=".xlsx,.xls" required>
+              </div>
+              <div class="form-group" style="display:flex;align-items:flex-end;">
+                <label style="display:flex;align-items:center;gap:8px;margin:0 0 10px;">
+                  <input type="checkbox" name="set_active" value="1" checked>
+                  Jadikan batch aktif setelah import
+                </label>
+              </div>
+            </div>
+            <button type="submit" class="btn btn-primary btn-sm">📥 Import Excel</button>
+          </form>
+        </div>
+      </div>
+
+      <div class="card">
+        <div class="card-header"><h3>🗂️ Riwayat Batch Remisi (<%= batches.length %> batch)</h3></div>
+        <div class="card-body" style="padding:0;">
+          <div style="padding:12px 16px;border-bottom:1px solid #eee;display:flex;justify-content:space-between;align-items:center;gap:12px;flex-wrap:wrap;">
+            <form method="GET" action="/admin/remisi" style="display:flex;align-items:end;gap:8px;flex-wrap:wrap;">
+              <div class="form-group" style="margin:0;min-width:260px;">
+                <label style="margin-bottom:4px;display:block;">Tampilkan Data Batch</label>
+                <select name="batch" onchange="this.form.submit()">
+                  <% batches.forEach((batch) => { %>
+                    <option value="<%= batch.id %>" <%= Number(batch.id) === Number(selectedBatchId) ? 'selected' : '' %>>
+                      <%= batch.label %> <%= Number(batch.id) === Number(activeBatchId) ? '(AKTIF)' : '' %>
+                    </option>
+                  <% }) %>
+                </select>
+              </div>
+              <noscript><button type="submit" class="btn btn-secondary btn-sm">Terapkan</button></noscript>
+            </form>
+            <div style="font-size:.9em;color:#666;">
+              Batch tampil saat ini: <strong><%= selectedBatch ? selectedBatch.label : '-' %></strong>
+            </div>
+          </div>
+          <div class="table-wrap">
+            <table class="admin-table">
+              <thead>
+                <tr>
+                  <th>Batch</th>
+                  <th>Periode</th>
+                  <th>Sumber</th>
+                  <th>Jumlah Data</th>
+                  <th>Status</th>
+                  <th>Aksi</th>
+                </tr>
+              </thead>
+              <tbody>
+                <% batches.forEach((batch) => { %>
+                <% const periodText = [batch.periodeBulan, batch.periodeTahun].filter(Boolean).join(' '); %>
+                <tr>
+                  <td>
+                    <strong><%= batch.label %></strong>
+                    <% if (batch.notes) { %><div style="font-size:.85em;color:#666;"><%= batch.notes %></div><% } %>
+                  </td>
+                  <td><%= periodText || '-' %></td>
+                  <td><%= (batch.sourceType || '-').toUpperCase() %></td>
+                  <td><%= batch.totalData %></td>
+                  <td>
+                    <% if (Number(batch.id) === Number(activeBatchId)) { %>
+                      <span class="badge badge-success">AKTIF</span>
+                    <% } else { %>
+                      <span class="badge">ARSIP</span>
+                    <% } %>
+                  </td>
+                  <td>
+                    <div class="actions">
+                      <a href="/admin/remisi?batch=<%= batch.id %>" class="btn btn-info btn-xs">👁️ Lihat</a>
+                      <% if (Number(batch.id) !== Number(activeBatchId)) { %>
+                      <form method="POST" action="/admin/remisi/batch/<%= batch.id %>/activate" style="display:inline;" onsubmit="return confirm('Jadikan batch ini aktif?')">
+                        <button type="submit" class="btn btn-success btn-xs">✅ Aktifkan</button>
+                      </form>
+                      <form method="POST" action="/admin/remisi/batch/<%= batch.id %>/delete" style="display:inline;" onsubmit="return handleBatchDeletePrompt(this, '<%= String(batch.label || '').replace(/'/g, "\\'") %>')">
+                        <input type="hidden" name="verification_text" value="">
+                        <button type="submit" class="btn btn-danger btn-xs">🗑 Hapus Batch</button>
+                      </form>
+                      <% } %>
+                    </div>
+                  </td>
+                </tr>
+                <% }) %>
+                <% if (!batches.length) { %>
+                <tr><td colspan="6" style="text-align:center;color:#aaa;padding:20px;">Belum ada batch remisi</td></tr>
+                <% } %>
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+
+      <div class="card">
+        <div class="card-header">
+          <h3>➕ Tambah Data Remisi Manual</h3>
+          <div style="font-size:.9em;color:#666;">
+            Batch dipilih: <strong><%= selectedBatch ? selectedBatch.label : 'Belum ada batch' %></strong>
+          </div>
+        </div>
         <div class="card-body">
           <form method="POST" action="/admin/remisi/add">
             <div class="form-grid col-4" style="margin-bottom:12px;">
+              <div class="form-group">
+                <label>Batch Tujuan</label>
+                <select name="batch_id" required>
+                  <% batches.forEach((batch) => { %>
+                    <option value="<%= batch.id %>" <%= Number(batch.id) === Number(selectedBatchId) ? 'selected' : '' %>>
+                      <%= batch.label %> <%= Number(batch.id) === Number(activeBatchId) ? '(AKTIF)' : '' %>
+                    </option>
+                  <% }) %>
+                </select>
+              </div>
               <div class="form-group">
                 <label>Keterangan (Jenis Remisi)</label>
                 <input type="text" name="jenis" placeholder="cth: REMISI UMUM" required>
@@ -53,17 +189,26 @@
                 <input type="text" name="remisi_total" placeholder="cth: 12 BULAN" required>
               </div>
             </div>
-            <button type="submit" class="btn btn-primary btn-sm">➕ Tambah</button>
+            <button type="submit" class="btn btn-primary btn-sm" <%= selectedBatchId ? '' : 'disabled' %>>➕ Tambah</button>
           </form>
         </div>
       </div>
 
-      <!-- Form Edit -->
       <% if (edit) { %>
       <div class="edit-panel">
         <h4>✏️ Edit Data Remisi (ID: <%= edit.id %>)</h4>
         <form method="POST" action="/admin/remisi/<%= edit.id %>/update">
           <div class="form-grid col-4" style="margin-bottom:12px;">
+            <div class="form-group">
+              <label>Batch Data</label>
+              <select name="batch_id" required>
+                <% batches.forEach((batch) => { %>
+                  <option value="<%= batch.id %>" <%= Number(batch.id) === Number(edit.batch_id || selectedBatchId) ? 'selected' : '' %>>
+                    <%= batch.label %> <%= Number(batch.id) === Number(activeBatchId) ? '(AKTIF)' : '' %>
+                  </option>
+                <% }) %>
+              </select>
+            </div>
             <div class="form-group">
               <label>Keterangan (Jenis Remisi)</label>
               <input type="text" name="jenis" value="<%= edit.jenis %>" required>
@@ -83,15 +228,14 @@
           </div>
           <div style="display:flex;gap:8px;">
             <button type="submit" class="btn btn-success btn-sm">💾 Simpan</button>
-            <a href="/admin/remisi" class="btn btn-secondary btn-sm">✕ Batal</a>
+            <a href="/admin/remisi<%= selectedBatchId ? `?batch=${selectedBatchId}` : '' %>" class="btn btn-secondary btn-sm">✕ Batal</a>
           </div>
         </form>
       </div>
       <% } %>
 
-      <!-- Tabel -->
       <div class="card">
-        <div class="card-header"><h3>Daftar Besaran Remisi (<%= list.length %> data)</h3></div>
+        <div class="card-header"><h3>Daftar Besaran Remisi Batch (<%= list.length %> data)</h3></div>
         <div class="card-body" style="padding:0;">
           <div class="table-wrap">
             <table class="admin-table">
@@ -108,8 +252,9 @@
                   <td><%= item.jenis %></td>
                   <td>
                     <div class="actions">
-                      <a href="/admin/remisi?edit=<%= item.id %>" class="btn btn-warning btn-xs">✏️ Edit</a>
+                      <a href="/admin/remisi?edit=<%= item.id %><%= selectedBatchId ? `&batch=${selectedBatchId}` : '' %>" class="btn btn-warning btn-xs">✏️ Edit</a>
                       <form method="POST" action="/admin/remisi/<%= item.id %>/delete" style="display:inline" onsubmit="return confirm('Hapus data ini?')">
+                        <input type="hidden" name="batch_id" value="<%= selectedBatchId || '' %>">
                         <button type="submit" class="btn btn-danger btn-xs">🗑 Hapus</button>
                       </form>
                     </div>
@@ -124,6 +269,44 @@
           </div>
         </div>
       </div>
+
+      <style>
+        .badge {
+          display: inline-block;
+          padding: 4px 8px;
+          border-radius: 999px;
+          background: #f1f3f5;
+          color: #666;
+          font-size: .75rem;
+          font-weight: 700;
+          letter-spacing: .3px;
+        }
+        .badge-success {
+          background: #e7f7ee;
+          color: #157347;
+        }
+      </style>
+
+      <script>
+        function normalizeVerifyText(value) {
+          return String(value || '').toLowerCase().replace(/\s+/g, ' ').trim();
+        }
+
+        function handleBatchDeletePrompt(formElement, batchLabel) {
+          var expected = 'hapus ' + String(batchLabel || '').trim();
+          var notice = 'Semua data remisi pada batch ini akan ikut terhapus.\n\nKetik tepat: ' + expected;
+          var typed = window.prompt(notice, '');
+          if (typed === null) return false;
+
+          if (normalizeVerifyText(typed) !== normalizeVerifyText(expected)) {
+            window.alert('Verifikasi tidak sesuai. Hapus batch dibatalkan.');
+            return false;
+          }
+
+          formElement.verification_text.value = typed;
+          return true;
+        }
+      </script>
     </div>
   </div>
 </div>

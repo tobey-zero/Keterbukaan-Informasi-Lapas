@@ -29,6 +29,17 @@ db.exec(`
     remisi_total TEXT NOT NULL DEFAULT ''
   );
 
+  CREATE TABLE IF NOT EXISTS remisi_batches (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    label TEXT NOT NULL,
+    periode_bulan TEXT NOT NULL DEFAULT '',
+    periode_tahun TEXT NOT NULL DEFAULT '',
+    notes TEXT NOT NULL DEFAULT '',
+    source_type TEXT NOT NULL DEFAULT 'manual',
+    is_active INTEGER NOT NULL DEFAULT 0,
+    created_at TEXT NOT NULL DEFAULT (datetime('now','localtime'))
+  );
+
   CREATE TABLE IF NOT EXISTS menu_makan (
     id INTEGER PRIMARY KEY AUTOINCREMENT,
     tanggal TEXT NOT NULL DEFAULT '',
@@ -615,6 +626,17 @@ if (!piketJagaColumnNames.includes('regu_members_json')) db.exec("ALTER TABLE ka
 const remisiColumns = db.prepare("PRAGMA table_info('besaran_remisi')").all();
 const remisiColumnNames = remisiColumns.map(col => col.name);
 if (!remisiColumnNames.includes('remisi_total')) db.exec("ALTER TABLE besaran_remisi ADD COLUMN remisi_total TEXT NOT NULL DEFAULT ''");
+if (!remisiColumnNames.includes('batch_id')) db.exec('ALTER TABLE besaran_remisi ADD COLUMN batch_id INTEGER');
+
+const remisiBatchColumns = db.prepare("PRAGMA table_info('remisi_batches')").all();
+const remisiBatchColumnNames = remisiBatchColumns.map(col => col.name);
+if (!remisiBatchColumnNames.includes('label')) db.exec("ALTER TABLE remisi_batches ADD COLUMN label TEXT NOT NULL DEFAULT 'Batch Remisi'");
+if (!remisiBatchColumnNames.includes('periode_bulan')) db.exec("ALTER TABLE remisi_batches ADD COLUMN periode_bulan TEXT NOT NULL DEFAULT ''");
+if (!remisiBatchColumnNames.includes('periode_tahun')) db.exec("ALTER TABLE remisi_batches ADD COLUMN periode_tahun TEXT NOT NULL DEFAULT ''");
+if (!remisiBatchColumnNames.includes('notes')) db.exec("ALTER TABLE remisi_batches ADD COLUMN notes TEXT NOT NULL DEFAULT ''");
+if (!remisiBatchColumnNames.includes('source_type')) db.exec("ALTER TABLE remisi_batches ADD COLUMN source_type TEXT NOT NULL DEFAULT 'manual'");
+if (!remisiBatchColumnNames.includes('is_active')) db.exec('ALTER TABLE remisi_batches ADD COLUMN is_active INTEGER NOT NULL DEFAULT 0');
+if (!remisiBatchColumnNames.includes('created_at')) db.exec("ALTER TABLE remisi_batches ADD COLUMN created_at TEXT NOT NULL DEFAULT (datetime('now','localtime'))");
 
 const giiatjaPnbpColumns = db.prepare("PRAGMA table_info('giiatja_pnbp')").all();
 const giiatjaPnbpColumnNames = giiatjaPnbpColumns.map(col => col.name);
@@ -699,6 +721,33 @@ db.exec(`
   UPDATE besaran_remisi
   SET remisi_total = COALESCE(NULLIF(TRIM(remisi_total), ''), besaran)
 `);
+
+const remisiBatchCount = Number(db.prepare('SELECT COUNT(*) AS c FROM remisi_batches').get()?.c || 0);
+if (remisiBatchCount === 0) {
+  db.prepare(`
+    INSERT INTO remisi_batches (label, periode_bulan, periode_tahun, notes, source_type, is_active)
+    VALUES (?, ?, ?, ?, ?, 1)
+  `).run('Data Remisi Awal', '', '', 'Batch migrasi data remisi yang sudah ada sebelumnya', 'legacy');
+}
+
+let activeRemisiBatchId = Number(db.prepare('SELECT id FROM remisi_batches WHERE is_active = 1 ORDER BY id DESC LIMIT 1').get()?.id || 0);
+if (!activeRemisiBatchId) {
+  activeRemisiBatchId = Number(db.prepare('SELECT id FROM remisi_batches ORDER BY id DESC LIMIT 1').get()?.id || 0);
+  if (activeRemisiBatchId) {
+    db.prepare('UPDATE remisi_batches SET is_active = 0').run();
+    db.prepare('UPDATE remisi_batches SET is_active = 1 WHERE id = ?').run(activeRemisiBatchId);
+  }
+}
+
+if (activeRemisiBatchId) {
+  db.prepare('UPDATE besaran_remisi SET batch_id = ? WHERE batch_id IS NULL').run(activeRemisiBatchId);
+}
+
+db.prepare(`
+  INSERT INTO app_settings (key, value)
+  VALUES (?, ?)
+  ON CONFLICT(key) DO UPDATE SET value = excluded.value
+`).run('remisi_active_batch_id', String(activeRemisiBatchId || ''));
 
 db.exec(`
   UPDATE jadwal_kegiatan
