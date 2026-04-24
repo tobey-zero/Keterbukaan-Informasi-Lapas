@@ -954,7 +954,7 @@ app.use((req, res, next) => {
 });
 
 // ─── Role Access Map ─────────────────────────────────────────────────────────
-const ROLES = ['superadmin', 'registrasi', 'pembinaan', 'klinik', 'dapur', 'humas', 'kamtib', 'tata_usaha', 'pengamanan', 'giiatja'];
+const ROLES = ['superadmin', 'registrasi', 'pembinaan', 'klinik', 'dapur', 'humas', 'kamtib', 'tata_usaha', 'pengamanan', 'giiatja', 'kalapas'];
 
 const roleAccess = {
   superadmin: ['dashboard', 'statistik', 'remisi', 'kata-bijak', 'menu', 'jadwal', 'pembinaan-detail', 'razia', 'pengawalan', 'register-f', 'strapsel', 'piket-jaga', 'tu-umum', 'kamar-blok', 'papan-isi', 'luar-tembok', 'giiatja', 'users', 'video', 'klinik-medis', 'klinik-berobat', 'klinik-oncall', 'klinik-kontrol', 'klinik-statistik', 'pengaduan'],
@@ -967,7 +967,13 @@ const roleAccess = {
   tata_usaha: ['dashboard', 'tu-umum'],
   pengamanan: ['dashboard', 'kamar-blok', 'luar-tembok'],
   giiatja: ['dashboard', 'giiatja'],
+  kalapas: [],
 };
+
+function canAccessKalapasView(user) {
+  if (!user || !user.role) return false;
+  return user.role === 'kalapas' || user.role === 'superadmin';
+}
 
 // ─── Auth Middleware ──────────────────────────────────────────────────────────
 function requireLogin(req, res, next) {
@@ -982,6 +988,16 @@ function requireAccess(page) {
     if (allowed.includes(page)) return next();
     return res.status(403).render('admin/403', { user: req.session.user, active: '' });
   };
+}
+
+function requireKalapasLogin(req, res, next) {
+  if (!req.session || !req.session.user) {
+    return res.redirect('/kalapas/login');
+  }
+  if (!canAccessKalapasView(req.session.user)) {
+    return res.status(403).render('admin/403', { user: req.session.user, active: '' });
+  }
+  return next();
 }
 
 // ─── Helper: baca semua data publik dari SQLite ───────────────────────────────
@@ -2159,6 +2175,53 @@ app.post('/pengaduan-masyarakat/add', pengaduanUpload.single('dokumentasi'), (re
   return res.redirect(`/pengaduan-masyarakat?success=1&no_pengaduan=${encodeURIComponent(noPengaduan)}`);
 });
 
+app.get('/kalapas/login', (req, res) => {
+  if (canAccessKalapasView(req.session?.user)) return res.redirect('/kalapas');
+  res.render('admin/login', {
+    error: null,
+    pageTitle: 'Login Kalapas – Keterbukaan Informasi Lapas',
+    loginSubtitle: 'Sistem Keterbukaan Informasi Narapidana\nAkses Tampilan Kalapas',
+    formAction: '/kalapas/login',
+    helperText: 'Gunakan akun dengan role kalapas'
+  });
+});
+
+app.post('/kalapas/login', (req, res) => {
+  const { username, password } = req.body;
+  const user = db.prepare('SELECT * FROM users WHERE username = ?').get(username);
+  if (!user || !bcrypt.compareSync(password, user.password)) {
+    return res.render('admin/login', {
+      error: 'Username atau password salah.',
+      pageTitle: 'Login Kalapas – Keterbukaan Informasi Lapas',
+      loginSubtitle: 'Sistem Keterbukaan Informasi Narapidana\nAkses Tampilan Kalapas',
+      formAction: '/kalapas/login',
+      helperText: 'Gunakan akun dengan role kalapas'
+    });
+  }
+  if (!canAccessKalapasView(user)) {
+    return res.render('admin/login', {
+      error: 'Akun tidak memiliki akses ke tampilan Kalapas.',
+      pageTitle: 'Login Kalapas – Keterbukaan Informasi Lapas',
+      loginSubtitle: 'Sistem Keterbukaan Informasi Narapidana\nAkses Tampilan Kalapas',
+      formAction: '/kalapas/login',
+      helperText: 'Hubungi SuperAdmin untuk role kalapas'
+    });
+  }
+
+  req.session.user = { id: user.id, username: user.username, role: user.role };
+  return res.redirect('/kalapas');
+});
+
+app.get('/kalapas/logout', (req, res) => {
+  req.session.destroy();
+  res.redirect('/kalapas/login');
+});
+
+app.use('/kalapas', (req, res, next) => {
+  if (req.path === '/login' || req.path === '/logout') return next();
+  return requireKalapasLogin(req, res, next);
+});
+
 app.get('/kalapas', (req, res) => {
   res.render('kalapas', { ...getKalapasData(), activePage: 'kalapas' });
 });
@@ -3217,7 +3280,12 @@ app.get('/api/public-data-version', (_req, res) => {
 // ═══════════════════════════════════════════════════════════════════
 
 app.get('/admin/login', (req, res) => {
-  if (req.session.user) return res.redirect('/admin/dashboard');
+  if (req.session.user) {
+    if (canAccessKalapasView(req.session.user) && req.session.user.role === 'kalapas') {
+      return res.redirect('/kalapas');
+    }
+    return res.redirect('/admin/dashboard');
+  }
   res.render('admin/login', { error: null });
 });
 
@@ -3228,6 +3296,7 @@ app.post('/admin/login', (req, res) => {
     return res.render('admin/login', { error: 'Username atau password salah.' });
   }
   req.session.user = { id: user.id, username: user.username, role: user.role };
+  if (user.role === 'kalapas') return res.redirect('/kalapas');
   res.redirect('/admin/dashboard');
 });
 

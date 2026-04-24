@@ -44,6 +44,7 @@
                   <option value="tata_usaha">TU – Tata Usaha</option>
                   <option value="pengamanan">Pengamanan – Kamar/Blok & Papan Isi</option>
                   <option value="giiatja">GIIATJA – Kegiatan Kerja</option>
+                  <option value="kalapas">Kalapas – Tampilan Kalapas</option>
                 </select>
               </div>
             </div>
@@ -69,7 +70,7 @@
             <div class="form-group">
               <label>Role</label>
               <select name="role">
-                <% [['superadmin','SuperAdmin – Akses Penuh'],['registrasi','Registrasi'],['pembinaan','Pembinaan'],['klinik','Klinik'],['dapur','Dapur'],['humas','Humas'],['kamtib','Kamtib'],['tata_usaha','Tata Usaha'],['pengamanan','Pengamanan'],['giiatja','GIIATJA']].forEach(([v,l]) => { %>
+                <% [['superadmin','SuperAdmin – Akses Penuh'],['registrasi','Registrasi'],['pembinaan','Pembinaan'],['klinik','Klinik'],['dapur','Dapur'],['humas','Humas'],['kamtib','Kamtib'],['tata_usaha','Tata Usaha'],['pengamanan','Pengamanan'],['giiatja','GIIATJA'],['kalapas','Kalapas – Tampilan Kalapas']].forEach(([v,l]) => { %>
                 <option value="<%= v %>" <%= edit.role===v?'selected':'' %>><%= l %></option>
                 <% }) %>
               </select>

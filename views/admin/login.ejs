@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Admin Login – Keterbukaan Informasi Lapas</title>
+  <title><%= (typeof pageTitle !== 'undefined' && pageTitle) ? pageTitle : 'Admin Login – Keterbukaan Informasi Lapas' %></title>
   <link rel="stylesheet" href="/css/admin.css">
 </head>
 <body>
@@ -11,12 +11,13 @@
   <div class="login-box">
     <div class="login-logo">
       <h1>🏛 LAPAS</h1>
-      <p>Sistem Keterbukaan Informasi Narapidana<br>Panel Administrasi</p>
+      <% const subtitle = String((typeof loginSubtitle !== 'undefined' && loginSubtitle) ? loginSubtitle : 'Sistem Keterbukaan Informasi Narapidana\nPanel Administrasi'); %>
+      <p><%- subtitle.replace(/\n/g, '<br>') %></p>
     </div>
     <% if (error) { %>
     <div class="alert alert-danger">⚠️ <%= error %></div>
     <% } %>
-    <form method="POST" action="/admin/login">
+    <form method="POST" action="<%= (typeof formAction !== 'undefined' && formAction) ? formAction : '/admin/login' %>">
       <div class="form-group">
         <label for="username">Username</label>
         <input type="text" id="username" name="username" placeholder="Masukkan username" required autofocus>
@@ -28,7 +29,7 @@
       <br>
       <button type="submit" class="btn btn-primary">🔐 Masuk</button>
     </form>
-    <p style="text-align:center;margin-top:16px;font-size:11px;color:#aaa">Default: admin / admin123</p>
+    <p style="text-align:center;margin-top:16px;font-size:11px;color:#aaa"><%= (typeof helperText !== 'undefined' && helperText) ? helperText : 'Default: admin / admin123' %></p>
   </div>
 </div>
 </body>
