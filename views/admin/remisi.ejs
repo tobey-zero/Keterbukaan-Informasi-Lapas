@@ -17,6 +17,7 @@
       <% if (success) { %><div class="alert alert-success">✅ Data berhasil disimpan.</div><% } %>
       <% if (titleSuccess) { %><div class="alert alert-success">✅ Judul remisi berhasil diperbarui.</div><% } %>
       <% if (batchSuccess) { %><div class="alert alert-success">✅ Batch aktif berhasil diubah.</div><% } %>
+      <% if (batchCreateSuccess) { %><div class="alert alert-success">✅ Batch baru berhasil dibuat.</div><% } %>
       <% if (batchDeleteSuccess) { %><div class="alert alert-success">✅ Batch berhasil dihapus.</div><% } %>
       <% if (importSuccess) { %><div class="alert alert-success">✅ Import Excel remisi berhasil.</div><% } %>
       <% if (error) { %><div class="alert alert-error">⚠️ <%= error %></div><% } %>
@@ -30,6 +31,39 @@
               <input type="text" name="remisi_title" value="<%= remisiTitle %>" placeholder="Contoh: BESARAN REMISI WARGA BINAAN" required>
             </div>
             <button type="submit" class="btn btn-primary btn-sm">💾 Simpan Judul</button>
+          </form>
+        </div>
+      </div>
+
+      <div class="card">
+        <div class="card-header"><h3>🆕 Buat Batch Remisi Manual</h3></div>
+        <div class="card-body">
+          <form method="POST" action="/admin/remisi/batch/create">
+            <div class="form-grid col-4" style="margin-bottom:12px;">
+              <div class="form-group">
+                <label>Label Batch</label>
+                <input type="text" name="batch_label" placeholder="Contoh: Remisi Semester 2 2026" required>
+              </div>
+              <div class="form-group">
+                <label>Periode Bulan</label>
+                <input type="text" name="periode_bulan" placeholder="Contoh: JULI - DESEMBER">
+              </div>
+              <div class="form-group">
+                <label>Periode Tahun</label>
+                <input type="text" name="periode_tahun" placeholder="Contoh: 2026">
+              </div>
+              <div class="form-group">
+                <label>Catatan</label>
+                <input type="text" name="batch_notes" placeholder="Opsional">
+              </div>
+            </div>
+            <div style="margin-bottom:12px;">
+              <label style="display:flex;align-items:center;gap:8px;">
+                <input type="checkbox" name="set_active" value="1" checked>
+                Jadikan batch aktif setelah dibuat
+              </label>
+            </div>
+            <button type="submit" class="btn btn-primary btn-sm">🆕 Buat Batch</button>
           </form>
         </div>
       </div>

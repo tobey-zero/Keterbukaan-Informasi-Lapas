@@ -3424,6 +3424,7 @@ app.get('/admin/remisi', requireAccess('remisi'), (req, res) => {
     success: req.query.success,
     titleSuccess: req.query.titleSuccess,
     batchSuccess: req.query.batchSuccess,
+    batchCreateSuccess: req.query.batchCreateSuccess,
     batchDeleteSuccess: req.query.batchDeleteSuccess,
     importSuccess: req.query.importSuccess,
     error: req.query.error,
@@ -3438,6 +3439,53 @@ app.post('/admin/remisi/title/update', requireAccess('remisi'), (req, res) => {
     ON CONFLICT(key) DO UPDATE SET value=excluded.value
   `).run('remisi_title', nextTitle);
   res.redirect('/admin/remisi?titleSuccess=1');
+});
+
+app.post('/admin/remisi/batch/create', requireAccess('remisi'), (req, res) => {
+  const batchLabel = String(req.body.batch_label || '').trim();
+  const periodeBulan = String(req.body.periode_bulan || '').trim().toUpperCase();
+  const periodeTahun = String(req.body.periode_tahun || '').trim();
+  const notes = String(req.body.batch_notes || '').trim();
+  const setActive = String(req.body.set_active || '') === '1';
+
+  if (!batchLabel) {
+    return res.redirect('/admin/remisi?error=Label+batch+wajib+diisi');
+  }
+
+  const existingLabel = db.prepare(`
+    SELECT id
+    FROM remisi_batches
+    WHERE UPPER(TRIM(label)) = UPPER(TRIM(?))
+    LIMIT 1
+  `).get(batchLabel);
+  if (existingLabel?.id) {
+    return res.redirect('/admin/remisi?error=Label+batch+sudah+digunakan');
+  }
+
+  db.exec('BEGIN');
+  try {
+    const insertResult = db.prepare(`
+      INSERT INTO remisi_batches (label, periode_bulan, periode_tahun, notes, source_type, is_active)
+      VALUES (?, ?, ?, ?, 'manual', 0)
+    `).run(batchLabel, periodeBulan, periodeTahun, notes);
+
+    const newBatchId = Number(insertResult.lastInsertRowid || 0);
+    if (!newBatchId) {
+      throw new Error('Gagal membuat batch baru');
+    }
+
+    if (setActive || !getActiveRemisiBatch()) {
+      db.prepare('UPDATE remisi_batches SET is_active = 0').run();
+      db.prepare('UPDATE remisi_batches SET is_active = 1 WHERE id = ?').run(newBatchId);
+      setAppSetting('remisi_active_batch_id', String(newBatchId));
+    }
+
+    db.exec('COMMIT');
+    return res.redirect(`/admin/remisi?batch=${newBatchId}&batchCreateSuccess=1`);
+  } catch (_err) {
+    db.exec('ROLLBACK');
+    return res.redirect('/admin/remisi?error=Gagal+membuat+batch+remisi');
+  }
 });
 
 app.get('/admin/remisi/template.xlsx', requireAccess('remisi'), (_req, res) => {
