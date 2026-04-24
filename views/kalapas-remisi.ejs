@@ -1,0 +1,196 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title><%= pageTitle %> - Kalapas</title>
+  <link rel="stylesheet" href="/css/style.css?v=<%= Date.now() %>">
+  <style>
+    .kalapas-table-wrap { padding: 14px 15px; }
+    .kalapas-table-toolbar {
+      display: flex;
+      gap: 8px;
+      flex-wrap: wrap;
+      align-items: center;
+      margin-bottom: 10px;
+    }
+    .kalapas-table-toolbar a {
+      text-decoration: none;
+      color: #fff;
+      background: #1a4bb8;
+      border: 1px solid rgba(255,255,255,.3);
+      border-radius: 6px;
+      padding: 7px 11px;
+      font-size: 12px;
+      font-weight: bold;
+    }
+    .remisi-filter-box {
+      padding: 10px;
+      display: flex;
+      gap: 8px;
+      flex-wrap: wrap;
+      align-items: end;
+      border-bottom: 1px solid #e2e8f0;
+      background: #f8fafc;
+    }
+    .remisi-filter-box .group {
+      display: grid;
+      gap: 4px;
+      min-width: 220px;
+      flex: 1 1 260px;
+    }
+    .remisi-filter-box .label {
+      font-size: 11px;
+      color: #334155;
+      font-weight: bold;
+      letter-spacing: .2px;
+    }
+    .remisi-filter-box input,
+    .remisi-filter-box select {
+      border: 1px solid #cbd5e1;
+      border-radius: 6px;
+      padding: 8px 10px;
+      font-size: 12px;
+      font-weight: 700;
+      color: #0f172a;
+      background: #fff;
+    }
+    .remisi-filter-box button,
+    .remisi-filter-box .reset {
+      text-decoration: none;
+      border: 1px solid rgba(255,255,255,.3);
+      border-radius: 6px;
+      padding: 8px 11px;
+      font-size: 12px;
+      font-weight: bold;
+      cursor: pointer;
+      color: #fff;
+      background: #1a4bb8;
+      height: 34px;
+      display: inline-flex;
+      align-items: center;
+    }
+    .remisi-filter-box .reset {
+      color: #1e3a8a;
+      background: #eff6ff;
+      border-color: #cbd5e1;
+    }
+    .remisi-mode-note {
+      padding: 8px 10px 0;
+      font-size: 12px;
+      font-weight: 700;
+      color: #1e3a8a;
+    }
+    .batch-pill {
+      display: inline-block;
+      padding: 3px 8px;
+      border-radius: 999px;
+      font-size: 10px;
+      font-weight: 700;
+      letter-spacing: .3px;
+      margin-left: 6px;
+      background: #e2e8f0;
+      color: #334155;
+    }
+    .batch-pill.active {
+      background: #dcfce7;
+      color: #166534;
+    }
+    .kalapas-empty {
+      text-align: center;
+      color: #64748b;
+      padding: 14px;
+      font-weight: bold;
+    }
+  </style>
+</head>
+<body class="page-umum">
+  <header class="header">
+    <div class="header-content">
+      <div class="logo-section">
+        <div class="logo kalapas-logo">
+          <img src="/images/Logo.png" alt="Logo SIMWASPIM" class="kalapas-logo-img">
+        </div>
+        <div class="header-info">
+          <h2><%= sectionTitle %></h2>
+          <h3>Filter Batch + Pencarian Lintas Batch</h3>
+          <p class="address">Total data tampil: <%= list.length %></p>
+        </div>
+      </div>
+    </div>
+  </header>
+
+  <div class="kalapas-table-wrap">
+    <div class="kalapas-table-toolbar">
+      <a href="<%= backUrl %>">⬅ Kembali ke Kalapas</a>
+    </div>
+
+    <div class="panel kalapas-table-panel">
+      <div class="panel-header red">
+        <span><%= sectionTitle %></span>
+        <span><%= list.length %> data</span>
+      </div>
+      <div class="panel-content" style="padding:0;">
+        <form method="GET" action="/kalapas/table/remisi" class="remisi-filter-box">
+          <div class="group" style="max-width:300px;">
+            <label class="label">Filter Batch</label>
+            <select name="batch">
+              <option value="ALL" <%= Number(selectedBatchId) === 0 ? 'selected' : '' %>>SEMUA BATCH</option>
+              <% batchOptions.forEach((batch) => { %>
+                <option value="<%= batch.id %>" <%= Number(batch.id) === Number(selectedBatchId) ? 'selected' : '' %>>
+                  <%= batch.label %><%= Number(batch.isActive) === 1 ? ' (AKTIF)' : '' %>
+                </option>
+              <% }) %>
+            </select>
+          </div>
+          <div class="group" style="min-width:320px; flex:2 1 420px;">
+            <label class="label">Pencarian (nama / jenis / besaran / batch)</label>
+            <input type="text" name="search" value="<%= searchKeyword || '' %>" placeholder="Ketik kata kunci...">
+          </div>
+          <button type="submit">Terapkan</button>
+          <a href="/kalapas/table/remisi" class="reset">Reset</a>
+        </form>
+
+        <% if (isSearchMode) { %>
+          <div class="remisi-mode-note">Mode pencarian aktif: hasil ditarik dari seluruh batch.</div>
+        <% } else { %>
+          <div class="remisi-mode-note">Batch tampil: <strong><%= selectedBatch ? selectedBatch.label : 'SEMUA BATCH' %></strong></div>
+        <% } %>
+
+        <div class="table-wrap">
+          <table class="admin-table">
+            <thead>
+              <tr>
+                <th>#</th>
+                <th>Batch</th>
+                <th>Nama Warga Binaan</th>
+                <th>Besaran Remisi</th>
+                <th>Remisi Total</th>
+                <th>Keterangan</th>
+              </tr>
+            </thead>
+            <tbody>
+              <% list.forEach((item, idx) => { %>
+                <tr>
+                  <td><%= idx + 1 %></td>
+                  <td>
+                    <strong><%= item.batchLabel || '-' %></strong>
+                    <span class="batch-pill <%= Number(item.batchIsActive) === 1 ? 'active' : '' %>"><%= Number(item.batchIsActive) === 1 ? 'AKTIF' : 'ARSIP' %></span>
+                  </td>
+                  <td><%= formatDateIndo(item.nama || '-') %></td>
+                  <td><strong><%= formatDateIndo(item.besaran || '-') %></strong></td>
+                  <td><strong><%= formatDateIndo(item.remisiTotal || '-') %></strong></td>
+                  <td><%= formatDateIndo(item.jenis || '-') %></td>
+                </tr>
+              <% }) %>
+              <% if (!list.length) { %>
+                <tr><td colspan="6" class="kalapas-empty">Data remisi tidak ditemukan</td></tr>
+              <% } %>
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+  </div>
+</body>
+</html>

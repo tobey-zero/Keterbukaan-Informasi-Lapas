@@ -2257,20 +2257,77 @@ app.get('/kalapas/table/okupansi', (req, res) => {
 
 app.get('/kalapas/table/remisi', (req, res) => {
   const umum = getPublicData();
-  const rows = umum.besaranRemisi.map(item => [
-    item.nama || '-',
-    item.besaran || '-',
-    item.remisiTotal || '-',
-    item.jenis || '-'
-  ]);
+  const activeBatch = getActiveRemisiBatch();
+  const batchOptions = db.prepare(`
+    SELECT
+      id,
+      label,
+      is_active AS isActive,
+      created_at AS createdAt
+    FROM remisi_batches
+    ORDER BY created_at DESC, id DESC
+  `).all();
 
-  res.render('kalapas-table', {
+  const requestedBatch = String(req.query.batch || '').trim();
+  const selectedBatchId = Number(requestedBatch || 0);
+  const searchKeyword = String(req.query.search || '').trim();
+  const isSearchMode = Boolean(searchKeyword);
+
+  const effectiveBatchId = requestedBatch.toUpperCase() === 'ALL'
+    ? 0
+    : (selectedBatchId > 0
+      ? selectedBatchId
+      : Number(activeBatch?.id || batchOptions[0]?.id || 0));
+
+  const whereClauses = [];
+  const params = [];
+
+  if (!isSearchMode && effectiveBatchId > 0) {
+    whereClauses.push('r.batch_id = ?');
+    params.push(effectiveBatchId);
+  }
+
+  if (isSearchMode) {
+    const likeValue = `%${searchKeyword.toLowerCase()}%`;
+    whereClauses.push(`(
+      LOWER(COALESCE(r.nama, '')) LIKE ?
+      OR LOWER(COALESCE(r.jenis, '')) LIKE ?
+      OR LOWER(COALESCE(r.besaran, '')) LIKE ?
+      OR LOWER(COALESCE(r.remisi_total, '')) LIKE ?
+      OR LOWER(COALESCE(b.label, '')) LIKE ?
+    )`);
+    params.push(likeValue, likeValue, likeValue, likeValue, likeValue);
+  }
+
+  const whereSql = whereClauses.length ? `WHERE ${whereClauses.join(' AND ')}` : '';
+  const list = db.prepare(`
+    SELECT
+      r.id,
+      r.nama,
+      r.besaran,
+      r.remisi_total AS remisiTotal,
+      r.jenis,
+      r.batch_id AS batchId,
+      COALESCE(b.label, 'BATCH TIDAK DIKETAHUI') AS batchLabel,
+      COALESCE(b.is_active, 0) AS batchIsActive
+    FROM besaran_remisi r
+    LEFT JOIN remisi_batches b ON b.id = r.batch_id
+    ${whereSql}
+    ORDER BY UPPER(TRIM(r.nama)) ASC, r.id ASC
+  `).all(...params);
+
+  const selectedBatch = batchOptions.find((batch) => Number(batch.id) === Number(effectiveBatchId)) || null;
+
+  res.render('kalapas-remisi', {
     pageTitle: umum.remisiTitle,
     sectionTitle: umum.remisiTitle,
-    subtitle: `Total data: ${rows.length}`,
-    columns: ['NAMA WARGA BINAAN', 'BESARAN REMISI', 'REMISI TOTAL', 'KETERANGAN'],
-    rows,
-    backUrl: '/kalapas'
+    backUrl: '/kalapas',
+    list,
+    batchOptions,
+    selectedBatchId: effectiveBatchId,
+    selectedBatch,
+    searchKeyword,
+    isSearchMode,
   });
 });
 
