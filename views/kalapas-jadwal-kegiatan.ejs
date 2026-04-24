@@ -1,0 +1,178 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title><%= pageTitle %> - Kalapas</title>
+  <link rel="stylesheet" href="/css/style.css?v=<%= Date.now() %>">
+  <style>
+    .kalapas-table-wrap { padding: 14px 15px; }
+    .kalapas-table-toolbar {
+      display: flex;
+      gap: 8px;
+      flex-wrap: wrap;
+      align-items: center;
+      margin-bottom: 10px;
+    }
+    .kalapas-table-toolbar a {
+      text-decoration: none;
+      color: #fff;
+      background: #1a4bb8;
+      border: 1px solid rgba(255,255,255,.3);
+      border-radius: 6px;
+      padding: 7px 11px;
+      font-size: 12px;
+      font-weight: bold;
+    }
+    .jadwal-filter-form {
+      display: flex;
+      gap: 8px;
+      flex-wrap: wrap;
+      align-items: flex-end;
+      margin-bottom: 10px;
+      padding: 10px;
+      border: 1px solid #dbeafe;
+      border-radius: 8px;
+      background: #f8fafc;
+    }
+    .jadwal-filter-form .field {
+      display: grid;
+      gap: 4px;
+      min-width: 210px;
+    }
+    .jadwal-filter-form label {
+      font-size: 11px;
+      font-weight: 700;
+      color: #334155;
+    }
+    .jadwal-filter-form select {
+      border: 1px solid #cbd5e1;
+      border-radius: 6px;
+      padding: 7px 10px;
+      font-size: 12px;
+      font-weight: 700;
+      color: #0f172a;
+      background: #fff;
+    }
+    .jadwal-filter-form button,
+    .jadwal-filter-form a {
+      text-decoration: none;
+      border: 1px solid rgba(255,255,255,.3);
+      border-radius: 6px;
+      padding: 7px 11px;
+      font-size: 12px;
+      font-weight: bold;
+      cursor: pointer;
+    }
+    .jadwal-filter-form button {
+      color: #fff;
+      background: #1a4bb8;
+    }
+    .jadwal-filter-form a {
+      color: #1e3a8a;
+      background: #eff6ff;
+      border-color: #cbd5e1;
+      display: inline-flex;
+      align-items: center;
+    }
+    .kalapas-table-panel table th,
+    .kalapas-table-panel table td {
+      font-size: 12px;
+      padding: 8px 9px;
+    }
+    .kalapas-empty {
+      text-align: center;
+      color: #64748b;
+      padding: 14px;
+      font-weight: bold;
+    }
+  </style>
+</head>
+<body class="page-umum">
+  <header class="header">
+    <div class="header-content">
+      <div class="logo-section">
+        <div class="logo kalapas-logo">
+          <img src="/images/Logo.png" alt="Logo SIMWASPIM" class="kalapas-logo-img">
+        </div>
+        <div class="header-info">
+          <h2><%= sectionTitle %></h2>
+          <h3>Data Jadwal Kegiatan Pembinaan</h3>
+          <p class="address"><%= subtitle %></p>
+        </div>
+      </div>
+    </div>
+  </header>
+
+  <div class="kalapas-table-wrap">
+    <div class="kalapas-table-toolbar">
+      <a href="<%= backUrl %>">⬅ Kembali ke Kalapas</a>
+    </div>
+
+    <form method="GET" action="/kalapas/table/jadwal-kegiatan" class="jadwal-filter-form">
+      <div class="field">
+        <label for="filter-hari">Filter Hari</label>
+        <select id="filter-hari" name="hari">
+          <option value="">Semua Hari</option>
+          <% (hariOptions || []).forEach((option) => { %>
+            <option value="<%= option %>" <%= selectedHari === option ? 'selected' : '' %>><%= option %></option>
+          <% }) %>
+        </select>
+      </div>
+
+      <div class="field">
+        <label for="filter-pj">Filter Penanggung Jawab</label>
+        <select id="filter-pj" name="penanggung_jawab">
+          <option value="">Semua Penanggung Jawab</option>
+          <% (penanggungJawabOptions || []).forEach((option) => { %>
+            <option value="<%= option %>" <%= selectedPenanggungJawab === option ? 'selected' : '' %>><%= option %></option>
+          <% }) %>
+        </select>
+      </div>
+
+      <button type="submit">🔎 Terapkan</button>
+      <a href="/kalapas/table/jadwal-kegiatan">↺ Reset</a>
+    </form>
+
+    <div class="panel kalapas-table-panel">
+      <div class="panel-header red">
+        <span><%= sectionTitle %></span>
+        <span><%= rows.length %> data</span>
+      </div>
+      <div class="panel-content" style="padding:0;">
+        <div class="table-wrap">
+          <table class="admin-table">
+            <thead>
+              <tr>
+                <th>HARI</th>
+                <th>WAKTU</th>
+                <th>KEGIATAN</th>
+                <th>LOKASI</th>
+                <th>PENANGGUNG JAWAB</th>
+              </tr>
+            </thead>
+            <tbody>
+              <% rows.forEach((row) => { %>
+                <tr>
+                  <% if (row.showHari) { %>
+                    <td rowspan="<%= row.hariRowspan %>"><%= row.hari %></td>
+                  <% } %>
+                  <td><%= row.waktu %></td>
+                  <td><%= row.kegiatan %></td>
+                  <td><%= row.lokasi %></td>
+                  <% if (row.showPenanggungJawab) { %>
+                    <td rowspan="<%= row.penanggungJawabRowspan %>"><%= row.penanggungJawab %></td>
+                  <% } %>
+                </tr>
+              <% }) %>
+              <% if (!rows.length) { %>
+                <tr><td colspan="5" class="kalapas-empty">Belum ada data</td></tr>
+              <% } %>
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+  </div>
+</body>
+</html>

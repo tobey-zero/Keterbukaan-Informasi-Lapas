@@ -217,14 +217,60 @@
                                 </tr>
                             </thead>
                             <tbody>
-                                <% jadwalKegiatan.forEach(item => { %>
-                                <tr>
-                                    <td><%= item.hari || '-' %></td>
-                                    <td><%= item.waktu || '-' %></td>
-                                    <td><%= item.kegiatan || '-' %></td>
-                                    <td><%= item.lokasi || '-' %></td>
-                                    <td><%= item.penanggungJawab || '-' %></td>
-                                </tr>
+                                <% const mergedJadwalRows = []; %>
+                                <% let jadwalIndex = 0; %>
+                                <% while (jadwalIndex < jadwalKegiatan.length) { %>
+                                    <% const hariValue = String(jadwalKegiatan[jadwalIndex].hari || '').trim() || '-'; %>
+                                    <% let hariEnd = jadwalIndex; %>
+                                    <% while (hariEnd < jadwalKegiatan.length) { %>
+                                        <% const nextHari = String(jadwalKegiatan[hariEnd].hari || '').trim() || '-'; %>
+                                        <% if (nextHari !== hariValue) { break; } %>
+                                        <% hariEnd += 1; %>
+                                    <% } %>
+
+                                    <% let pjStart = jadwalIndex; %>
+                                    <% while (pjStart < hariEnd) { %>
+                                        <% const pjValue = String(jadwalKegiatan[pjStart].penanggungJawab || '').trim() || '-'; %>
+                                        <% let pjEnd = pjStart; %>
+                                        <% while (pjEnd < hariEnd) { %>
+                                            <% const nextPj = String(jadwalKegiatan[pjEnd].penanggungJawab || '').trim() || '-'; %>
+                                            <% if (nextPj !== pjValue) { break; } %>
+                                            <% pjEnd += 1; %>
+                                        <% } %>
+
+                                        <% for (let rowIndex = pjStart; rowIndex < pjEnd; rowIndex += 1) { %>
+                                            <% const row = jadwalKegiatan[rowIndex]; %>
+                                            <% mergedJadwalRows.push({
+                                                hari: hariValue,
+                                                waktu: row.waktu || '-',
+                                                kegiatan: row.kegiatan || '-',
+                                                lokasi: row.lokasi || '-',
+                                                penanggungJawab: pjValue,
+                                                showHari: rowIndex === jadwalIndex,
+                                                hariRowspan: rowIndex === jadwalIndex ? (hariEnd - jadwalIndex) : 0,
+                                                showPenanggungJawab: rowIndex === pjStart,
+                                                penanggungJawabRowspan: rowIndex === pjStart ? (pjEnd - pjStart) : 0,
+                                            }); %>
+                                        <% } %>
+
+                                        <% pjStart = pjEnd; %>
+                                    <% } %>
+
+                                    <% jadwalIndex = hariEnd; %>
+                                <% } %>
+
+                                <% mergedJadwalRows.forEach((item) => { %>
+                                    <tr>
+                                        <% if (item.showHari) { %>
+                                            <td rowspan="<%= item.hariRowspan %>"><%= item.hari %></td>
+                                        <% } %>
+                                        <td><%= item.waktu %></td>
+                                        <td><%= item.kegiatan %></td>
+                                        <td><%= item.lokasi %></td>
+                                        <% if (item.showPenanggungJawab) { %>
+                                            <td rowspan="<%= item.penanggungJawabRowspan %>"><%= item.penanggungJawab %></td>
+                                        <% } %>
+                                    </tr>
                                 <% }) %>
                                 <% if (!jadwalKegiatan.length) { %>
                                 <tr>

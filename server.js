@@ -991,7 +991,28 @@ function getPublicData() {
     }));
 
   const jadwalKegiatan = db
-    .prepare('SELECT hari, waktu, kegiatan, lokasi, penanggung_jawab AS penanggungJawab FROM jadwal_kegiatan ORDER BY id')
+    .prepare(`SELECT
+      hari,
+      waktu,
+      kegiatan,
+      lokasi,
+      penanggung_jawab AS penanggungJawab
+    FROM jadwal_kegiatan
+    ORDER BY
+      CASE UPPER(TRIM(hari))
+        WHEN 'SENIN' THEN 1
+        WHEN 'SELASA' THEN 2
+        WHEN 'RABU' THEN 3
+        WHEN 'KAMIS' THEN 4
+        WHEN 'JUMAT' THEN 5
+        WHEN 'JUM''AT' THEN 5
+        WHEN 'SABTU' THEN 6
+        WHEN 'MINGGU' THEN 7
+        ELSE 99
+      END ASC,
+      UPPER(TRIM(penanggung_jawab)) ASC,
+      UPPER(TRIM(waktu)) ASC,
+      id ASC`)
     .all();
 
   const dokumentasiMedia = db.prepare(`
@@ -2196,22 +2217,104 @@ app.get('/kalapas/table/pembinaan', (req, res) => {
 });
 
 app.get('/kalapas/table/jadwal-kegiatan', (req, res) => {
-  const umum = getPublicData();
-  const rows = umum.jadwalKegiatan.map(item => [
-    item.hari || '-',
-    item.waktu || '-',
-    item.kegiatan || '-',
-    item.lokasi || '-',
-    item.penanggungJawab || '-'
-  ]);
+  const selectedHari = String(req.query.hari || '').trim();
+  const selectedPenanggungJawab = String(req.query.penanggung_jawab || '').trim();
+  const dayOrderSql = `
+    CASE UPPER(TRIM(hari))
+      WHEN 'SENIN' THEN 1
+      WHEN 'SELASA' THEN 2
+      WHEN 'RABU' THEN 3
+      WHEN 'KAMIS' THEN 4
+      WHEN 'JUMAT' THEN 5
+      WHEN 'JUM''AT' THEN 5
+      WHEN 'SABTU' THEN 6
+      WHEN 'MINGGU' THEN 7
+      ELSE 99
+    END
+  `;
 
-  res.render('kalapas-table', {
+  const jadwalList = db.prepare(`
+    SELECT
+      id,
+      hari,
+      waktu,
+      kegiatan,
+      lokasi,
+      penanggung_jawab AS penanggungJawab
+    FROM jadwal_kegiatan
+    ORDER BY ${dayOrderSql} ASC,
+      UPPER(TRIM(penanggung_jawab)) ASC,
+      UPPER(TRIM(waktu)) ASC,
+      id ASC
+  `).all();
+
+  const hariOptions = Array.from(new Set(
+    jadwalList.map((item) => String(item.hari || '').trim()).filter(Boolean)
+  ));
+  const penanggungJawabOptions = Array.from(new Set(
+    jadwalList.map((item) => String(item.penanggungJawab || '').trim()).filter(Boolean)
+  )).sort((a, b) => a.localeCompare(b, 'id', { sensitivity: 'base' }));
+
+  const filteredList = jadwalList.filter((item) => {
+    const hari = String(item.hari || '').trim();
+    const penanggungJawab = String(item.penanggungJawab || '').trim();
+    if (selectedHari && hari !== selectedHari) return false;
+    if (selectedPenanggungJawab && penanggungJawab !== selectedPenanggungJawab) return false;
+    return true;
+  });
+
+  const mergedRows = [];
+  let index = 0;
+  while (index < filteredList.length) {
+    const hariValue = String(filteredList[index].hari || '').trim() || '-';
+    let hariEnd = index;
+    while (hariEnd < filteredList.length) {
+      const nextHari = String(filteredList[hariEnd].hari || '').trim() || '-';
+      if (nextHari !== hariValue) break;
+      hariEnd += 1;
+    }
+
+    let pjStart = index;
+    while (pjStart < hariEnd) {
+      const pjValue = String(filteredList[pjStart].penanggungJawab || '').trim() || '-';
+      let pjEnd = pjStart;
+      while (pjEnd < hariEnd) {
+        const nextPj = String(filteredList[pjEnd].penanggungJawab || '').trim() || '-';
+        if (nextPj !== pjValue) break;
+        pjEnd += 1;
+      }
+
+      for (let rowIndex = pjStart; rowIndex < pjEnd; rowIndex += 1) {
+        const row = filteredList[rowIndex];
+        mergedRows.push({
+          hari: hariValue,
+          waktu: row.waktu || '-',
+          kegiatan: row.kegiatan || '-',
+          lokasi: row.lokasi || '-',
+          penanggungJawab: pjValue,
+          showHari: rowIndex === index,
+          hariRowspan: rowIndex === index ? (hariEnd - index) : 0,
+          showPenanggungJawab: rowIndex === pjStart,
+          penanggungJawabRowspan: rowIndex === pjStart ? (pjEnd - pjStart) : 0,
+        });
+      }
+
+      pjStart = pjEnd;
+    }
+
+    index = hariEnd;
+  }
+
+  res.render('kalapas-jadwal-kegiatan', {
     pageTitle: 'Jadwal Kegiatan Pembinaan',
     sectionTitle: 'JADWAL KEGIATAN PEMBINAAN',
-    subtitle: `Total data: ${rows.length}`,
-    columns: ['HARI', 'WAKTU', 'KEGIATAN', 'LOKASI', 'PENANGGUNG JAWAB'],
-    rows,
-    backUrl: '/kalapas'
+    subtitle: `Total data: ${mergedRows.length}`,
+    backUrl: '/kalapas',
+    selectedHari,
+    selectedPenanggungJawab,
+    hariOptions,
+    penanggungJawabOptions,
+    rows: mergedRows,
   });
 });
 
