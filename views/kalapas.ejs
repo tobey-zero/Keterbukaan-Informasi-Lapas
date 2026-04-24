@@ -908,9 +908,9 @@
         label: 'Pengaduan Masyarakat', value: totalPengaduanMasyarakat, link: '/kalapas/table/pengaduan' }, {
         label: 'Laporan BMN' , value: tuUmumSummary.totalTuUmum, link: '/kalapas/table/tu-bmn' }, { label: 'Kepegawaian'
         , value: tuUmumSummary.totalPegawai, link: '/kalapas/table/kepegawaian' },
-        { label: 'Kegiatan GIIATJA', value: giiatjaSummary.kegiatan, link: '/kalapas/table/giiatja' },
-        { label: 'WBP yang Mendapatkan Pelatihan', value: giiatjaSummary.pelatihan, link: '/kalapas/table/giiatja' },
-        { label: 'WBP Yang Mendapatkan Premi', value: giiatjaSummary.premi, link: '/kalapas/table/giiatja' } ]; const
+        { label: 'Kegiatan GIIATJA', value: giiatjaSummary.kegiatan, link: '/kalapas/table/giiatja-kegiatan' },
+        { label: 'WBP yang Mendapatkan Pelatihan', value: giiatjaSummary.pelatihan, link: '/kalapas/table/giiatja-pelatihan' },
+        { label: 'WBP Yang Mendapatkan Premi', value: giiatjaSummary.premi, link: '/kalapas/table/giiatja-premi' } ]; const
         summaryIconFor = (label) => {
         const key = String(label || '').toLowerCase();
         if (key.includes('remisi')) return '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 5h10l6 6v8a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2z"></path><path d="M14 5v6h6"></path></svg>';

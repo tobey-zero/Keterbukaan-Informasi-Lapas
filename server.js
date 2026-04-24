@@ -2565,6 +2565,78 @@ app.get('/kalapas/table/giiatja/pnbp-detail', (req, res) => {
   });
 });
 
+app.get('/kalapas/table/giiatja-kegiatan', (req, res) => {
+  const data = getGiiatjaData();
+  const normalizeMultiline = (value) => String(value || '')
+    .split(/\r?\n/)
+    .map((line) => line.trim())
+    .filter(Boolean)
+    .join(' | ');
+
+  const rows = data.kegiatanList.map((item, index) => [
+    String(index + 1),
+    item.kategori || '-',
+    item.jenisKegiatan || '-',
+    normalizeMultiline(item.pesertaKegiatan) || '-',
+    normalizeMultiline(item.pengawas) || '-',
+    item.dokumentasiPath || '-',
+  ]);
+
+  res.render('kalapas-table', {
+    pageTitle: 'Kegiatan GIIATJA',
+    sectionTitle: 'KEGIATAN GIIATJA',
+    subtitle: `Total data: ${rows.length}`,
+    columns: ['NO', 'KATEGORI', 'JENIS KEGIATAN', 'PESERTA KEGIATAN', 'PENGAWAS', 'DOKUMENTASI'],
+    rows,
+    backUrl: '/kalapas'
+  });
+});
+
+app.get('/kalapas/table/giiatja-pelatihan', (req, res) => {
+  const data = getGiiatjaData();
+  const rows = data.pelatihanList.map((item, index) => [
+    String(index + 1),
+    item.noRegistrasi || '-',
+    item.namaWbp || '-',
+    item.jenisPelatihan || '-',
+    item.tanggalPelaksanaan || '-',
+    item.instruktur || '-',
+    item.potoSertifikatPath || '-',
+    item.keterangan || '-',
+  ]);
+
+  res.render('kalapas-table', {
+    pageTitle: 'WBP yang Mendapatkan Pelatihan',
+    sectionTitle: 'WBP YANG MENDAPATKAN PELATIHAN BERSERTIFIKAT',
+    subtitle: `Total data: ${rows.length}`,
+    columns: ['NO', 'NO REGISTRASI', 'NAMA WBP', 'JENIS PELATIHAN', 'TANGGAL PELAKSANAAN', 'INSTRUKTUR', 'FOTO SERTIFIKAT', 'KETERANGAN'],
+    rows,
+    backUrl: '/kalapas'
+  });
+});
+
+app.get('/kalapas/table/giiatja-premi', (req, res) => {
+  const data = getGiiatjaData();
+  const rows = data.premiList.map((item, index) => [
+    String(index + 1),
+    item.noRegistrasi || '-',
+    item.namaWbp || '-',
+    `${item.periodeBulan || '-'} ${item.periodeTahun || '-'}`.trim(),
+    item.jenisKegiatan || '-',
+    item.premiDidapat || '-',
+    item.keterangan || '-',
+  ]);
+
+  res.render('kalapas-table', {
+    pageTitle: 'WBP yang Mendapatkan Premi',
+    sectionTitle: 'WBP YANG MENDAPATKAN PREMI',
+    subtitle: `Total data: ${rows.length}`,
+    columns: ['NO', 'NO REGISTRASI', 'NAMA WBP', 'PERIODE', 'JENIS KEGIATAN', 'PREMI', 'KETERANGAN'],
+    rows,
+    backUrl: '/kalapas'
+  });
+});
+
 app.get('/kalapas/table/pnbp-giiatja', (req, res) => {
   const pnbpYear = String(req.query.tahun || '').trim();
   const data = getGiiatjaData({ pnbpYear });
