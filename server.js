@@ -986,7 +986,7 @@ function requireAccess(page) {
     if (!req.session || !req.session.user) return res.redirect('/admin/login');
     const allowed = roleAccess[req.session.user.role] || [];
     if (allowed.includes(page)) return next();
-    return res.status(403).render('admin/403', { user: req.session.user, active: '' });
+    return res.status(403).render('admin/403', { user: req.session.user, active: '', allowed });
   };
 }
 
@@ -995,7 +995,8 @@ function requireKalapasLogin(req, res, next) {
     return res.redirect('/kalapas/login');
   }
   if (!canAccessKalapasView(req.session.user)) {
-    return res.status(403).render('admin/403', { user: req.session.user, active: '' });
+    const allowed = roleAccess[req.session.user.role] || [];
+    return res.status(403).render('admin/403', { user: req.session.user, active: '', allowed });
   }
   return next();
 }

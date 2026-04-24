@@ -11,7 +11,8 @@
     </div>
   </div>
   <nav class="sidebar-nav">
-    <% const hasAny = (pages) => pages.some(p => allowed.includes(p)); %>
+    <% const safeAllowed = (typeof allowed !== 'undefined' && Array.isArray(allowed)) ? allowed : []; %>
+    <% const hasAny = (pages) => pages.some(p => safeAllowed.includes(p)); %>
     <% const isSuperAdmin = user && user.role === 'superadmin'; %>
     <div class="nav-label">Utama</div>
     <a href="/admin/dashboard" class="nav-item <%= active==='dashboard'?'active':'' %>">
@@ -26,19 +27,19 @@
     <div class="nav-label">Role Registrasi</div>
     <% } %>
 
-    <% if (allowed.includes('statistik')) { %>
+    <% if (safeAllowed.includes('statistik')) { %>
     <a href="/admin/statistik" class="nav-item <%= active==='statistik'?'active':'' %>">
       <span class="icon">📈</span><span>Statistik</span>
     </a>
     <% } %>
 
-    <% if (allowed.includes('remisi')) { %>
+    <% if (safeAllowed.includes('remisi')) { %>
     <a href="/admin/remisi" class="nav-item <%= active==='remisi'?'active':'' %>">
       <span class="icon">📋</span><span>Besaran Remisi</span>
     </a>
     <% } %>
 
-    <% if (allowed.includes('papan-isi')) { %>
+    <% if (safeAllowed.includes('papan-isi')) { %>
     <a href="/admin/papan-isi" class="nav-item <%= active==='papan-isi'?'active':'' %>">
       <span class="icon">📌</span><span>Papan Keadaan Isi</span>
     </a>
@@ -48,19 +49,19 @@
     <div class="nav-label">Role Pembinaan</div>
     <% } %>
 
-    <% if (allowed.includes('jadwal')) { %>
+    <% if (safeAllowed.includes('jadwal')) { %>
     <a href="/admin/jadwal" class="nav-item <%= active==='jadwal'?'active':'' %>">
       <span class="icon">📅</span><span>Jadwal Kegiatan</span>
     </a>
     <% } %>
 
-    <% if (allowed.includes('pembinaan-detail')) { %>
+    <% if (safeAllowed.includes('pembinaan-detail')) { %>
     <a href="/admin/pembinaan-detail" class="nav-item <%= active==='pembinaan-detail'?'active':'' %>">
       <span class="icon">🧭</span><span>Detail Pembinaan</span>
     </a>
     <% } %>
 
-    <% if (allowed.includes('giiatja')) { %>
+    <% if (safeAllowed.includes('giiatja')) { %>
     <div class="nav-label">Role GIIATJA</div>
     <a href="/admin/giiatja?menu=kegiatan" class="nav-item <%= active==='giiatja-kegiatan'?'active':'' %>">
       <span class="icon">🏭</span><span>GIIATJA Kegiatan</span>
@@ -80,37 +81,37 @@
     <div class="nav-label">Role Klinik</div>
     <% } %>
 
-    <% if (allowed.includes('klinik-medis')) { %>
+    <% if (safeAllowed.includes('klinik-medis')) { %>
     <a href="/admin/klinik-medis" class="nav-item <%= active==='klinik-medis'?'active':'' %>">
       <span class="icon">🩺</span><span>Tenaga Medis</span>
     </a>
     <% } %>
 
-    <% if (allowed.includes('klinik-berobat')) { %>
+    <% if (safeAllowed.includes('klinik-berobat')) { %>
     <a href="/admin/klinik-berobat" class="nav-item <%= active==='klinik-berobat'?'active':'' %>">
       <span class="icon">🏥</span><span>WARGA BINAAN Sakit</span>
     </a>
     <% } %>
 
-    <% if (allowed.includes('klinik-oncall')) { %>
+    <% if (safeAllowed.includes('klinik-oncall')) { %>
     <a href="/admin/klinik-oncall" class="nav-item <%= active==='klinik-oncall'?'active':'' %>">
       <span class="icon">📞</span><span>Jadwal On Call</span>
     </a>
     <% } %>
 
-    <% if (allowed.includes('klinik-kontrol')) { %>
+    <% if (safeAllowed.includes('klinik-kontrol')) { %>
     <a href="/admin/klinik-kontrol" class="nav-item <%= active==='klinik-kontrol'?'active':'' %>">
       <span class="icon">🔍</span><span>Jadwal Kontrol</span>
     </a>
     <% } %>
 
-    <% if (allowed.includes('klinik-statistik')) { %>
+    <% if (safeAllowed.includes('klinik-statistik')) { %>
     <a href="/admin/klinik-statistik" class="nav-item <%= active==='klinik-statistik'?'active':'' %>">
       <span class="icon">📊</span><span>Statistik Klinik</span>
     </a>
     <% } %>
 
-    <% if (allowed.includes('menu')) { %>
+    <% if (safeAllowed.includes('menu')) { %>
     <div class="nav-label">Role Dapur</div>
     <a href="/admin/menu/master" class="nav-item <%= active==='menu-master'?'active':'' %>">
       <span class="icon">📚</span><span>Master Menu</span>
@@ -127,13 +128,13 @@
     <div class="nav-label">Role Humas</div>
     <% } %>
 
-    <% if (allowed.includes('video')) { %>
+    <% if (safeAllowed.includes('video')) { %>
     <a href="/admin/video" class="nav-item <%= typeof active !== 'undefined' && active==='video' ? 'active' : '' %>">
       <span class="icon">🎥</span><span>Video Dokumentasi</span>
     </a>
     <% } %>
 
-    <% if (allowed.includes('kata-bijak')) { %>
+    <% if (safeAllowed.includes('kata-bijak')) { %>
     <a href="/admin/kata-bijak" class="nav-item <%= active==='kata-bijak'?'active':'' %>">
       <span class="icon">💬</span><span>Kata Bijak</span>
     </a>
@@ -143,43 +144,43 @@
     <div class="nav-label">Role Kamtib</div>
     <% } %>
 
-    <% if (allowed.includes('razia')) { %>
+    <% if (safeAllowed.includes('razia')) { %>
     <a href="/admin/razia" class="nav-item <%= active==='razia'?'active':'' %>">
       <span class="icon">🚨</span><span>Razia</span>
     </a>
     <% } %>
 
-    <% if (allowed.includes('pengawalan')) { %>
+    <% if (safeAllowed.includes('pengawalan')) { %>
     <a href="/admin/pengawalan" class="nav-item <%= active==='pengawalan'?'active':'' %>">
       <span class="icon">🛡️</span><span>Giat Pengawalan</span>
     </a>
     <% } %>
 
-    <% if (allowed.includes('register-f')) { %>
+    <% if (safeAllowed.includes('register-f')) { %>
     <a href="/admin/register-f" class="nav-item <%= active==='register-f'?'active':'' %>">
       <span class="icon">📘</span><span>Register F</span>
     </a>
     <% } %>
 
-    <% if (allowed.includes('strapsel')) { %>
+    <% if (safeAllowed.includes('strapsel')) { %>
     <a href="/admin/strapsel" class="nav-item <%= active==='strapsel'?'active':'' %>">
       <span class="icon">🛡️</span><span>Strapsel</span>
     </a>
     <% } %>
 
-    <% if (allowed.includes('piket-jaga')) { %>
+    <% if (safeAllowed.includes('piket-jaga')) { %>
     <a href="/admin/piket-jaga" class="nav-item <%= active==='piket-jaga'?'active':'' %>">
       <span class="icon">🧷</span><span>Piket Jaga</span>
     </a>
     <% } %>
 
-    <% if (allowed.includes('pengaduan')) { %>
+    <% if (safeAllowed.includes('pengaduan')) { %>
     <a href="/admin/pengaduan" class="nav-item <%= active==='pengaduan'?'active':'' %>">
       <span class="icon">📢</span><span>Pengaduan Masyarakat</span>
     </a>
     <% } %>
 
-    <% if (allowed.includes('tu-umum')) { %>
+    <% if (safeAllowed.includes('tu-umum')) { %>
     <div class="nav-label">Role Tata Usaha</div>
     <a href="/admin/tu-umum/realisasi" class="nav-item <%= active==='tu-realisasi'?'active':'' %>">
       <span class="icon">💰</span><span>TU Realisasi</span>
@@ -196,13 +197,13 @@
     <div class="nav-label">Role Pengamanan</div>
     <% } %>
 
-    <% if (allowed.includes('kamar-blok')) { %>
+    <% if (safeAllowed.includes('kamar-blok')) { %>
     <a href="/admin/kamar-blok" class="nav-item <%= active==='kamar-blok'?'active':'' %>">
       <span class="icon">🛏️</span><span>Kamar/Blok</span>
     </a>
     <% } %>
 
-    <% if (allowed.includes('luar-tembok')) { %>
+    <% if (safeAllowed.includes('luar-tembok')) { %>
     <a href="/admin/luar-tembok" class="nav-item <%= active==='luar-tembok'?'active':'' %>">
       <span class="icon">🧾</span><span>WBP Luar Tembok</span>
     </a>
@@ -213,25 +214,25 @@
     <div class="nav-label">Kelola Data</div>
     <% } %>
 
-    <% if (allowed.includes('statistik')) { %>
+    <% if (safeAllowed.includes('statistik')) { %>
     <a href="/admin/statistik" class="nav-item <%= active==='statistik'?'active':'' %>">
       <span class="icon">📈</span><span>Statistik</span>
     </a>
     <% } %>
 
-    <% if (allowed.includes('remisi')) { %>
+    <% if (safeAllowed.includes('remisi')) { %>
     <a href="/admin/remisi" class="nav-item <%= active==='remisi'?'active':'' %>">
       <span class="icon">📋</span><span>Besaran Remisi</span>
     </a>
     <% } %>
 
-    <% if (allowed.includes('kata-bijak')) { %>
+    <% if (safeAllowed.includes('kata-bijak')) { %>
     <a href="/admin/kata-bijak" class="nav-item <%= active==='kata-bijak'?'active':'' %>">
       <span class="icon">💬</span><span>Kata Bijak</span>
     </a>
     <% } %>
 
-    <% if (allowed.includes('menu')) { %>
+    <% if (safeAllowed.includes('menu')) { %>
     <a href="/admin/menu/master" class="nav-item <%= active==='menu-master'?'active':'' %>">
       <span class="icon">📚</span><span>Master Menu</span>
     </a>
@@ -243,31 +244,31 @@
     </a>
     <% } %>
 
-    <% if (allowed.includes('video')) { %>
+    <% if (safeAllowed.includes('video')) { %>
     <a href="/admin/video" class="nav-item <%= typeof active !== 'undefined' && active==='video' ? 'active' : '' %>">
       <span class="icon">🎥</span><span>Video Dokumentasi</span>
     </a>
     <% } %>
 
-    <% if (allowed.includes('pengaduan')) { %>
+    <% if (safeAllowed.includes('pengaduan')) { %>
     <a href="/admin/pengaduan" class="nav-item <%= active==='pengaduan'?'active':'' %>">
       <span class="icon">📢</span><span>Pengaduan Masyarakat</span>
     </a>
     <% } %>
 
-    <% if (allowed.includes('jadwal')) { %>
+    <% if (safeAllowed.includes('jadwal')) { %>
     <a href="/admin/jadwal" class="nav-item <%= active==='jadwal'?'active':'' %>">
       <span class="icon">📅</span><span>Jadwal Kegiatan</span>
     </a>
     <% } %>
 
-    <% if (allowed.includes('pembinaan-detail')) { %>
+    <% if (safeAllowed.includes('pembinaan-detail')) { %>
     <a href="/admin/pembinaan-detail" class="nav-item <%= active==='pembinaan-detail'?'active':'' %>">
       <span class="icon">🧭</span><span>Detail Pembinaan</span>
     </a>
     <% } %>
 
-    <% if (allowed.includes('giiatja')) { %>
+    <% if (safeAllowed.includes('giiatja')) { %>
     <a href="/admin/giiatja?menu=kegiatan" class="nav-item <%= active==='giiatja-kegiatan'?'active':'' %>">
       <span class="icon">🏭</span><span>GIIATJA Kegiatan</span>
     </a>
@@ -282,37 +283,37 @@
     </a>
     <% } %>
 
-    <% if (allowed.includes('razia')) { %>
+    <% if (safeAllowed.includes('razia')) { %>
     <a href="/admin/razia" class="nav-item <%= active==='razia'?'active':'' %>">
       <span class="icon">🚨</span><span>Razia</span>
     </a>
     <% } %>
 
-    <% if (allowed.includes('pengawalan')) { %>
+    <% if (safeAllowed.includes('pengawalan')) { %>
     <a href="/admin/pengawalan" class="nav-item <%= active==='pengawalan'?'active':'' %>">
       <span class="icon">🛡️</span><span>Giat Pengawalan</span>
     </a>
     <% } %>
 
-    <% if (allowed.includes('register-f')) { %>
+    <% if (safeAllowed.includes('register-f')) { %>
     <a href="/admin/register-f" class="nav-item <%= active==='register-f'?'active':'' %>">
       <span class="icon">📘</span><span>Register F</span>
     </a>
     <% } %>
 
-    <% if (allowed.includes('strapsel')) { %>
+    <% if (safeAllowed.includes('strapsel')) { %>
     <a href="/admin/strapsel" class="nav-item <%= active==='strapsel'?'active':'' %>">
       <span class="icon">🛡️</span><span>Strapsel</span>
     </a>
     <% } %>
 
-    <% if (allowed.includes('piket-jaga')) { %>
+    <% if (safeAllowed.includes('piket-jaga')) { %>
     <a href="/admin/piket-jaga" class="nav-item <%= active==='piket-jaga'?'active':'' %>">
       <span class="icon">🧷</span><span>Piket Jaga</span>
     </a>
     <% } %>
 
-    <% if (allowed.includes('tu-umum')) { %>
+    <% if (safeAllowed.includes('tu-umum')) { %>
     <a href="/admin/tu-umum/realisasi" class="nav-item <%= active==='tu-realisasi'?'active':'' %>">
       <span class="icon">💰</span><span>TU Realisasi</span>
     </a>
@@ -324,19 +325,19 @@
     </a>
     <% } %>
 
-    <% if (allowed.includes('kamar-blok')) { %>
+    <% if (safeAllowed.includes('kamar-blok')) { %>
     <a href="/admin/kamar-blok" class="nav-item <%= active==='kamar-blok'?'active':'' %>">
       <span class="icon">🛏️</span><span>Kamar/Blok</span>
     </a>
     <% } %>
 
-    <% if (allowed.includes('papan-isi')) { %>
+    <% if (safeAllowed.includes('papan-isi')) { %>
     <a href="/admin/papan-isi" class="nav-item <%= active==='papan-isi'?'active':'' %>">
       <span class="icon">📌</span><span>Papan Keadaan Isi</span>
     </a>
     <% } %>
 
-    <% if (allowed.includes('luar-tembok')) { %>
+    <% if (safeAllowed.includes('luar-tembok')) { %>
     <a href="/admin/luar-tembok" class="nav-item <%= active==='luar-tembok'?'active':'' %>">
       <span class="icon">🧾</span><span>WBP Luar Tembok</span>
     </a>
@@ -346,38 +347,38 @@
     <div class="nav-label">Kelola Klinik</div>
     <% } %>
 
-    <% if (allowed.includes('klinik-medis')) { %>
+    <% if (safeAllowed.includes('klinik-medis')) { %>
     <a href="/admin/klinik-medis" class="nav-item <%= active==='klinik-medis'?'active':'' %>">
       <span class="icon">🩺</span><span>Tenaga Medis</span>
     </a>
     <% } %>
 
-    <% if (allowed.includes('klinik-berobat')) { %>
+    <% if (safeAllowed.includes('klinik-berobat')) { %>
     <a href="/admin/klinik-berobat" class="nav-item <%= active==='klinik-berobat'?'active':'' %>">
       <span class="icon">🏥</span><span>WARGA BINAAN Sakit</span>
     </a>
     <% } %>
 
-    <% if (allowed.includes('klinik-oncall')) { %>
+    <% if (safeAllowed.includes('klinik-oncall')) { %>
     <a href="/admin/klinik-oncall" class="nav-item <%= active==='klinik-oncall'?'active':'' %>">
       <span class="icon">📞</span><span>Jadwal On Call</span>
     </a>
     <% } %>
 
-    <% if (allowed.includes('klinik-kontrol')) { %>
+    <% if (safeAllowed.includes('klinik-kontrol')) { %>
     <a href="/admin/klinik-kontrol" class="nav-item <%= active==='klinik-kontrol'?'active':'' %>">
       <span class="icon">🔍</span><span>Jadwal Kontrol</span>
     </a>
     <% } %>
 
-    <% if (allowed.includes('klinik-statistik')) { %>
+    <% if (safeAllowed.includes('klinik-statistik')) { %>
     <a href="/admin/klinik-statistik" class="nav-item <%= active==='klinik-statistik'?'active':'' %>">
       <span class="icon">📊</span><span>Statistik Klinik</span>
     </a>
     <% } %>
     <% } %>
 
-    <% if (allowed.includes('users')) { %>
+    <% if (safeAllowed.includes('users')) { %>
     <div class="nav-label">Sistem</div>
     <a href="/admin/users" class="nav-item <%= active==='users'?'active':'' %>">
       <span class="icon">👤</span><span>Kelola User</span>
