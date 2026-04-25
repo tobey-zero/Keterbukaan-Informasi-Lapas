@@ -24,7 +24,7 @@
             <div class="form-grid col-4" style="margin-bottom:12px;">
               <div class="form-group"><label>No Registrasi</label><input type="text" name="no_registrasi" required value="<%= edit ? edit.no_registrasi : '' %>" placeholder="BI.001-LT/2026"></div>
               <div class="form-group"><label>Nama</label><input type="text" name="nama" required value="<%= edit ? edit.nama : '' %>" placeholder="Nama WBP"></div>
-              <div class="form-group"><label>Tanggal</label><input type="text" name="tanggal" required value="<%= edit ? edit.tanggal : '' %>" placeholder="17 April 2026"></div>
+              <div class="form-group"><label>Tanggal</label><input type="date" name="tanggal" required value="<%= edit ? editTanggalInput : todayYmd %>"></div>
               <div class="form-group"><label>Pendamping</label><input type="text" name="pendamping" required value="<%= edit ? edit.pendamping : '' %>" placeholder="Nama Pendamping"></div>
               <div class="form-group" style="grid-column: span 4;"><label>Keterangan</label><input type="text" name="keterangan" value="<%= edit ? (edit.keterangan || '') : '' %>" placeholder="cth: Kebersihan Luar Tembok"></div>
             </div>

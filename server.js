@@ -366,7 +366,53 @@ function normalizeDateToYmd(value) {
     if (month) return `${year}-${month}-${day}`;
   }
 
+  const indoNoYearMatch = raw.match(/^(\d{1,2})\s+([A-Za-zÀ-ÿ.]+)$/);
+  if (indoNoYearMatch) {
+    const day = indoNoYearMatch[1].padStart(2, '0');
+    const monthRaw = indoNoYearMatch[2].toLowerCase().replace(/\./g, '');
+    const month = monthMap[monthRaw];
+    if (month) {
+      const currentYear = getTodayYmd().slice(0, 4);
+      return `${currentYear}-${month}-${day}`;
+    }
+  }
+
   return null;
+}
+
+function normalizeLegacyLuarTembokDates() {
+  const rows = db.prepare(`
+    SELECT id, tanggal
+    FROM board_luar_tembok_detail
+    ORDER BY id ASC
+  `).all();
+
+  if (!rows.length) return;
+
+  const updateStmt = db.prepare('UPDATE board_luar_tembok_detail SET tanggal = ? WHERE id = ?');
+  let updatedCount = 0;
+
+  db.exec('BEGIN');
+  try {
+    rows.forEach((row) => {
+      const rawTanggal = String(row.tanggal || '').trim();
+      if (!rawTanggal) return;
+      const normalized = normalizeDateToYmd(rawTanggal);
+      if (!normalized || normalized === rawTanggal) return;
+      updateStmt.run(normalized, Number(row.id));
+      updatedCount += 1;
+    });
+
+    db.exec('COMMIT');
+    if (updatedCount > 0) {
+      setAppSetting('board_luar_tembok_normalized_at', getJakartaNowDatetimeLocal());
+      setAppSetting('board_luar_tembok_normalized_count', String(updatedCount));
+      console.log(`✅ Normalisasi tanggal WBP luar tembok: ${updatedCount} data diperbarui.`);
+    }
+  } catch (err) {
+    db.exec('ROLLBACK');
+    throw err;
+  }
 }
 
 function ensureDailyOperationalResets() {
@@ -927,6 +973,8 @@ function syncPembinaanMasterByName(namaWbp, statusIntegrasi) {
   db.prepare('INSERT INTO pentahapan_pembinaan (nama_wbp, status_integrasi) VALUES (?, ?)')
     .run(normalizedName, statusIntegrasi);
 }
+
+normalizeLegacyLuarTembokDates();
 
 // ─── Template Engine ──────────────────────────────────────────────────────────
 app.set('view engine', 'ejs');
@@ -5705,17 +5753,21 @@ app.post('/admin/papan-isi/luar/:id/delete', requireAccess('papan-isi'), (req, r
 });
 
 app.get('/admin/luar-tembok', requireAccess('luar-tembok'), (req, res) => {
+  const todayYmd = getTodayYmd();
   const list = db.prepare(`
     SELECT id, no_registrasi, nama, tanggal, pendamping, keterangan
     FROM board_luar_tembok_detail
     ORDER BY id DESC
   `).all();
   const edit = req.query.edit ? db.prepare('SELECT * FROM board_luar_tembok_detail WHERE id=?').get(Number(req.query.edit)) : null;
+  const editTanggalInput = edit ? (normalizeDateToYmd(edit.tanggal) || '') : todayYmd;
 
   res.render('admin/luar-tembok', {
     user: req.session.user,
     list,
     edit,
+    editTanggalInput,
+    todayYmd,
     active: 'luar-tembok',
     success: req.query.success
   });
@@ -5724,7 +5776,8 @@ app.get('/admin/luar-tembok', requireAccess('luar-tembok'), (req, res) => {
 app.post('/admin/luar-tembok/add', requireAccess('luar-tembok'), (req, res) => {
   const noRegistrasi = (req.body.no_registrasi || '').trim().toUpperCase();
   const nama = (req.body.nama || '').trim().toUpperCase();
-  const tanggal = (req.body.tanggal || '').trim();
+  const tanggalRaw = (req.body.tanggal || '').trim();
+  const tanggal = normalizeDateToYmd(tanggalRaw) || tanggalRaw;
   const pendamping = (req.body.pendamping || '').trim();
   const keterangan = (req.body.keterangan || '').trim();
   if (!noRegistrasi || !nama || !tanggal || !pendamping) return res.redirect('/admin/luar-tembok');
@@ -5740,7 +5793,8 @@ app.post('/admin/luar-tembok/add', requireAccess('luar-tembok'), (req, res) => {
 app.post('/admin/luar-tembok/:id/update', requireAccess('luar-tembok'), (req, res) => {
   const noRegistrasi = (req.body.no_registrasi || '').trim().toUpperCase();
   const nama = (req.body.nama || '').trim().toUpperCase();
-  const tanggal = (req.body.tanggal || '').trim();
+  const tanggalRaw = (req.body.tanggal || '').trim();
+  const tanggal = normalizeDateToYmd(tanggalRaw) || tanggalRaw;
   const pendamping = (req.body.pendamping || '').trim();
   const keterangan = (req.body.keterangan || '').trim();
   if (!noRegistrasi || !nama || !tanggal || !pendamping) return res.redirect('/admin/luar-tembok');
