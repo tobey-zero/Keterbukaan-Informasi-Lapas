@@ -35,7 +35,11 @@
                 <input type="text" name="tanggal_masuk_strapsel" placeholder="Contoh: 14 April 2026" required>
               </div>
               <div class="form-group">
-                <label>Tanggal Keluar</label>
+                <label>Tanggal Keluar Strapsel</label>
+                <input type="text" name="tanggal_keluar_strapsel" placeholder="Contoh: 30 April 2026">
+              </div>
+              <div class="form-group">
+                <label>Expirasi</label>
                 <input type="text" name="ekspirasi" placeholder="Contoh: 14 Mei 2026">
               </div>
               <div class="form-group">
@@ -74,7 +78,11 @@
               <input type="text" name="tanggal_masuk_strapsel" value="<%= edit.tanggal_masuk_strapsel %>" required>
             </div>
             <div class="form-group">
-              <label>Tanggal Keluar</label>
+              <label>Tanggal Keluar Strapsel</label>
+              <input type="text" name="tanggal_keluar_strapsel" value="<%= edit.tanggal_keluar_strapsel || '' %>">
+            </div>
+            <div class="form-group">
+              <label>Expirasi</label>
               <input type="text" name="ekspirasi" value="<%= edit.ekspirasi || '' %>">
             </div>
             <div class="form-group">
@@ -136,7 +144,7 @@
           </div>
           <div class="table-wrap">
             <table class="admin-table">
-              <thead><tr><th>#</th><th>Nama WBP</th><th>Blok Hunian</th><th>Tanggal Masuk</th><th>Tanggal Keluar</th><th>Permasalahan</th><th>Barang Bukti</th><th>Dokumentasi</th><th>Aksi</th></tr></thead>
+              <thead><tr><th>#</th><th>Nama WBP</th><th>Blok Hunian</th><th>Tanggal Masuk</th><th>Tanggal Keluar Strapsel</th><th>Expirasi</th><th>Permasalahan</th><th>Barang Bukti</th><th>Dokumentasi</th><th>Aksi</th></tr></thead>
               <tbody>
                 <% list.forEach((item, i) => { %>
                 <tr>
@@ -144,6 +152,7 @@
                   <td><%= item.nama_wbp %></td>
                   <td><%= item.blok_hunian %></td>
                   <td><%= formatDateIndo(item.tanggal_masuk_strapsel) %></td>
+                  <td><%= formatDateIndo(item.tanggal_keluar_strapsel || '-') %></td>
                   <td><%= formatDateIndo(item.ekspirasi || '-') %></td>
                   <td><%= item.permasalahan || '-' %></td>
                   <td><%= item.barang_bukti || '-' %></td>
@@ -164,7 +173,7 @@
                   </td>
                 </tr>
                 <% }) %>
-                <% if (!list.length) { %><tr><td colspan="9" style="text-align:center;color:#aaa;padding:20px;">Belum ada data</td></tr><% } %>
+                <% if (!list.length) { %><tr><td colspan="10" style="text-align:center;color:#aaa;padding:20px;">Belum ada data</td></tr><% } %>
               </tbody>
             </table>
           </div>

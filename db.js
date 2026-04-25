@@ -217,6 +217,7 @@ db.exec(`
     nama_wbp TEXT NOT NULL,
     blok_hunian TEXT NOT NULL,
     tanggal_masuk_strapsel TEXT NOT NULL,
+    tanggal_keluar_strapsel TEXT,
     ekspirasi TEXT,
     permasalahan TEXT,
     barang_bukti TEXT,
@@ -577,6 +578,7 @@ const strapselColumnNames = strapselColumns.map(col => col.name);
 if (!strapselColumnNames.includes('nama_wbp')) db.exec("ALTER TABLE strapsel_data ADD COLUMN nama_wbp TEXT DEFAULT ''");
 if (!strapselColumnNames.includes('blok_hunian')) db.exec("ALTER TABLE strapsel_data ADD COLUMN blok_hunian TEXT DEFAULT ''");
 if (!strapselColumnNames.includes('tanggal_masuk_strapsel')) db.exec("ALTER TABLE strapsel_data ADD COLUMN tanggal_masuk_strapsel TEXT DEFAULT ''");
+if (!strapselColumnNames.includes('tanggal_keluar_strapsel')) db.exec('ALTER TABLE strapsel_data ADD COLUMN tanggal_keluar_strapsel TEXT');
 if (!strapselColumnNames.includes('ekspirasi')) db.exec('ALTER TABLE strapsel_data ADD COLUMN ekspirasi TEXT');
 if (!strapselColumnNames.includes('permasalahan')) db.exec('ALTER TABLE strapsel_data ADD COLUMN permasalahan TEXT');
 if (!strapselColumnNames.includes('barang_bukti')) db.exec('ALTER TABLE strapsel_data ADD COLUMN barang_bukti TEXT');
@@ -1049,12 +1051,12 @@ seedIfEmpty('razia_barang_bukti', () => {
 seedIfEmpty('strapsel_data', () => {
   const insert = db.prepare(`
     INSERT INTO strapsel_data
-      (nama_wbp, blok_hunian, tanggal_masuk_strapsel, ekspirasi, permasalahan, barang_bukti, dokumentasi_path)
-    VALUES (?, ?, ?, ?, ?, ?, ?)
+      (nama_wbp, blok_hunian, tanggal_masuk_strapsel, tanggal_keluar_strapsel, ekspirasi, permasalahan, barang_bukti, dokumentasi_path)
+    VALUES (?, ?, ?, ?, ?, ?, ?, ?)
   `);
   const rows = [
-    ['WBP A.N. C', 'Blok B-02', '13 April 2026', '13 Mei 2026', 'Membawa alat terlarang', 'Pisau rakitan', null],
-    ['WBP A.N. D', 'Blok C-04', '14 April 2026', '14 Mei 2026', 'Menyimpan barang terlarang', 'Handphone', null],
+    ['WBP A.N. C', 'Blok B-02', '13 April 2026', '30 April 2026', '13 Mei 2026', 'Membawa alat terlarang', 'Pisau rakitan', null],
+    ['WBP A.N. D', 'Blok C-04', '14 April 2026', '29 April 2026', '14 Mei 2026', 'Menyimpan barang terlarang', 'Handphone', null],
   ];
   rows.forEach(r => insert.run(...r));
 });

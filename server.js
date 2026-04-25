@@ -1302,6 +1302,7 @@ function getSecurityData(filter = {}) {
       nama_wbp AS namaWbp,
       blok_hunian AS blokHunian,
       tanggal_masuk_strapsel AS tanggalMasukStrapsel,
+      tanggal_keluar_strapsel AS tanggalKeluarStrapsel,
       ekspirasi,
       permasalahan,
       barang_bukti AS barangBukti,
@@ -1314,6 +1315,7 @@ function getSecurityData(filter = {}) {
           item.namaWbp,
           item.blokHunian,
           item.tanggalMasukStrapsel,
+          item.tanggalKeluarStrapsel,
           item.ekspirasi,
           item.permasalahan,
           item.barangBukti,
@@ -2690,6 +2692,7 @@ app.get('/kalapas/table/strapsel', (req, res) => {
     item.namaWbp || '-',
     item.blokHunian || '-',
     item.tanggalMasukStrapsel || '-',
+    item.tanggalKeluarStrapsel || '-',
     item.ekspirasi || '-',
     item.permasalahan || '-',
     item.barangBukti || '-',
@@ -2711,7 +2714,7 @@ app.get('/kalapas/table/strapsel', (req, res) => {
       searchPlaceholder: 'Cari nama, blok, permasalahan, barang bukti, tanggal...',
       searchValue: searchKeyword
     },
-    columns: ['NAMA WBP', 'BLOK HUNIAN', 'TANGGAL MASUK STRAPSEL', 'TANGGAL KELUAR', 'PERMASALAHAN', 'BARANG BUKTI', 'DOKUMENTASI'],
+    columns: ['NAMA WBP', 'BLOK HUNIAN', 'TANGGAL MASUK STRAPSEL', 'TANGGAL KELUAR STRAPSEL', 'EXPIRASI', 'PERMASALAHAN', 'BARANG BUKTI', 'DOKUMENTASI'],
     rows,
     backUrl: '/kalapas'
   });
@@ -4372,6 +4375,7 @@ app.get('/admin/strapsel', requireAccess('strapsel'), (req, res) => {
         item.nama_wbp,
         item.blok_hunian,
         item.tanggal_masuk_strapsel,
+        item.tanggal_keluar_strapsel,
         item.ekspirasi,
         item.permasalahan,
         item.barang_bukti,
@@ -4521,13 +4525,13 @@ app.post('/admin/piket-jaga/update', requireAccess('piket-jaga'), (req, res) => 
 
 app.post('/admin/strapsel/add', requireAccess('strapsel'), raziaUpload.single('dokumentasi'), (req, res) => {
   const searchKeyword = String(req.query.search || '').trim();
-  const { nama_wbp, blok_hunian, tanggal_masuk_strapsel, ekspirasi, permasalahan, barang_bukti } = req.body;
+  const { nama_wbp, blok_hunian, tanggal_masuk_strapsel, tanggal_keluar_strapsel, ekspirasi, permasalahan, barang_bukti } = req.body;
   const dokumentasiPath = req.file ? `/uploads/razia/${req.file.filename}` : null;
   db.prepare(`
     INSERT INTO strapsel_data
-      (nama_wbp, blok_hunian, tanggal_masuk_strapsel, ekspirasi, permasalahan, barang_bukti, dokumentasi_path)
-    VALUES (?, ?, ?, ?, ?, ?, ?)
-  `).run(nama_wbp, blok_hunian, tanggal_masuk_strapsel, ekspirasi || '', permasalahan || '', barang_bukti || '', dokumentasiPath);
+      (nama_wbp, blok_hunian, tanggal_masuk_strapsel, tanggal_keluar_strapsel, ekspirasi, permasalahan, barang_bukti, dokumentasi_path)
+    VALUES (?, ?, ?, ?, ?, ?, ?, ?)
+  `).run(nama_wbp, blok_hunian, tanggal_masuk_strapsel, tanggal_keluar_strapsel || '', ekspirasi || '', permasalahan || '', barang_bukti || '', dokumentasiPath);
   const redirectParams = new URLSearchParams({ success: '1' });
   if (searchKeyword) redirectParams.set('search', searchKeyword);
   res.redirect(`/admin/strapsel?${redirectParams.toString()}`);
@@ -4536,7 +4540,7 @@ app.post('/admin/strapsel/add', requireAccess('strapsel'), raziaUpload.single('d
 app.post('/admin/strapsel/:id/update', requireAccess('strapsel'), raziaUpload.single('dokumentasi'), (req, res) => {
   const searchKeyword = String(req.query.search || '').trim();
   const id = Number(req.params.id);
-  const { nama_wbp, blok_hunian, tanggal_masuk_strapsel, ekspirasi, permasalahan, barang_bukti } = req.body;
+  const { nama_wbp, blok_hunian, tanggal_masuk_strapsel, tanggal_keluar_strapsel, ekspirasi, permasalahan, barang_bukti } = req.body;
   const existing = db.prepare('SELECT dokumentasi_path FROM strapsel_data WHERE id=?').get(id);
   let nextPath = existing?.dokumentasi_path || null;
 
@@ -4547,9 +4551,9 @@ app.post('/admin/strapsel/:id/update', requireAccess('strapsel'), raziaUpload.si
 
   db.prepare(`
     UPDATE strapsel_data
-    SET nama_wbp=?, blok_hunian=?, tanggal_masuk_strapsel=?, ekspirasi=?, permasalahan=?, barang_bukti=?, dokumentasi_path=?
+    SET nama_wbp=?, blok_hunian=?, tanggal_masuk_strapsel=?, tanggal_keluar_strapsel=?, ekspirasi=?, permasalahan=?, barang_bukti=?, dokumentasi_path=?
     WHERE id=?
-  `).run(nama_wbp, blok_hunian, tanggal_masuk_strapsel, ekspirasi || '', permasalahan || '', barang_bukti || '', nextPath, id);
+  `).run(nama_wbp, blok_hunian, tanggal_masuk_strapsel, tanggal_keluar_strapsel || '', ekspirasi || '', permasalahan || '', barang_bukti || '', nextPath, id);
   const redirectParams = new URLSearchParams({ success: '1' });
   if (searchKeyword) redirectParams.set('search', searchKeyword);
   res.redirect(`/admin/strapsel?${redirectParams.toString()}`);
