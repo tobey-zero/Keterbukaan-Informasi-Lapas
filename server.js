@@ -3193,6 +3193,9 @@ app.get('/kalapas/table/pidana-umum', (req, res) => {
 
 app.get('/kalapas/table/luar-tembok', (req, res) => {
   const todayYmd = getTodayYmd();
+  const selectedDate = /^\d{4}-\d{2}-\d{2}$/.test(String(req.query.tanggal || ''))
+    ? String(req.query.tanggal)
+    : todayYmd;
   const searchKeyword = String(req.query.search || '').trim();
   const normalizeSearchText = (value) => String(value || '')
     .toLowerCase()
@@ -3202,8 +3205,10 @@ app.get('/kalapas/table/luar-tembok', (req, res) => {
 
   const board = getBoardData();
   const filtered = board.luarTembokDetail.filter((item) => {
+    const normalizedDate = normalizeDateToYmd(item.tanggal);
+    if (normalizedDate !== selectedDate) return false;
+
     if (searchKeyword) {
-      const normalizedDate = normalizeDateToYmd(item.tanggal);
       const dateSlash = normalizedDate
         ? `${normalizedDate.slice(8, 10)}/${normalizedDate.slice(5, 7)}/${normalizedDate.slice(0, 4)}`
         : '';
@@ -3224,7 +3229,7 @@ app.get('/kalapas/table/luar-tembok', (req, res) => {
       return searchBlob.includes(normalizeSearchText(searchKeyword));
     }
 
-    return normalizeDateToYmd(item.tanggal) === todayYmd;
+    return true;
   });
 
   const rows = filtered.map(item => [
@@ -3239,14 +3244,17 @@ app.get('/kalapas/table/luar-tembok', (req, res) => {
     pageTitle: 'WBP di Luar Tembok',
     sectionTitle: 'WBP DI LUAR TEMBOK',
     subtitle: searchKeyword
-      ? `Pencarian: "${searchKeyword}" | Total riwayat ditemukan: ${rows.length}`
-      : `Data tanggal hari ini: ${rows.length}`,
+      ? `Pencarian: "${searchKeyword}" | Tanggal: ${formatDateIndo(selectedDate)} | Total: ${rows.length}`
+      : `Data tanggal ${formatDateIndo(selectedDate)}: ${rows.length}`,
     dateFilter: {
       action: '/kalapas/table/luar-tembok',
-      dateEnabled: false,
+      label: 'Filter tanggal',
+      value: selectedDate,
+      todayValue: todayYmd,
+      dateEnabled: true,
       resetUrl: '/kalapas/table/luar-tembok',
       searchEnabled: true,
-      searchLabel: 'Pencarian riwayat WBP luar tembok',
+      searchLabel: 'Pencarian data WBP luar tembok (tanggal terpilih)',
       searchPlaceholder: 'Cari no registrasi, nama, tanggal, pendamping, keterangan...',
       searchValue: searchKeyword,
     },
@@ -5754,11 +5762,16 @@ app.post('/admin/papan-isi/luar/:id/delete', requireAccess('papan-isi'), (req, r
 
 app.get('/admin/luar-tembok', requireAccess('luar-tembok'), (req, res) => {
   const todayYmd = getTodayYmd();
+  const selectedDate = /^\d{4}-\d{2}-\d{2}$/.test(String(req.query.tanggal || ''))
+    ? String(req.query.tanggal)
+    : todayYmd;
+
   const list = db.prepare(`
     SELECT id, no_registrasi, nama, tanggal, pendamping, keterangan
     FROM board_luar_tembok_detail
+    WHERE date(COALESCE(NULLIF(TRIM(tanggal), ''), '0001-01-01')) = date(?)
     ORDER BY id DESC
-  `).all();
+  `).all(selectedDate);
   const edit = req.query.edit ? db.prepare('SELECT * FROM board_luar_tembok_detail WHERE id=?').get(Number(req.query.edit)) : null;
   const editTanggalInput = edit ? (normalizeDateToYmd(edit.tanggal) || '') : todayYmd;
 
@@ -5768,6 +5781,7 @@ app.get('/admin/luar-tembok', requireAccess('luar-tembok'), (req, res) => {
     edit,
     editTanggalInput,
     todayYmd,
+    selectedDate,
     active: 'luar-tembok',
     success: req.query.success
   });
@@ -5780,6 +5794,9 @@ app.post('/admin/luar-tembok/add', requireAccess('luar-tembok'), (req, res) => {
   const tanggal = normalizeDateToYmd(tanggalRaw) || tanggalRaw;
   const pendamping = (req.body.pendamping || '').trim();
   const keterangan = (req.body.keterangan || '').trim();
+  const redirectDate = /^\d{4}-\d{2}-\d{2}$/.test(String(req.body.redirect_tanggal || ''))
+    ? String(req.body.redirect_tanggal)
+    : getTodayYmd();
   if (!noRegistrasi || !nama || !tanggal || !pendamping) return res.redirect('/admin/luar-tembok');
 
   db.prepare(`
@@ -5787,7 +5804,7 @@ app.post('/admin/luar-tembok/add', requireAccess('luar-tembok'), (req, res) => {
     VALUES (?, ?, ?, ?, ?)
   `).run(noRegistrasi, nama, tanggal, pendamping, keterangan);
 
-  res.redirect('/admin/luar-tembok?success=1');
+  res.redirect(`/admin/luar-tembok?success=1&tanggal=${encodeURIComponent(redirectDate)}`);
 });
 
 app.post('/admin/luar-tembok/:id/update', requireAccess('luar-tembok'), (req, res) => {
@@ -5797,6 +5814,9 @@ app.post('/admin/luar-tembok/:id/update', requireAccess('luar-tembok'), (req, re
   const tanggal = normalizeDateToYmd(tanggalRaw) || tanggalRaw;
   const pendamping = (req.body.pendamping || '').trim();
   const keterangan = (req.body.keterangan || '').trim();
+  const redirectDate = /^\d{4}-\d{2}-\d{2}$/.test(String(req.body.redirect_tanggal || ''))
+    ? String(req.body.redirect_tanggal)
+    : getTodayYmd();
   if (!noRegistrasi || !nama || !tanggal || !pendamping) return res.redirect('/admin/luar-tembok');
 
   db.prepare(`
@@ -5805,12 +5825,15 @@ app.post('/admin/luar-tembok/:id/update', requireAccess('luar-tembok'), (req, re
     WHERE id=?
   `).run(noRegistrasi, nama, tanggal, pendamping, keterangan, Number(req.params.id));
 
-  res.redirect('/admin/luar-tembok?success=1');
+  res.redirect(`/admin/luar-tembok?success=1&tanggal=${encodeURIComponent(redirectDate)}`);
 });
 
 app.post('/admin/luar-tembok/:id/delete', requireAccess('luar-tembok'), (req, res) => {
+  const redirectDate = /^\d{4}-\d{2}-\d{2}$/.test(String(req.body.redirect_tanggal || ''))
+    ? String(req.body.redirect_tanggal)
+    : getTodayYmd();
   db.prepare('DELETE FROM board_luar_tembok_detail WHERE id=?').run(Number(req.params.id));
-  res.redirect('/admin/luar-tembok?success=1');
+  res.redirect(`/admin/luar-tembok?success=1&tanggal=${encodeURIComponent(redirectDate)}`);
 });
 
 app.post('/admin/papan-isi/agama/add', requireAccess('papan-isi'), (req, res) => {

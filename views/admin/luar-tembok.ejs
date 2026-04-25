@@ -18,9 +18,24 @@
       <% if (success) { %><div class="alert alert-success">✅ Data berhasil disimpan.</div><% } %>
 
       <div class="card">
+        <div class="card-header"><h3>📅 Filter Tanggal</h3></div>
+        <div class="card-body">
+          <form method="GET" action="/admin/luar-tembok" style="display:flex;gap:8px;align-items:end;flex-wrap:wrap;">
+            <div class="form-group" style="margin:0;min-width:220px;">
+              <label>Tampilkan tanggal</label>
+              <input type="date" name="tanggal" value="<%= selectedDate || todayYmd %>" required>
+            </div>
+            <button type="submit" class="btn btn-primary btn-sm">Terapkan</button>
+            <a href="/admin/luar-tembok" class="btn btn-secondary btn-sm">Hari Ini</a>
+          </form>
+        </div>
+      </div>
+
+      <div class="card">
         <div class="card-header"><h3><%= edit ? '✏️ Edit WBP Luar Tembok' : '➕ Tambah WBP Luar Tembok' %></h3></div>
         <div class="card-body">
           <form method="POST" action="<%= edit ? '/admin/luar-tembok/' + edit.id + '/update' : '/admin/luar-tembok/add' %>">
+            <input type="hidden" name="redirect_tanggal" value="<%= selectedDate || todayYmd %>">
             <div class="form-grid col-4" style="margin-bottom:12px;">
               <div class="form-group"><label>No Registrasi</label><input type="text" name="no_registrasi" required value="<%= edit ? edit.no_registrasi : '' %>" placeholder="BI.001-LT/2026"></div>
               <div class="form-group"><label>Nama</label><input type="text" name="nama" required value="<%= edit ? edit.nama : '' %>" placeholder="Nama WBP"></div>
@@ -30,7 +45,7 @@
             </div>
             <div style="display:flex;gap:8px;">
               <button type="submit" class="btn <%= edit ? 'btn-success' : 'btn-primary' %> btn-sm"><%= edit ? '💾 Simpan' : '➕ Tambah' %></button>
-              <% if (edit) { %><a href="/admin/luar-tembok" class="btn btn-secondary btn-sm">✕ Batal</a><% } %>
+              <% if (edit) { %><a href="/admin/luar-tembok?tanggal=<%= encodeURIComponent(selectedDate || todayYmd) %>" class="btn btn-secondary btn-sm">✕ Batal</a><% } %>
             </div>
           </form>
         </div>
@@ -55,6 +70,7 @@
                     <div class="actions">
                       <a href="/admin/luar-tembok?edit=<%= item.id %>" class="btn btn-warning btn-xs">✏️ Edit</a>
                       <form method="POST" action="/admin/luar-tembok/<%= item.id %>/delete" style="display:inline" onsubmit="return confirm('Hapus data ini?')">
+                        <input type="hidden" name="redirect_tanggal" value="<%= selectedDate || todayYmd %>">
                         <button class="btn btn-danger btn-xs">🗑 Hapus</button>
                       </form>
                     </div>
