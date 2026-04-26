@@ -3,15 +3,16 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title><%= (typeof pageTitle !== 'undefined' && pageTitle) ? pageTitle : 'Admin Login – Keterbukaan Informasi Lapas' %></title>
+  <title><%= (typeof pageTitle !== 'undefined' && pageTitle) ? pageTitle : 'Admin Login – SIMWASPIM' %></title>
   <link rel="stylesheet" href="/css/admin.css">
 </head>
 <body>
 <div class="login-page">
   <div class="login-box">
     <div class="login-logo">
-      <h1>🏛 LAPAS</h1>
-      <% const subtitle = String((typeof loginSubtitle !== 'undefined' && loginSubtitle) ? loginSubtitle : 'Sistem Keterbukaan Informasi Narapidana\nPanel Administrasi'); %>
+      <img src="/images/Logo.png" alt="SIMWASPIM" class="login-logo-image">
+      <h1>SIMWASPIM</h1>
+      <% const subtitle = String((typeof loginSubtitle !== 'undefined' && loginSubtitle) ? loginSubtitle : 'Sistem Pengawasan Pimpinan'); %>
       <p><%- subtitle.replace(/\n/g, '<br>') %></p>
     </div>
     <% if (error) { %>
