@@ -2843,8 +2843,46 @@ app.get('/kalapas/table/pengaduan', (req, res) => {
 });
 
 app.get('/kalapas/table/pengawalan', (req, res) => {
+  const todayYmd = getTodayYmd();
+  const selectedDate = /^\d{4}-\d{2}-\d{2}$/.test(String(req.query.tanggal || ''))
+    ? String(req.query.tanggal)
+    : todayYmd;
+  const searchKeyword = String(req.query.search || '').trim();
+  const normalizeSearchText = (value) => String(value || '')
+    .toLowerCase()
+    .replace(/[^a-z0-9\s]/g, ' ')
+    .replace(/\s+/g, ' ')
+    .trim();
+
   const pengawalan = getPengawalanData();
-  const rows = pengawalan.list.map(item => [
+  const filtered = pengawalan.list.filter((item) => {
+    const normalizedDate = normalizeDateToYmd(item.tanggal);
+    if (normalizedDate !== selectedDate) return false;
+
+    if (searchKeyword) {
+      const dateSlash = normalizedDate
+        ? `${normalizedDate.slice(8, 10)}/${normalizedDate.slice(5, 7)}/${normalizedDate.slice(0, 4)}`
+        : '';
+      const dateDash = normalizedDate
+        ? `${normalizedDate.slice(8, 10)}-${normalizedDate.slice(5, 7)}-${normalizedDate.slice(0, 4)}`
+        : '';
+      const searchBlob = normalizeSearchText([
+        item.tanggal,
+        normalizedDate,
+        dateSlash,
+        dateDash,
+        formatDateIndo(item.tanggal),
+        item.namaWbp,
+        item.petugas,
+        item.keterangan,
+      ].join(' '));
+      return searchBlob.includes(normalizeSearchText(searchKeyword));
+    }
+
+    return true;
+  });
+
+  const rows = filtered.map(item => [
     item.tanggal || '-',
     item.namaWbp || '-',
     item.petugas || '-',
@@ -2855,7 +2893,21 @@ app.get('/kalapas/table/pengawalan', (req, res) => {
   res.render('kalapas-table', {
     pageTitle: 'Giat Pengawalan',
     sectionTitle: 'GIAT PENGAWALAN',
-    subtitle: `Total data: ${rows.length}`,
+    subtitle: searchKeyword
+      ? `Pencarian: "${searchKeyword}" | Tanggal: ${formatDateIndo(selectedDate)} | Total: ${rows.length}`
+      : `Data tanggal ${formatDateIndo(selectedDate)}: ${rows.length}`,
+    dateFilter: {
+      action: '/kalapas/table/pengawalan',
+      label: 'Filter tanggal',
+      value: selectedDate,
+      todayValue: todayYmd,
+      dateEnabled: true,
+      resetUrl: '/kalapas/table/pengawalan',
+      searchEnabled: true,
+      searchLabel: 'Pencarian data giat pengawalan (tanggal terpilih)',
+      searchPlaceholder: 'Cari tanggal, nama WBP, petugas, keterangan... ',
+      searchValue: searchKeyword,
+    },
     columns: ['TANGGAL', 'NAMA WBP', 'PETUGAS', 'KETERANGAN', 'DOKUMENTASI'],
     rows,
     backUrl: '/kalapas'
