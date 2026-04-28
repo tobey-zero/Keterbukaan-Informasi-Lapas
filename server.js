@@ -2037,9 +2037,10 @@ function getKalapasData() {
   const statistikTanggalYmd = normalizeDateToYmd(umum.tanggal);
   const hasStatistikKunjunganTodayUpdate = statistikInputDate === todayYmd
     || (!statistikInputDate && statistikTanggalYmd === todayYmd);
-  const hasLuarTembokToday = (board.luarTembokDetail || []).some((item) => {
+  const luarTembokTodayCount = (board.luarTembokDetail || []).filter((item) => {
     return normalizeDateToYmd(item.tanggal) === todayYmd;
-  });
+  }).length;
+  const hasLuarTembokToday = luarTembokTodayCount > 0;
   const papanIsiInputDate = normalizeDateToYmd(getAppSetting('board_registrasi_hunian_last_input_date', ''));
   const hasPapanIsiTodayUpdate = papanIsiInputDate === todayYmd;
   const hasDapurTodayUpdate = Number(db.prepare(`
@@ -2116,6 +2117,7 @@ function getKalapasData() {
     pidanaUmum: board.pidanaUmum,
     luarTembok: board.luarTembok,
     luarTembokDetail: board.luarTembokDetail,
+    luarTembokTodayCount,
     agama: board.agama,
     wnaNegara: board.wnaNegara,
     boardSummary: board.boardSummary,
