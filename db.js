@@ -209,6 +209,7 @@ db.exec(`
     id INTEGER PRIMARY KEY AUTOINCREMENT,
     pemilik TEXT NOT NULL,
     kamar_blok TEXT NOT NULL,
+    tanggal_temuan TEXT,
     foto_path TEXT
   );
 
@@ -583,6 +584,10 @@ if (!strapselColumnNames.includes('ekspirasi')) db.exec('ALTER TABLE strapsel_da
 if (!strapselColumnNames.includes('permasalahan')) db.exec('ALTER TABLE strapsel_data ADD COLUMN permasalahan TEXT');
 if (!strapselColumnNames.includes('barang_bukti')) db.exec('ALTER TABLE strapsel_data ADD COLUMN barang_bukti TEXT');
 if (!strapselColumnNames.includes('dokumentasi_path')) db.exec('ALTER TABLE strapsel_data ADD COLUMN dokumentasi_path TEXT');
+
+const raziaBuktiColumns = db.prepare("PRAGMA table_info('razia_barang_bukti')").all();
+const raziaBuktiColumnNames = raziaBuktiColumns.map(col => col.name);
+if (!raziaBuktiColumnNames.includes('tanggal_temuan')) db.exec('ALTER TABLE razia_barang_bukti ADD COLUMN tanggal_temuan TEXT');
 
 const tuUmumBarangColumns = db.prepare("PRAGMA table_info('tu_umum_barang')").all();
 const tuUmumBarangColumnNames = tuUmumBarangColumns.map(col => col.name);
@@ -1040,10 +1045,10 @@ seedIfEmpty('razia_jadwal', () => {
 });
 
 seedIfEmpty('razia_barang_bukti', () => {
-  const insert = db.prepare('INSERT INTO razia_barang_bukti (pemilik, kamar_blok, foto_path) VALUES (?, ?, ?)');
+  const insert = db.prepare('INSERT INTO razia_barang_bukti (pemilik, kamar_blok, tanggal_temuan, foto_path) VALUES (?, ?, ?, ?)');
   const rows = [
-    ['WBP A.N. A', 'Blok A-03', null],
-    ['WBP A.N. B', 'Blok C-01', null],
+    ['WBP A.N. A', 'Blok A-03', '2026-04-12', null],
+    ['WBP A.N. B', 'Blok C-01', '2026-04-13', null],
   ];
   rows.forEach(r => insert.run(...r));
 });

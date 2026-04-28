@@ -252,21 +252,24 @@
           <form method="GET" action="/kalapas/table/kamtib" class="kamtib-panel-filter">
             <input type="hidden" name="pengawalanTanggal" value="<%= selectedPengawalanDate || todayYmd %>">
             <input type="hidden" name="pengawalanSearch" value="<%= pengawalanSearch || '' %>">
+            <input type="hidden" name="buktiMonth" value="<%= selectedBuktiMonth %>">
+            <input type="hidden" name="buktiYear" value="<%= selectedBuktiYear %>">
+            <input type="hidden" name="buktiSearch" value="<%= buktiSearch || '' %>">
             <input type="hidden" name="strapselSearch" value="<%= strapselSearch || '' %>">
             <input type="hidden" name="registerFSearch" value="<%= registerFSearch || '' %>">
             <span class="kamtib-panel-filter-label">Pencarian Giat Razia Perbulan</span>
-            <select name="month" aria-label="Filter bulan razia">
+            <select name="raziaMonth" aria-label="Filter bulan razia">
               <% monthOptions.forEach(opt => { %>
-                <option value="<%= opt.value %>" <%= opt.value === selectedMonth ? 'selected' : '' %>><%= opt.label %></option>
+                <option value="<%= opt.value %>" <%= opt.value === selectedRaziaMonth ? 'selected' : '' %>><%= opt.label %></option>
               <% }) %>
             </select>
-            <select name="year" aria-label="Filter tahun razia">
+            <select name="raziaYear" aria-label="Filter tahun razia">
               <% yearOptions.forEach(year => { %>
-                <option value="<%= year %>" <%= String(year) === String(selectedYear) ? 'selected' : '' %>><%= year %></option>
+                <option value="<%= year %>" <%= String(year) === String(selectedRaziaYear) ? 'selected' : '' %>><%= year %></option>
               <% }) %>
             </select>
             <button type="submit">Terapkan</button>
-            <a href="/kalapas/table/kamtib?pengawalanTanggal=<%= encodeURIComponent(selectedPengawalanDate || todayYmd) %><%= pengawalanSearch ? ('&pengawalanSearch=' + encodeURIComponent(pengawalanSearch)) : '' %><%= strapselSearch ? ('&strapselSearch=' + encodeURIComponent(strapselSearch)) : '' %><%= registerFSearch ? ('&registerFSearch=' + encodeURIComponent(registerFSearch)) : '' %>" class="reset">Reset</a>
+            <a href="/kalapas/table/kamtib?buktiMonth=<%= selectedBuktiMonth %>&buktiYear=<%= selectedBuktiYear %><%= selectedPengawalanDate ? ('&pengawalanTanggal=' + encodeURIComponent(selectedPengawalanDate)) : '' %><%= pengawalanSearch ? ('&pengawalanSearch=' + encodeURIComponent(pengawalanSearch)) : '' %><%= buktiSearch ? ('&buktiSearch=' + encodeURIComponent(buktiSearch)) : '' %><%= strapselSearch ? ('&strapselSearch=' + encodeURIComponent(strapselSearch)) : '' %><%= registerFSearch ? ('&registerFSearch=' + encodeURIComponent(registerFSearch)) : '' %>" class="reset">Reset</a>
             <span><%= jadwalRazia.length %> data</span>
           </form>
         </div>
@@ -302,19 +305,42 @@
       <div class="panel kamtib-panel kamtib-panel-bukti">
         <div class="panel-header red">
           <span>BARANG BUKTI RAZIA</span>
-          <span><%= barangBuktiRazia.length %> data</span>
+          <form method="GET" action="/kalapas/table/kamtib" class="kamtib-panel-filter">
+            <input type="hidden" name="raziaMonth" value="<%= selectedRaziaMonth %>">
+            <input type="hidden" name="raziaYear" value="<%= selectedRaziaYear %>">
+            <input type="hidden" name="pengawalanTanggal" value="<%= selectedPengawalanDate || todayYmd %>">
+            <input type="hidden" name="pengawalanSearch" value="<%= pengawalanSearch || '' %>">
+            <input type="hidden" name="strapselSearch" value="<%= strapselSearch || '' %>">
+            <input type="hidden" name="registerFSearch" value="<%= registerFSearch || '' %>">
+            <span class="kamtib-panel-filter-label">Pencarian Barang Bukti Perbulan</span>
+            <select name="buktiMonth" aria-label="Filter bulan barang bukti razia">
+              <% monthOptions.forEach(opt => { %>
+                <option value="<%= opt.value %>" <%= opt.value === selectedBuktiMonth ? 'selected' : '' %>><%= opt.label %></option>
+              <% }) %>
+            </select>
+            <select name="buktiYear" aria-label="Filter tahun barang bukti razia">
+              <% yearOptions.forEach(year => { %>
+                <option value="<%= year %>" <%= String(year) === String(selectedBuktiYear) ? 'selected' : '' %>><%= year %></option>
+              <% }) %>
+            </select>
+            <input type="text" name="buktiSearch" value="<%= buktiSearch || '' %>" placeholder="Cari pemilik, kamar/blok, tanggal temuan...">
+            <button type="submit">Terapkan</button>
+            <a href="/kalapas/table/kamtib?raziaMonth=<%= selectedRaziaMonth %>&raziaYear=<%= selectedRaziaYear %>&buktiMonth=<%= selectedBuktiMonth %>&buktiYear=<%= selectedBuktiYear %><%= selectedPengawalanDate ? ('&pengawalanTanggal=' + encodeURIComponent(selectedPengawalanDate)) : '' %><%= pengawalanSearch ? ('&pengawalanSearch=' + encodeURIComponent(pengawalanSearch)) : '' %><%= strapselSearch ? ('&strapselSearch=' + encodeURIComponent(strapselSearch)) : '' %><%= registerFSearch ? ('&registerFSearch=' + encodeURIComponent(registerFSearch)) : '' %>" class="reset">Reset</a>
+            <span><%= barangBuktiRazia.length %> data</span>
+          </form>
         </div>
         <div class="panel-content">
           <div class="table-wrap kamtib-table-scroll">
             <table class="admin-table">
               <thead>
-                <tr><th>PEMILIK</th><th>KAMAR/BLOK</th><th>FOTO</th></tr>
+                <tr><th>PEMILIK</th><th>KAMAR/BLOK</th><th>TANGGAL TEMUAN</th><th>FOTO</th></tr>
               </thead>
               <tbody>
                 <% barangBuktiRazia.forEach(item => { %>
                 <tr>
                   <td><%= item.pemilik || '-' %></td>
                   <td><%= item.kamarBlok || '-' %></td>
+                  <td><%= formatDateIndo(item.tanggalTemuan || '-') %></td>
                   <td>
                     <% if (item.fotoPath) { %>
                     <a href="<%= item.fotoPath %>" target="_blank" rel="noopener noreferrer" class="kamtib-preview-btn">🔍 Preview</a>
@@ -325,7 +351,7 @@
                 </tr>
                 <% }) %>
                 <% if (!barangBuktiRazia.length) { %>
-                <tr><td colspan="3" class="kamtib-empty">Belum ada data</td></tr>
+                <tr><td colspan="4" class="kamtib-empty">Belum ada data</td></tr>
                 <% } %>
               </tbody>
             </table>
@@ -337,15 +363,18 @@
         <div class="panel-header red">
           <span>GIAT PENGAWALAN</span>
           <form method="GET" action="/kalapas/table/kamtib" class="kamtib-panel-filter">
-            <input type="hidden" name="month" value="<%= selectedMonth %>">
-            <input type="hidden" name="year" value="<%= selectedYear %>">
+            <input type="hidden" name="raziaMonth" value="<%= selectedRaziaMonth %>">
+            <input type="hidden" name="raziaYear" value="<%= selectedRaziaYear %>">
+            <input type="hidden" name="buktiMonth" value="<%= selectedBuktiMonth %>">
+            <input type="hidden" name="buktiYear" value="<%= selectedBuktiYear %>">
+            <input type="hidden" name="buktiSearch" value="<%= buktiSearch || '' %>">
             <input type="hidden" name="strapselSearch" value="<%= strapselSearch || '' %>">
             <input type="hidden" name="registerFSearch" value="<%= registerFSearch || '' %>">
             <span class="kamtib-panel-filter-label">Filter Giat Pengawalan</span>
             <input type="date" name="pengawalanTanggal" value="<%= selectedPengawalanDate || todayYmd %>" aria-label="Filter tanggal pengawalan">
             <input type="text" name="pengawalanSearch" value="<%= pengawalanSearch || '' %>" placeholder="Cari tanggal, nama WBP, petugas, keterangan...">
             <button type="submit">Terapkan</button>
-            <a href="/kalapas/table/kamtib?month=<%= selectedMonth %>&year=<%= selectedYear %><%= strapselSearch ? ('&strapselSearch=' + encodeURIComponent(strapselSearch)) : '' %><%= registerFSearch ? ('&registerFSearch=' + encodeURIComponent(registerFSearch)) : '' %>" class="reset">Reset</a>
+            <a href="/kalapas/table/kamtib?raziaMonth=<%= selectedRaziaMonth %>&raziaYear=<%= selectedRaziaYear %>&buktiMonth=<%= selectedBuktiMonth %>&buktiYear=<%= selectedBuktiYear %><%= buktiSearch ? ('&buktiSearch=' + encodeURIComponent(buktiSearch)) : '' %><%= strapselSearch ? ('&strapselSearch=' + encodeURIComponent(strapselSearch)) : '' %><%= registerFSearch ? ('&registerFSearch=' + encodeURIComponent(registerFSearch)) : '' %>" class="reset">Reset</a>
             <span><%= pengawalanList.length %> data</span>
           </form>
         </div>
@@ -384,15 +413,18 @@
         <div class="panel-header red">
           <span>DATA STRAPSEL</span>
           <form method="GET" action="/kalapas/table/kamtib" class="kamtib-panel-filter">
-            <input type="hidden" name="month" value="<%= selectedMonth %>">
-            <input type="hidden" name="year" value="<%= selectedYear %>">
+            <input type="hidden" name="raziaMonth" value="<%= selectedRaziaMonth %>">
+            <input type="hidden" name="raziaYear" value="<%= selectedRaziaYear %>">
+            <input type="hidden" name="buktiMonth" value="<%= selectedBuktiMonth %>">
+            <input type="hidden" name="buktiYear" value="<%= selectedBuktiYear %>">
             <input type="hidden" name="pengawalanTanggal" value="<%= selectedPengawalanDate || todayYmd %>">
             <input type="hidden" name="pengawalanSearch" value="<%= pengawalanSearch || '' %>">
+            <input type="hidden" name="buktiSearch" value="<%= buktiSearch || '' %>">
             <input type="hidden" name="registerFSearch" value="<%= registerFSearch || '' %>">
             <span class="kamtib-panel-filter-label">Pencarian Strapsel</span>
             <input type="text" name="strapselSearch" value="<%= strapselSearch || '' %>" placeholder="Cari nama, blok, permasalahan, barang bukti...">
             <button type="submit">Terapkan</button>
-            <a href="/kalapas/table/kamtib?month=<%= selectedMonth %>&year=<%= selectedYear %><%= registerFSearch ? ('&registerFSearch=' + encodeURIComponent(registerFSearch)) : '' %><%= selectedPengawalanDate ? ('&pengawalanTanggal=' + encodeURIComponent(selectedPengawalanDate)) : '' %><%= pengawalanSearch ? ('&pengawalanSearch=' + encodeURIComponent(pengawalanSearch)) : '' %>" class="reset">Reset</a>
+            <a href="/kalapas/table/kamtib?raziaMonth=<%= selectedRaziaMonth %>&raziaYear=<%= selectedRaziaYear %>&buktiMonth=<%= selectedBuktiMonth %>&buktiYear=<%= selectedBuktiYear %><%= registerFSearch ? ('&registerFSearch=' + encodeURIComponent(registerFSearch)) : '' %><%= selectedPengawalanDate ? ('&pengawalanTanggal=' + encodeURIComponent(selectedPengawalanDate)) : '' %><%= pengawalanSearch ? ('&pengawalanSearch=' + encodeURIComponent(pengawalanSearch)) : '' %><%= buktiSearch ? ('&buktiSearch=' + encodeURIComponent(buktiSearch)) : '' %>" class="reset">Reset</a>
             <span><%= strapselList.length %> data</span>
           </form>
         </div>
@@ -435,15 +467,18 @@
         <div class="panel-header red">
           <span>REGISTER F</span>
           <form method="GET" action="/kalapas/table/kamtib" class="kamtib-panel-filter">
-            <input type="hidden" name="month" value="<%= selectedMonth %>">
-            <input type="hidden" name="year" value="<%= selectedYear %>">
+            <input type="hidden" name="raziaMonth" value="<%= selectedRaziaMonth %>">
+            <input type="hidden" name="raziaYear" value="<%= selectedRaziaYear %>">
+            <input type="hidden" name="buktiMonth" value="<%= selectedBuktiMonth %>">
+            <input type="hidden" name="buktiYear" value="<%= selectedBuktiYear %>">
             <input type="hidden" name="pengawalanTanggal" value="<%= selectedPengawalanDate || todayYmd %>">
             <input type="hidden" name="pengawalanSearch" value="<%= pengawalanSearch || '' %>">
+            <input type="hidden" name="buktiSearch" value="<%= buktiSearch || '' %>">
             <input type="hidden" name="strapselSearch" value="<%= strapselSearch || '' %>">
             <span class="kamtib-panel-filter-label">Pencarian Register F</span>
             <input type="text" name="registerFSearch" value="<%= registerFSearch || '' %>" placeholder="Cari no register, nama, pelanggaran, hukuman...">
             <button type="submit">Terapkan</button>
-            <a href="/kalapas/table/kamtib?month=<%= selectedMonth %>&year=<%= selectedYear %><%= strapselSearch ? ('&strapselSearch=' + encodeURIComponent(strapselSearch)) : '' %><%= selectedPengawalanDate ? ('&pengawalanTanggal=' + encodeURIComponent(selectedPengawalanDate)) : '' %><%= pengawalanSearch ? ('&pengawalanSearch=' + encodeURIComponent(pengawalanSearch)) : '' %>" class="reset">Reset</a>
+            <a href="/kalapas/table/kamtib?raziaMonth=<%= selectedRaziaMonth %>&raziaYear=<%= selectedRaziaYear %>&buktiMonth=<%= selectedBuktiMonth %>&buktiYear=<%= selectedBuktiYear %><%= strapselSearch ? ('&strapselSearch=' + encodeURIComponent(strapselSearch)) : '' %><%= selectedPengawalanDate ? ('&pengawalanTanggal=' + encodeURIComponent(selectedPengawalanDate)) : '' %><%= pengawalanSearch ? ('&pengawalanSearch=' + encodeURIComponent(pengawalanSearch)) : '' %><%= buktiSearch ? ('&buktiSearch=' + encodeURIComponent(buktiSearch)) : '' %>" class="reset">Reset</a>
             <span><%= registerFList.length %> data</span>
           </form>
         </div>

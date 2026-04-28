@@ -1277,7 +1277,7 @@ function getRaziaData() {
     .all();
 
   const barangBuktiRazia = db
-    .prepare('SELECT id, pemilik, kamar_blok AS kamarBlok, foto_path AS fotoPath FROM razia_barang_bukti ORDER BY id DESC')
+    .prepare('SELECT id, pemilik, kamar_blok AS kamarBlok, tanggal_temuan AS tanggalTemuan, foto_path AS fotoPath FROM razia_barang_bukti ORDER BY id DESC')
     .all();
 
   return {
@@ -2075,6 +2075,15 @@ function getKalapasData() {
       AND UPPER(TRIM(periode_bulan)) = ?
   `).get(currentYear, currentMonthLabel)?.c || 0) > 0;
   const hasGiiatjaMonthlyUpdate = hasGiiatjaPelatihanThisMonth || hasGiiatjaPnbpThisMonth || hasGiiatjaPremiThisMonth;
+  const currentYearMonth = `${currentYear}-${currentMonth}`;
+  const totalJadwalRaziaThisMonth = (razia.jadwalRazia || []).filter((item) => {
+    const normalizedDate = normalizeDateToYmd(item.tanggal);
+    return Boolean(normalizedDate && normalizedDate.startsWith(currentYearMonth));
+  }).length;
+  const totalBarangBuktiThisMonth = (razia.barangBuktiRazia || []).filter((item) => {
+    const normalizedDate = normalizeDateToYmd(item.tanggalTemuan);
+    return Boolean(normalizedDate && normalizedDate.startsWith(currentYearMonth));
+  }).length;
 
   const pengaduanDiterimaCount = Number(db.prepare(`
     SELECT COUNT(*) AS c
@@ -2096,7 +2105,11 @@ function getKalapasData() {
     tenagaMedis: klinik.tenagaMedis,
     jadwalRazia: razia.jadwalRazia,
     barangBuktiRazia: razia.barangBuktiRazia,
-    raziaSummary: razia.raziaSummary,
+    raziaSummary: {
+      ...razia.raziaSummary,
+      totalJadwalRazia: totalJadwalRaziaThisMonth,
+      totalBarangBukti: totalBarangBuktiThisMonth,
+    },
     strapselList: security.strapselList,
     registerFList: security.registerFList,
     securitySummary: security.securitySummary,
@@ -2694,18 +2707,73 @@ app.get('/kalapas/table/razia-jadwal', (req, res) => {
 });
 
 app.get('/kalapas/table/razia-barang-bukti', (req, res) => {
+  const todayYmd = getTodayYmd();
+  const selectedDate = /^\d{4}-\d{2}-\d{2}$/.test(String(req.query.tanggal || ''))
+    ? String(req.query.tanggal)
+    : todayYmd;
+  const selectedYearMonth = selectedDate.slice(0, 7);
+  const searchKeyword = String(req.query.search || '').trim();
+  const normalizeSearchText = (value) => String(value || '')
+    .toLowerCase()
+    .replace(/[^a-z0-9\s]/g, ' ')
+    .replace(/\s+/g, ' ')
+    .trim();
+
   const razia = getRaziaData();
-  const rows = razia.barangBuktiRazia.map(item => [
+  const filtered = razia.barangBuktiRazia.filter((item) => {
+    const normalizedDate = normalizeDateToYmd(item.tanggalTemuan);
+    if (!normalizedDate || !normalizedDate.startsWith(selectedYearMonth)) return false;
+
+    if (searchKeyword) {
+      const dateSlash = `${normalizedDate.slice(8, 10)}/${normalizedDate.slice(5, 7)}/${normalizedDate.slice(0, 4)}`;
+      const dateDash = `${normalizedDate.slice(8, 10)}-${normalizedDate.slice(5, 7)}-${normalizedDate.slice(0, 4)}`;
+      const searchBlob = normalizeSearchText([
+        item.pemilik,
+        item.kamarBlok,
+        item.tanggalTemuan,
+        normalizedDate,
+        dateSlash,
+        dateDash,
+        formatDateIndo(item.tanggalTemuan),
+      ].join(' '));
+      return searchBlob.includes(normalizeSearchText(searchKeyword));
+    }
+
+    return true;
+  });
+
+  const rows = filtered.map(item => [
     item.pemilik || '-',
     item.kamarBlok || '-',
+    item.tanggalTemuan || '-',
     item.fotoPath || '-'
   ]);
+
+  const selectedMonthLabel = new Intl.DateTimeFormat('id-ID', {
+    timeZone: 'Asia/Jakarta',
+    month: 'long',
+    year: 'numeric'
+  }).format(new Date(`${selectedYearMonth}-01T00:00:00`));
 
   res.render('kalapas-table', {
     pageTitle: 'Barang Bukti Razia',
     sectionTitle: 'BARANG BUKTI RAZIA',
-    subtitle: `Total data: ${rows.length}`,
-    columns: ['PEMILIK', 'KAMAR/BLOK', 'FOTO BARANG BUKTI'],
+    subtitle: searchKeyword
+      ? `Pencarian: "${searchKeyword}" | ${selectedMonthLabel}: ${rows.length} data`
+      : `${selectedMonthLabel}: ${rows.length} data`,
+    dateFilter: {
+      action: '/kalapas/table/razia-barang-bukti',
+      label: 'Filter bulan (pilih tanggal dalam bulan)',
+      value: selectedDate,
+      todayValue: todayYmd,
+      dateEnabled: true,
+      resetUrl: '/kalapas/table/razia-barang-bukti',
+      searchEnabled: true,
+      searchLabel: 'Pencarian barang bukti (bulan terpilih)',
+      searchPlaceholder: 'Cari pemilik, kamar/blok, tanggal temuan... ',
+      searchValue: searchKeyword,
+    },
+    columns: ['PEMILIK', 'KAMAR/BLOK', 'TANGGAL TEMUAN', 'FOTO BARANG BUKTI'],
     rows,
     backUrl: '/kalapas'
   });
@@ -2801,6 +2869,7 @@ app.get('/kalapas/table/kamtib', (req, res) => {
   const todayYmd = getTodayYmd();
   const strapselSearch = String(req.query.strapselSearch || '').trim();
   const registerFSearch = String(req.query.registerFSearch || '').trim();
+  const buktiSearch = String(req.query.buktiSearch || '').trim();
   const pengawalanSearch = String(req.query.pengawalanSearch || '').trim();
   const selectedPengawalanDate = /^\d{4}-\d{2}-\d{2}$/.test(String(req.query.pengawalanTanggal || ''))
     ? String(req.query.pengawalanTanggal)
@@ -2813,8 +2882,12 @@ app.get('/kalapas/table/kamtib', (req, res) => {
   const strapselSecurity = getSecurityData({ search: strapselSearch });
   const registerFSecurity = getSecurityData({ search: registerFSearch });
   const [defaultYear, defaultMonth] = getTodayYmd().split('-');
-  const selectedYear = /^\d{4}$/.test(String(req.query.year || '')) ? String(req.query.year) : defaultYear;
-  const selectedMonth = /^(0[1-9]|1[0-2])$/.test(String(req.query.month || '')) ? String(req.query.month) : defaultMonth;
+  const parseYear = (value) => /^\d{4}$/.test(String(value || '')) ? String(value) : null;
+  const parseMonth = (value) => /^(0[1-9]|1[0-2])$/.test(String(value || '')) ? String(value) : null;
+  const selectedRaziaYear = parseYear(req.query.raziaYear) || parseYear(req.query.year) || defaultYear;
+  const selectedRaziaMonth = parseMonth(req.query.raziaMonth) || parseMonth(req.query.month) || defaultMonth;
+  const selectedBuktiYear = parseYear(req.query.buktiYear) || parseYear(req.query.year) || defaultYear;
+  const selectedBuktiMonth = parseMonth(req.query.buktiMonth) || parseMonth(req.query.month) || defaultMonth;
   const pengawalan = getPengawalanData();
   const filteredPengawalanList = pengawalan.list.filter((item) => {
     const normalizedDate = normalizeDateToYmd(item.tanggal);
@@ -2849,25 +2922,62 @@ app.get('/kalapas/table/kamtib', (req, res) => {
   `).get()?.c || 0);
 
   const monthOptions = getMonthOptions();
-  const activeMonthLabel = monthOptions.find(item => item.value === selectedMonth)?.label || '-';
+  const activeRaziaMonthLabel = monthOptions.find(item => item.value === selectedRaziaMonth)?.label || '-';
+  const activeBuktiMonthLabel = monthOptions.find(item => item.value === selectedBuktiMonth)?.label || '-';
   const filteredJadwalRazia = (razia.jadwalRazia || []).filter((item) => {
     const normalizedDate = normalizeDateToYmd(item.tanggal);
-    return Boolean(normalizedDate && normalizedDate.startsWith(`${selectedYear}-${selectedMonth}`));
+    return Boolean(normalizedDate && normalizedDate.startsWith(`${selectedRaziaYear}-${selectedRaziaMonth}`));
   });
-  const piketJaga = getPiketJagaData({ year: selectedYear, month: selectedMonth });
-  const yearOptions = pengawalan.years.length ? pengawalan.years : [defaultYear];
+  const filteredBarangBuktiRazia = (razia.barangBuktiRazia || []).filter((item) => {
+    const normalizedDate = normalizeDateToYmd(item.tanggalTemuan);
+    if (!normalizedDate || !normalizedDate.startsWith(`${selectedBuktiYear}-${selectedBuktiMonth}`)) return false;
+
+    if (buktiSearch) {
+      const dateSlash = `${normalizedDate.slice(8, 10)}/${normalizedDate.slice(5, 7)}/${normalizedDate.slice(0, 4)}`;
+      const dateDash = `${normalizedDate.slice(8, 10)}-${normalizedDate.slice(5, 7)}-${normalizedDate.slice(0, 4)}`;
+      const searchBlob = normalizeSearchText([
+        item.pemilik,
+        item.kamarBlok,
+        item.tanggalTemuan,
+        normalizedDate,
+        dateSlash,
+        dateDash,
+        formatDateIndo(item.tanggalTemuan),
+      ].join(' '));
+      return searchBlob.includes(normalizeSearchText(buktiSearch));
+    }
+
+    return true;
+  });
+  const piketJaga = getPiketJagaData({ year: selectedRaziaYear, month: selectedRaziaMonth });
+  const yearSet = new Set(pengawalan.years || []);
+  (razia.jadwalRazia || []).forEach((item) => {
+    const normalizedDate = normalizeDateToYmd(item.tanggal);
+    if (normalizedDate) yearSet.add(normalizedDate.slice(0, 4));
+  });
+  (razia.barangBuktiRazia || []).forEach((item) => {
+    const normalizedDate = normalizeDateToYmd(item.tanggalTemuan);
+    if (normalizedDate) yearSet.add(normalizedDate.slice(0, 4));
+  });
+  const yearOptions = Array.from(yearSet).sort((a, b) => String(b).localeCompare(String(a)));
+  if (!yearOptions.length) yearOptions.push(defaultYear);
 
   res.render('kalapas-kamtib', {
     pageTitle: 'Kamtib',
-    subtitle: `Giat Razia: ${filteredJadwalRazia.length} (${activeMonthLabel} ${selectedYear}) | Barang Bukti: ${razia.barangBuktiRazia.length} | Giat Pengawalan: ${filteredPengawalanList.length} (Tanggal ${formatDateIndo(selectedPengawalanDate)}) | Piket Jaga: ${piketJaga.daysInMonth} hari | Strapsel: ${strapselSecurity.strapselList.length} | Register F: ${registerFSecurity.registerFList.length}`,
+    subtitle: `Giat Razia: ${filteredJadwalRazia.length} (${activeRaziaMonthLabel} ${selectedRaziaYear}) | Barang Bukti: ${filteredBarangBuktiRazia.length} (${activeBuktiMonthLabel} ${selectedBuktiYear}) | Giat Pengawalan: ${filteredPengawalanList.length} (Tanggal ${formatDateIndo(selectedPengawalanDate)}) | Piket Jaga: ${piketJaga.daysInMonth} hari | Strapsel: ${strapselSecurity.strapselList.length} | Register F: ${registerFSecurity.registerFList.length}`,
     jadwalRazia: filteredJadwalRazia,
-    barangBuktiRazia: razia.barangBuktiRazia,
+    barangBuktiRazia: filteredBarangBuktiRazia,
     pengawalanList: filteredPengawalanList,
     pengawalanSearch,
     selectedPengawalanDate,
     todayYmd,
-    selectedMonth,
-    selectedYear,
+    selectedMonth: selectedRaziaMonth,
+    selectedYear: selectedRaziaYear,
+    selectedRaziaMonth,
+    selectedRaziaYear,
+    selectedBuktiMonth,
+    selectedBuktiYear,
+    buktiSearch,
     strapselSearch,
     registerFSearch,
     monthOptions,
@@ -2875,8 +2985,8 @@ app.get('/kalapas/table/kamtib', (req, res) => {
     strapselList: strapselSecurity.strapselList,
     registerFList: registerFSecurity.registerFList,
     pengaduanDiterimaCount,
-    piketHref: `/kalapas/table/piket-jaga?month=${selectedMonth}&year=${selectedYear}`,
-    pengaduanHref: `/kalapas/table/pengaduan?month=${selectedMonth}&year=${selectedYear}`,
+    piketHref: `/kalapas/table/piket-jaga?month=${selectedRaziaMonth}&year=${selectedRaziaYear}`,
+    pengaduanHref: `/kalapas/table/pengaduan?month=${selectedRaziaMonth}&year=${selectedRaziaYear}`,
     backUrl: '/kalapas'
   });
 });
@@ -4298,7 +4408,13 @@ app.get('/admin/razia', requireAccess('razia'), (req, res) => {
   const [defaultYear, defaultMonth] = getTodayYmd().split('-');
   const selectedYear = /^\d{4}$/.test(String(req.query.year || '')) ? String(req.query.year) : defaultYear;
   const selectedMonth = /^(0[1-9]|1[0-2])$/.test(String(req.query.month || '')) ? String(req.query.month) : defaultMonth;
+  const buktiSearch = String(req.query.buktiSearch || '').trim();
   const monthOptions = getMonthOptions();
+  const normalizeSearchText = (value) => String(value || '')
+    .toLowerCase()
+    .replace(/[^a-z0-9\s]/g, ' ')
+    .replace(/\s+/g, ' ')
+    .trim();
 
   const allJadwalList = db.prepare('SELECT * FROM razia_jadwal ORDER BY id DESC').all();
   const jadwalList = allJadwalList.filter((item) => {
@@ -4306,16 +4422,41 @@ app.get('/admin/razia', requireAccess('razia'), (req, res) => {
     return Boolean(normalizedDate && normalizedDate.startsWith(`${selectedYear}-${selectedMonth}`));
   });
 
-  const buktiList = db.prepare('SELECT * FROM razia_barang_bukti ORDER BY id DESC').all();
+  const allBuktiList = db.prepare('SELECT * FROM razia_barang_bukti ORDER BY id DESC').all();
+  const buktiList = allBuktiList.filter((item) => {
+    const normalizedDate = normalizeDateToYmd(item.tanggal_temuan);
+    if (!normalizedDate || !normalizedDate.startsWith(`${selectedYear}-${selectedMonth}`)) return false;
+
+    if (buktiSearch) {
+      const dateSlash = `${normalizedDate.slice(8, 10)}/${normalizedDate.slice(5, 7)}/${normalizedDate.slice(0, 4)}`;
+      const dateDash = `${normalizedDate.slice(8, 10)}-${normalizedDate.slice(5, 7)}-${normalizedDate.slice(0, 4)}`;
+      const searchBlob = normalizeSearchText([
+        item.pemilik,
+        item.kamar_blok,
+        item.tanggal_temuan,
+        normalizedDate,
+        dateSlash,
+        dateDash,
+        formatDateIndo(item.tanggal_temuan),
+      ].join(' '));
+      return searchBlob.includes(normalizeSearchText(buktiSearch));
+    }
+
+    return true;
+  });
   const editJadwal = req.query.editJadwal ? db.prepare('SELECT * FROM razia_jadwal WHERE id=?').get(Number(req.query.editJadwal)) : null;
   const editBukti = req.query.editBukti ? db.prepare('SELECT * FROM razia_barang_bukti WHERE id=?').get(Number(req.query.editBukti)) : null;
-  const yearOptions = db.prepare(`
-    SELECT DISTINCT substr(tanggal, 1, 4) AS year
-    FROM razia_jadwal
-    WHERE length(tanggal) >= 7
-    ORDER BY year DESC
-  `).all().map((row) => row.year).filter(Boolean);
-  const safeYearOptions = yearOptions.length ? yearOptions : [defaultYear];
+  const yearSet = new Set();
+  allJadwalList.forEach((item) => {
+    const normalizedDate = normalizeDateToYmd(item.tanggal);
+    if (normalizedDate) yearSet.add(normalizedDate.slice(0, 4));
+  });
+  allBuktiList.forEach((item) => {
+    const normalizedDate = normalizeDateToYmd(item.tanggal_temuan);
+    if (normalizedDate) yearSet.add(normalizedDate.slice(0, 4));
+  });
+  const safeYearOptions = Array.from(yearSet).sort((a, b) => b.localeCompare(a));
+  if (!safeYearOptions.length) safeYearOptions.push(defaultYear);
 
   res.render('admin/razia', {
     user: req.session.user,
@@ -4325,6 +4466,7 @@ app.get('/admin/razia', requireAccess('razia'), (req, res) => {
     editBukti,
     selectedYear,
     selectedMonth,
+    buktiSearch,
     monthOptions,
     yearOptions: safeYearOptions,
     active: 'razia',
@@ -4337,17 +4479,19 @@ app.post('/admin/razia/jadwal/add', requireAccess('razia'), raziaUpload.single('
   const [defaultYear, defaultMonth] = getTodayYmd().split('-');
   const selectedYear = /^\d{4}$/.test(String(req.query.year || '')) ? String(req.query.year) : defaultYear;
   const selectedMonth = /^(0[1-9]|1[0-2])$/.test(String(req.query.month || '')) ? String(req.query.month) : defaultMonth;
+  const buktiSearch = String(req.query.buktiSearch || '').trim();
   const redirectBase = `/admin/razia?month=${selectedMonth}&year=${selectedYear}`;
   const { tanggal, petugas } = req.body;
   const dokumentasiPath = req.file ? `/uploads/razia/${req.file.filename}` : null;
   db.prepare('INSERT INTO razia_jadwal (tanggal, petugas, dokumentasi_path) VALUES (?, ?, ?)').run(tanggal, petugas, dokumentasiPath);
-  res.redirect(`${redirectBase}&success=1`);
+  res.redirect(`${redirectBase}${buktiSearch ? `&buktiSearch=${encodeURIComponent(buktiSearch)}` : ''}&success=1`);
 });
 
 app.post('/admin/razia/jadwal/:id/update', requireAccess('razia'), raziaUpload.single('dokumentasi'), (req, res) => {
   const [defaultYear, defaultMonth] = getTodayYmd().split('-');
   const selectedYear = /^\d{4}$/.test(String(req.query.year || '')) ? String(req.query.year) : defaultYear;
   const selectedMonth = /^(0[1-9]|1[0-2])$/.test(String(req.query.month || '')) ? String(req.query.month) : defaultMonth;
+  const buktiSearch = String(req.query.buktiSearch || '').trim();
   const redirectBase = `/admin/razia?month=${selectedMonth}&year=${selectedYear}`;
   const id = Number(req.params.id);
   const { tanggal, petugas } = req.body;
@@ -4360,31 +4504,42 @@ app.post('/admin/razia/jadwal/:id/update', requireAccess('razia'), raziaUpload.s
   }
 
   db.prepare('UPDATE razia_jadwal SET tanggal=?, petugas=?, dokumentasi_path=? WHERE id=?').run(tanggal, petugas, nextPath, id);
-  res.redirect(`${redirectBase}&success=1`);
+  res.redirect(`${redirectBase}${buktiSearch ? `&buktiSearch=${encodeURIComponent(buktiSearch)}` : ''}&success=1`);
 });
 
 app.post('/admin/razia/jadwal/:id/delete', requireAccess('razia'), (req, res) => {
   const [defaultYear, defaultMonth] = getTodayYmd().split('-');
   const selectedYear = /^\d{4}$/.test(String(req.query.year || '')) ? String(req.query.year) : defaultYear;
   const selectedMonth = /^(0[1-9]|1[0-2])$/.test(String(req.query.month || '')) ? String(req.query.month) : defaultMonth;
+  const buktiSearch = String(req.query.buktiSearch || '').trim();
   const redirectBase = `/admin/razia?month=${selectedMonth}&year=${selectedYear}`;
   const id = Number(req.params.id);
   const existing = db.prepare('SELECT dokumentasi_path FROM razia_jadwal WHERE id=?').get(id);
   if (existing?.dokumentasi_path) removeUploadedFile(existing.dokumentasi_path);
   db.prepare('DELETE FROM razia_jadwal WHERE id=?').run(id);
-  res.redirect(`${redirectBase}&success=1`);
+  res.redirect(`${redirectBase}${buktiSearch ? `&buktiSearch=${encodeURIComponent(buktiSearch)}` : ''}&success=1`);
 });
 
 app.post('/admin/razia/bukti/add', requireAccess('razia'), raziaUpload.single('foto'), (req, res) => {
-  const { pemilik, kamar_blok } = req.body;
+  const [defaultYear, defaultMonth] = getTodayYmd().split('-');
+  const selectedYear = /^\d{4}$/.test(String(req.query.year || '')) ? String(req.query.year) : defaultYear;
+  const selectedMonth = /^(0[1-9]|1[0-2])$/.test(String(req.query.month || '')) ? String(req.query.month) : defaultMonth;
+  const buktiSearch = String(req.query.buktiSearch || '').trim();
+  const redirectBase = `/admin/razia?month=${selectedMonth}&year=${selectedYear}`;
+  const { pemilik, kamar_blok, tanggal_temuan } = req.body;
   const fotoPath = req.file ? `/uploads/razia/${req.file.filename}` : null;
-  db.prepare('INSERT INTO razia_barang_bukti (pemilik, kamar_blok, foto_path) VALUES (?, ?, ?)').run(pemilik, kamar_blok, fotoPath);
-  res.redirect('/admin/razia?success=1');
+  db.prepare('INSERT INTO razia_barang_bukti (pemilik, kamar_blok, tanggal_temuan, foto_path) VALUES (?, ?, ?, ?)').run(pemilik, kamar_blok, tanggal_temuan || '', fotoPath);
+  res.redirect(`${redirectBase}${buktiSearch ? `&buktiSearch=${encodeURIComponent(buktiSearch)}` : ''}&success=1`);
 });
 
 app.post('/admin/razia/bukti/:id/update', requireAccess('razia'), raziaUpload.single('foto'), (req, res) => {
+  const [defaultYear, defaultMonth] = getTodayYmd().split('-');
+  const selectedYear = /^\d{4}$/.test(String(req.query.year || '')) ? String(req.query.year) : defaultYear;
+  const selectedMonth = /^(0[1-9]|1[0-2])$/.test(String(req.query.month || '')) ? String(req.query.month) : defaultMonth;
+  const buktiSearch = String(req.query.buktiSearch || '').trim();
+  const redirectBase = `/admin/razia?month=${selectedMonth}&year=${selectedYear}`;
   const id = Number(req.params.id);
-  const { pemilik, kamar_blok } = req.body;
+  const { pemilik, kamar_blok, tanggal_temuan } = req.body;
   const existing = db.prepare('SELECT foto_path FROM razia_barang_bukti WHERE id=?').get(id);
   let nextPath = existing?.foto_path || null;
 
@@ -4393,16 +4548,21 @@ app.post('/admin/razia/bukti/:id/update', requireAccess('razia'), raziaUpload.si
     nextPath = `/uploads/razia/${req.file.filename}`;
   }
 
-  db.prepare('UPDATE razia_barang_bukti SET pemilik=?, kamar_blok=?, foto_path=? WHERE id=?').run(pemilik, kamar_blok, nextPath, id);
-  res.redirect('/admin/razia?success=1');
+  db.prepare('UPDATE razia_barang_bukti SET pemilik=?, kamar_blok=?, tanggal_temuan=?, foto_path=? WHERE id=?').run(pemilik, kamar_blok, tanggal_temuan || '', nextPath, id);
+  res.redirect(`${redirectBase}${buktiSearch ? `&buktiSearch=${encodeURIComponent(buktiSearch)}` : ''}&success=1`);
 });
 
 app.post('/admin/razia/bukti/:id/delete', requireAccess('razia'), (req, res) => {
+  const [defaultYear, defaultMonth] = getTodayYmd().split('-');
+  const selectedYear = /^\d{4}$/.test(String(req.query.year || '')) ? String(req.query.year) : defaultYear;
+  const selectedMonth = /^(0[1-9]|1[0-2])$/.test(String(req.query.month || '')) ? String(req.query.month) : defaultMonth;
+  const buktiSearch = String(req.query.buktiSearch || '').trim();
+  const redirectBase = `/admin/razia?month=${selectedMonth}&year=${selectedYear}`;
   const id = Number(req.params.id);
   const existing = db.prepare('SELECT foto_path FROM razia_barang_bukti WHERE id=?').get(id);
   if (existing?.foto_path) removeUploadedFile(existing.foto_path);
   db.prepare('DELETE FROM razia_barang_bukti WHERE id=?').run(id);
-  res.redirect('/admin/razia?success=1');
+  res.redirect(`${redirectBase}${buktiSearch ? `&buktiSearch=${encodeURIComponent(buktiSearch)}` : ''}&success=1`);
 });
 
 // ── Giat Pengawalan ──────────────────────────────────────────────

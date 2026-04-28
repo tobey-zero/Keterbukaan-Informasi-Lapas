@@ -20,7 +20,7 @@
       <div class="card">
         <div class="card-header"><h3>📅 Giat Razia</h3></div>
         <div class="card-body">
-          <form method="POST" action="/admin/razia/jadwal/add?month=<%= selectedMonth %>&year=<%= selectedYear %>" enctype="multipart/form-data">
+          <form method="POST" action="/admin/razia/jadwal/add?month=<%= selectedMonth %>&year=<%= selectedYear %><%= buktiSearch ? ('&buktiSearch=' + encodeURIComponent(buktiSearch)) : '' %>" enctype="multipart/form-data">
             <div class="form-grid col-3" style="margin-bottom:12px;">
               <div class="form-group">
                 <label>Tanggal</label>
@@ -43,7 +43,7 @@
       <% if (editJadwal) { %>
       <div class="edit-panel">
         <h4>✏️ Edit Giat Razia (ID: <%= editJadwal.id %>)</h4>
-        <form method="POST" action="/admin/razia/jadwal/<%= editJadwal.id %>/update?month=<%= selectedMonth %>&year=<%= selectedYear %>" enctype="multipart/form-data">
+        <form method="POST" action="/admin/razia/jadwal/<%= editJadwal.id %>/update?month=<%= selectedMonth %>&year=<%= selectedYear %><%= buktiSearch ? ('&buktiSearch=' + encodeURIComponent(buktiSearch)) : '' %>" enctype="multipart/form-data">
           <div class="form-grid col-3" style="margin-bottom:12px;">
             <div class="form-group">
               <label>Tanggal</label>
@@ -66,7 +66,7 @@
           </div>
           <div style="display:flex;gap:8px;">
             <button type="submit" class="btn btn-success btn-sm">💾 Simpan</button>
-            <a href="/admin/razia?month=<%= selectedMonth %>&year=<%= selectedYear %>" class="btn btn-secondary btn-sm">✕ Batal</a>
+            <a href="/admin/razia?month=<%= selectedMonth %>&year=<%= selectedYear %><%= buktiSearch ? ('&buktiSearch=' + encodeURIComponent(buktiSearch)) : '' %>" class="btn btn-secondary btn-sm">✕ Batal</a>
           </div>
         </form>
       </div>
@@ -119,8 +119,8 @@
                   </td>
                   <td>
                     <div class="actions">
-                      <a href="/admin/razia?month=<%= selectedMonth %>&year=<%= selectedYear %>&editJadwal=<%= item.id %>" class="btn btn-warning btn-xs">✏️ Edit</a>
-                      <form method="POST" action="/admin/razia/jadwal/<%= item.id %>/delete?month=<%= selectedMonth %>&year=<%= selectedYear %>" style="display:inline" onsubmit="return confirm('Hapus Giat razia ini?')">
+                      <a href="/admin/razia?month=<%= selectedMonth %>&year=<%= selectedYear %><%= buktiSearch ? ('&buktiSearch=' + encodeURIComponent(buktiSearch)) : '' %>&editJadwal=<%= item.id %>" class="btn btn-warning btn-xs">✏️ Edit</a>
+                      <form method="POST" action="/admin/razia/jadwal/<%= item.id %>/delete?month=<%= selectedMonth %>&year=<%= selectedYear %><%= buktiSearch ? ('&buktiSearch=' + encodeURIComponent(buktiSearch)) : '' %>" style="display:inline" onsubmit="return confirm('Hapus Giat razia ini?')">
                         <button class="btn btn-danger btn-xs">🗑 Hapus</button>
                       </form>
                     </div>
@@ -137,7 +137,7 @@
       <div class="card">
         <div class="card-header"><h3>📦 Barang Bukti Razia</h3></div>
         <div class="card-body">
-          <form method="POST" action="/admin/razia/bukti/add" enctype="multipart/form-data">
+          <form method="POST" action="/admin/razia/bukti/add?month=<%= selectedMonth %>&year=<%= selectedYear %><%= buktiSearch ? ('&buktiSearch=' + encodeURIComponent(buktiSearch)) : '' %>" enctype="multipart/form-data">
             <div class="form-grid col-3" style="margin-bottom:12px;">
               <div class="form-group">
                 <label>Pemilik</label>
@@ -146,6 +146,10 @@
               <div class="form-group">
                 <label>Kamar/Blok</label>
                 <input type="text" name="kamar_blok" placeholder="Contoh: Blok A-03" required>
+              </div>
+              <div class="form-group">
+                <label>Tanggal Temuan</label>
+                <input type="date" name="tanggal_temuan" required>
               </div>
               <div class="form-group">
                 <label>Foto Barang Bukti (opsional)</label>
@@ -160,7 +164,7 @@
       <% if (editBukti) { %>
       <div class="edit-panel">
         <h4>✏️ Edit Barang Bukti Razia (ID: <%= editBukti.id %>)</h4>
-        <form method="POST" action="/admin/razia/bukti/<%= editBukti.id %>/update" enctype="multipart/form-data">
+        <form method="POST" action="/admin/razia/bukti/<%= editBukti.id %>/update?month=<%= selectedMonth %>&year=<%= selectedYear %><%= buktiSearch ? ('&buktiSearch=' + encodeURIComponent(buktiSearch)) : '' %>" enctype="multipart/form-data">
           <div class="form-grid col-3" style="margin-bottom:12px;">
             <div class="form-group">
               <label>Pemilik</label>
@@ -169,6 +173,10 @@
             <div class="form-group">
               <label>Kamar/Blok</label>
               <input type="text" name="kamar_blok" value="<%= editBukti.kamar_blok %>" required>
+            </div>
+            <div class="form-group">
+              <label>Tanggal Temuan</label>
+              <input type="date" name="tanggal_temuan" value="<%= editBukti.tanggal_temuan || '' %>" required>
             </div>
             <div class="form-group">
               <label>Foto Barang Bukti (opsional, upload untuk mengganti)</label>
@@ -192,15 +200,30 @@
       <div class="card">
         <div class="card-header"><h3>Daftar Barang Bukti Razia (<%= buktiList.length %> data)</h3></div>
         <div class="card-body" style="padding:0;">
+          <div style="padding:12px 12px 0;">
+            <form method="GET" action="/admin/razia" style="display:flex; gap:10px; flex-wrap:wrap; align-items:end;">
+              <input type="hidden" name="month" value="<%= selectedMonth %>">
+              <input type="hidden" name="year" value="<%= selectedYear %>">
+              <div class="form-group" style="margin:0; min-width:320px;">
+                <label>Pencarian Barang Bukti (bulan terpilih)</label>
+                <input type="text" name="buktiSearch" value="<%= buktiSearch || '' %>" placeholder="Cari pemilik, kamar/blok, tanggal temuan...">
+              </div>
+              <div style="display:flex; gap:8px; align-items:center;">
+                <button type="submit" class="btn btn-primary btn-sm">🔎 Tampilkan</button>
+                <a href="/admin/razia?month=<%= selectedMonth %>&year=<%= selectedYear %>" class="btn btn-secondary btn-sm">↺ Reset</a>
+              </div>
+            </form>
+          </div>
           <div class="table-wrap">
             <table class="admin-table">
-              <thead><tr><th>#</th><th>Pemilik</th><th>Kamar/Blok</th><th>Foto</th><th>Aksi</th></tr></thead>
+              <thead><tr><th>#</th><th>Pemilik</th><th>Kamar/Blok</th><th>Tanggal Temuan</th><th>Foto</th><th>Aksi</th></tr></thead>
               <tbody>
                 <% buktiList.forEach((item, i) => { %>
                 <tr>
                   <td><%= i+1 %></td>
                   <td><%= item.pemilik %></td>
                   <td><%= item.kamar_blok %></td>
+                  <td><%= formatDateIndo(item.tanggal_temuan || '-') %></td>
                   <td>
                     <% if (item.foto_path) { %>
                       <a href="<%= item.foto_path %>" target="_blank" rel="noopener noreferrer" class="btn btn-secondary btn-xs">🔍 Preview</a>
@@ -210,15 +233,15 @@
                   </td>
                   <td>
                     <div class="actions">
-                      <a href="/admin/razia?editBukti=<%= item.id %>" class="btn btn-warning btn-xs">✏️ Edit</a>
-                      <form method="POST" action="/admin/razia/bukti/<%= item.id %>/delete" style="display:inline" onsubmit="return confirm('Hapus barang bukti ini?')">
+                      <a href="/admin/razia?month=<%= selectedMonth %>&year=<%= selectedYear %><%= buktiSearch ? ('&buktiSearch=' + encodeURIComponent(buktiSearch)) : '' %>&editBukti=<%= item.id %>" class="btn btn-warning btn-xs">✏️ Edit</a>
+                      <form method="POST" action="/admin/razia/bukti/<%= item.id %>/delete?month=<%= selectedMonth %>&year=<%= selectedYear %><%= buktiSearch ? ('&buktiSearch=' + encodeURIComponent(buktiSearch)) : '' %>" style="display:inline" onsubmit="return confirm('Hapus barang bukti ini?')">
                         <button class="btn btn-danger btn-xs">🗑 Hapus</button>
                       </form>
                     </div>
                   </td>
                 </tr>
                 <% }) %>
-                <% if (!buktiList.length) { %><tr><td colspan="5" style="text-align:center;color:#aaa;padding:20px;">Belum ada data</td></tr><% } %>
+                <% if (!buktiList.length) { %><tr><td colspan="6" style="text-align:center;color:#aaa;padding:20px;">Belum ada data</td></tr><% } %>
               </tbody>
             </table>
           </div>
