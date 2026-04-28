@@ -10,7 +10,7 @@
   <%- include('_sidebar') %>
   <div class="main-content">
     <div class="topbar">
-      <div class="topbar-title"><h2>🚨 Razia</h2><p>Kelola jadwal razia dan barang bukti razia (khusus Kalapas)</p></div>
+      <div class="topbar-title"><h2>🚨 Razia</h2><p>Kelola Giat razia dan barang bukti razia (khusus Kalapas)</p></div>
       <div class="topbar-actions"><a href="/kalapas" target="_blank" class="btn-public">🧭 Lihat Kalapas</a></div>
     </div>
     <div class="content-area">
@@ -18,9 +18,9 @@
       <% if (error) { %><div class="alert alert-danger">❌ <%= error %></div><% } %>
 
       <div class="card">
-        <div class="card-header"><h3>📅 Jadwal Razia</h3></div>
+        <div class="card-header"><h3>📅 Giat Razia</h3></div>
         <div class="card-body">
-          <form method="POST" action="/admin/razia/jadwal/add" enctype="multipart/form-data">
+          <form method="POST" action="/admin/razia/jadwal/add?month=<%= selectedMonth %>&year=<%= selectedYear %>" enctype="multipart/form-data">
             <div class="form-grid col-3" style="margin-bottom:12px;">
               <div class="form-group">
                 <label>Tanggal</label>
@@ -35,15 +35,15 @@
                 <input type="file" name="dokumentasi" accept="image/*">
               </div>
             </div>
-            <button type="submit" class="btn btn-primary btn-sm">➕ Tambah Jadwal</button>
+            <button type="submit" class="btn btn-primary btn-sm">➕ Tambah Giat</button>
           </form>
         </div>
       </div>
 
       <% if (editJadwal) { %>
       <div class="edit-panel">
-        <h4>✏️ Edit Jadwal Razia (ID: <%= editJadwal.id %>)</h4>
-        <form method="POST" action="/admin/razia/jadwal/<%= editJadwal.id %>/update" enctype="multipart/form-data">
+        <h4>✏️ Edit Giat Razia (ID: <%= editJadwal.id %>)</h4>
+        <form method="POST" action="/admin/razia/jadwal/<%= editJadwal.id %>/update?month=<%= selectedMonth %>&year=<%= selectedYear %>" enctype="multipart/form-data">
           <div class="form-grid col-3" style="margin-bottom:12px;">
             <div class="form-group">
               <label>Tanggal</label>
@@ -66,15 +66,41 @@
           </div>
           <div style="display:flex;gap:8px;">
             <button type="submit" class="btn btn-success btn-sm">💾 Simpan</button>
-            <a href="/admin/razia" class="btn btn-secondary btn-sm">✕ Batal</a>
+            <a href="/admin/razia?month=<%= selectedMonth %>&year=<%= selectedYear %>" class="btn btn-secondary btn-sm">✕ Batal</a>
           </div>
         </form>
       </div>
       <% } %>
 
       <div class="card">
-        <div class="card-header"><h3>Daftar Jadwal Razia (<%= jadwalList.length %> data)</h3></div>
+        <div class="card-header">
+          <h3>Daftar Giat Razia (<%= jadwalList.length %> data)</h3>
+        </div>
         <div class="card-body" style="padding:0;">
+          <div style="padding:12px 12px 0;">
+            <form method="GET" action="/admin/razia" style="display:flex; gap:10px; flex-wrap:wrap; align-items:end;">
+              <div class="form-group" style="margin:0; min-width:220px;">
+                <label>Bulan</label>
+                <select name="month">
+                  <% monthOptions.forEach(opt => { %>
+                    <option value="<%= opt.value %>" <%= opt.value === selectedMonth ? 'selected' : '' %>><%= opt.label %></option>
+                  <% }) %>
+                </select>
+              </div>
+              <div class="form-group" style="margin:0; min-width:140px;">
+                <label>Tahun</label>
+                <select name="year">
+                  <% yearOptions.forEach(year => { %>
+                    <option value="<%= year %>" <%= String(year) === String(selectedYear) ? 'selected' : '' %>><%= year %></option>
+                  <% }) %>
+                </select>
+              </div>
+              <div style="display:flex; gap:8px; align-items:center;">
+                <button type="submit" class="btn btn-primary btn-sm">🔎 Tampilkan</button>
+                <a href="/admin/razia" class="btn btn-secondary btn-sm">↺ Bulan Ini</a>
+              </div>
+            </form>
+          </div>
           <div class="table-wrap">
             <table class="admin-table">
               <thead><tr><th>#</th><th>Tanggal</th><th>Petugas</th><th>Dokumentasi</th><th>Aksi</th></tr></thead>
@@ -93,8 +119,8 @@
                   </td>
                   <td>
                     <div class="actions">
-                      <a href="/admin/razia?editJadwal=<%= item.id %>" class="btn btn-warning btn-xs">✏️ Edit</a>
-                      <form method="POST" action="/admin/razia/jadwal/<%= item.id %>/delete" style="display:inline" onsubmit="return confirm('Hapus jadwal razia ini?')">
+                      <a href="/admin/razia?month=<%= selectedMonth %>&year=<%= selectedYear %>&editJadwal=<%= item.id %>" class="btn btn-warning btn-xs">✏️ Edit</a>
+                      <form method="POST" action="/admin/razia/jadwal/<%= item.id %>/delete?month=<%= selectedMonth %>&year=<%= selectedYear %>" style="display:inline" onsubmit="return confirm('Hapus Giat razia ini?')">
                         <button class="btn btn-danger btn-xs">🗑 Hapus</button>
                       </form>
                     </div>

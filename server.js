@@ -2652,17 +2652,41 @@ app.get('/kalapas/table/tenaga-medis', (req, res) => {
 });
 
 app.get('/kalapas/table/razia-jadwal', (req, res) => {
+  const todayYmd = getTodayYmd();
+  const selectedDate = /^\d{4}-\d{2}-\d{2}$/.test(String(req.query.tanggal || ''))
+    ? String(req.query.tanggal)
+    : todayYmd;
+  const selectedYearMonth = selectedDate.slice(0, 7);
   const razia = getRaziaData();
-  const rows = razia.jadwalRazia.map(item => [
+  const filteredJadwal = razia.jadwalRazia.filter((item) => {
+    const normalizedDate = normalizeDateToYmd(item.tanggal);
+    return Boolean(normalizedDate && normalizedDate.startsWith(selectedYearMonth));
+  });
+  const rows = filteredJadwal.map(item => [
     item.tanggal || '-',
     item.petugas || '-',
     item.dokumentasiPath || '-'
   ]);
 
+  const selectedMonthLabel = new Intl.DateTimeFormat('id-ID', {
+    timeZone: 'Asia/Jakarta',
+    month: 'long',
+    year: 'numeric'
+  }).format(new Date(`${selectedYearMonth}-01T00:00:00`));
+
   res.render('kalapas-table', {
-    pageTitle: 'Jadwal Razia',
-    sectionTitle: 'JADWAL RAZIA',
-    subtitle: `Total data: ${rows.length}`,
+    pageTitle: 'Giat Razia',
+    sectionTitle: 'GIAT RAZIA',
+    subtitle: `${selectedMonthLabel}: ${rows.length} data`,
+    dateFilter: {
+      action: '/kalapas/table/razia-jadwal',
+      label: 'Filter bulan (pilih tanggal dalam bulan)',
+      value: selectedDate,
+      todayValue: todayYmd,
+      dateEnabled: true,
+      resetUrl: '/kalapas/table/razia-jadwal',
+      searchEnabled: false,
+    },
     columns: ['TANGGAL', 'PETUGAS', 'DOKUMENTASI RAZIA'],
     rows,
     backUrl: '/kalapas'
@@ -2826,13 +2850,17 @@ app.get('/kalapas/table/kamtib', (req, res) => {
 
   const monthOptions = getMonthOptions();
   const activeMonthLabel = monthOptions.find(item => item.value === selectedMonth)?.label || '-';
+  const filteredJadwalRazia = (razia.jadwalRazia || []).filter((item) => {
+    const normalizedDate = normalizeDateToYmd(item.tanggal);
+    return Boolean(normalizedDate && normalizedDate.startsWith(`${selectedYear}-${selectedMonth}`));
+  });
   const piketJaga = getPiketJagaData({ year: selectedYear, month: selectedMonth });
   const yearOptions = pengawalan.years.length ? pengawalan.years : [defaultYear];
 
   res.render('kalapas-kamtib', {
     pageTitle: 'Kamtib',
-    subtitle: `Jadwal Razia: ${razia.jadwalRazia.length} | Barang Bukti: ${razia.barangBuktiRazia.length} | Giat Pengawalan: ${filteredPengawalanList.length} (Tanggal ${formatDateIndo(selectedPengawalanDate)}) | Piket Jaga: ${piketJaga.daysInMonth} hari | Strapsel: ${strapselSecurity.strapselList.length} | Register F: ${registerFSecurity.registerFList.length}`,
-    jadwalRazia: razia.jadwalRazia,
+    subtitle: `Giat Razia: ${filteredJadwalRazia.length} (${activeMonthLabel} ${selectedYear}) | Barang Bukti: ${razia.barangBuktiRazia.length} | Giat Pengawalan: ${filteredPengawalanList.length} (Tanggal ${formatDateIndo(selectedPengawalanDate)}) | Piket Jaga: ${piketJaga.daysInMonth} hari | Strapsel: ${strapselSecurity.strapselList.length} | Register F: ${registerFSecurity.registerFList.length}`,
+    jadwalRazia: filteredJadwalRazia,
     barangBuktiRazia: razia.barangBuktiRazia,
     pengawalanList: filteredPengawalanList,
     pengawalanSearch,
@@ -4267,10 +4295,27 @@ app.post('/admin/jadwal/:id/delete', requireAccess('jadwal'), (req, res) => {
 
 // ── Razia ─────────────────────────────────────────────────────────
 app.get('/admin/razia', requireAccess('razia'), (req, res) => {
-  const jadwalList = db.prepare('SELECT * FROM razia_jadwal ORDER BY id DESC').all();
+  const [defaultYear, defaultMonth] = getTodayYmd().split('-');
+  const selectedYear = /^\d{4}$/.test(String(req.query.year || '')) ? String(req.query.year) : defaultYear;
+  const selectedMonth = /^(0[1-9]|1[0-2])$/.test(String(req.query.month || '')) ? String(req.query.month) : defaultMonth;
+  const monthOptions = getMonthOptions();
+
+  const allJadwalList = db.prepare('SELECT * FROM razia_jadwal ORDER BY id DESC').all();
+  const jadwalList = allJadwalList.filter((item) => {
+    const normalizedDate = normalizeDateToYmd(item.tanggal);
+    return Boolean(normalizedDate && normalizedDate.startsWith(`${selectedYear}-${selectedMonth}`));
+  });
+
   const buktiList = db.prepare('SELECT * FROM razia_barang_bukti ORDER BY id DESC').all();
   const editJadwal = req.query.editJadwal ? db.prepare('SELECT * FROM razia_jadwal WHERE id=?').get(Number(req.query.editJadwal)) : null;
   const editBukti = req.query.editBukti ? db.prepare('SELECT * FROM razia_barang_bukti WHERE id=?').get(Number(req.query.editBukti)) : null;
+  const yearOptions = db.prepare(`
+    SELECT DISTINCT substr(tanggal, 1, 4) AS year
+    FROM razia_jadwal
+    WHERE length(tanggal) >= 7
+    ORDER BY year DESC
+  `).all().map((row) => row.year).filter(Boolean);
+  const safeYearOptions = yearOptions.length ? yearOptions : [defaultYear];
 
   res.render('admin/razia', {
     user: req.session.user,
@@ -4278,6 +4323,10 @@ app.get('/admin/razia', requireAccess('razia'), (req, res) => {
     buktiList,
     editJadwal,
     editBukti,
+    selectedYear,
+    selectedMonth,
+    monthOptions,
+    yearOptions: safeYearOptions,
     active: 'razia',
     success: req.query.success,
     error: req.query.error
@@ -4285,13 +4334,21 @@ app.get('/admin/razia', requireAccess('razia'), (req, res) => {
 });
 
 app.post('/admin/razia/jadwal/add', requireAccess('razia'), raziaUpload.single('dokumentasi'), (req, res) => {
+  const [defaultYear, defaultMonth] = getTodayYmd().split('-');
+  const selectedYear = /^\d{4}$/.test(String(req.query.year || '')) ? String(req.query.year) : defaultYear;
+  const selectedMonth = /^(0[1-9]|1[0-2])$/.test(String(req.query.month || '')) ? String(req.query.month) : defaultMonth;
+  const redirectBase = `/admin/razia?month=${selectedMonth}&year=${selectedYear}`;
   const { tanggal, petugas } = req.body;
   const dokumentasiPath = req.file ? `/uploads/razia/${req.file.filename}` : null;
   db.prepare('INSERT INTO razia_jadwal (tanggal, petugas, dokumentasi_path) VALUES (?, ?, ?)').run(tanggal, petugas, dokumentasiPath);
-  res.redirect('/admin/razia?success=1');
+  res.redirect(`${redirectBase}&success=1`);
 });
 
 app.post('/admin/razia/jadwal/:id/update', requireAccess('razia'), raziaUpload.single('dokumentasi'), (req, res) => {
+  const [defaultYear, defaultMonth] = getTodayYmd().split('-');
+  const selectedYear = /^\d{4}$/.test(String(req.query.year || '')) ? String(req.query.year) : defaultYear;
+  const selectedMonth = /^(0[1-9]|1[0-2])$/.test(String(req.query.month || '')) ? String(req.query.month) : defaultMonth;
+  const redirectBase = `/admin/razia?month=${selectedMonth}&year=${selectedYear}`;
   const id = Number(req.params.id);
   const { tanggal, petugas } = req.body;
   const existing = db.prepare('SELECT dokumentasi_path FROM razia_jadwal WHERE id=?').get(id);
@@ -4303,15 +4360,19 @@ app.post('/admin/razia/jadwal/:id/update', requireAccess('razia'), raziaUpload.s
   }
 
   db.prepare('UPDATE razia_jadwal SET tanggal=?, petugas=?, dokumentasi_path=? WHERE id=?').run(tanggal, petugas, nextPath, id);
-  res.redirect('/admin/razia?success=1');
+  res.redirect(`${redirectBase}&success=1`);
 });
 
 app.post('/admin/razia/jadwal/:id/delete', requireAccess('razia'), (req, res) => {
+  const [defaultYear, defaultMonth] = getTodayYmd().split('-');
+  const selectedYear = /^\d{4}$/.test(String(req.query.year || '')) ? String(req.query.year) : defaultYear;
+  const selectedMonth = /^(0[1-9]|1[0-2])$/.test(String(req.query.month || '')) ? String(req.query.month) : defaultMonth;
+  const redirectBase = `/admin/razia?month=${selectedMonth}&year=${selectedYear}`;
   const id = Number(req.params.id);
   const existing = db.prepare('SELECT dokumentasi_path FROM razia_jadwal WHERE id=?').get(id);
   if (existing?.dokumentasi_path) removeUploadedFile(existing.dokumentasi_path);
   db.prepare('DELETE FROM razia_jadwal WHERE id=?').run(id);
-  res.redirect('/admin/razia?success=1');
+  res.redirect(`${redirectBase}&success=1`);
 });
 
 app.post('/admin/razia/bukti/add', requireAccess('razia'), raziaUpload.single('foto'), (req, res) => {

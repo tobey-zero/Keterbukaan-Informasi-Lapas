@@ -248,8 +248,27 @@
     <div class="kamtib-grid">
       <div class="panel kamtib-panel kamtib-panel-jadwal">
         <div class="panel-header red">
-          <span>JADWAL RAZIA</span>
-          <span><%= jadwalRazia.length %> data</span>
+          <span>GIAT RAZIA</span>
+          <form method="GET" action="/kalapas/table/kamtib" class="kamtib-panel-filter">
+            <input type="hidden" name="pengawalanTanggal" value="<%= selectedPengawalanDate || todayYmd %>">
+            <input type="hidden" name="pengawalanSearch" value="<%= pengawalanSearch || '' %>">
+            <input type="hidden" name="strapselSearch" value="<%= strapselSearch || '' %>">
+            <input type="hidden" name="registerFSearch" value="<%= registerFSearch || '' %>">
+            <span class="kamtib-panel-filter-label">Pencarian Giat Razia Perbulan</span>
+            <select name="month" aria-label="Filter bulan razia">
+              <% monthOptions.forEach(opt => { %>
+                <option value="<%= opt.value %>" <%= opt.value === selectedMonth ? 'selected' : '' %>><%= opt.label %></option>
+              <% }) %>
+            </select>
+            <select name="year" aria-label="Filter tahun razia">
+              <% yearOptions.forEach(year => { %>
+                <option value="<%= year %>" <%= String(year) === String(selectedYear) ? 'selected' : '' %>><%= year %></option>
+              <% }) %>
+            </select>
+            <button type="submit">Terapkan</button>
+            <a href="/kalapas/table/kamtib?pengawalanTanggal=<%= encodeURIComponent(selectedPengawalanDate || todayYmd) %><%= pengawalanSearch ? ('&pengawalanSearch=' + encodeURIComponent(pengawalanSearch)) : '' %><%= strapselSearch ? ('&strapselSearch=' + encodeURIComponent(strapselSearch)) : '' %><%= registerFSearch ? ('&registerFSearch=' + encodeURIComponent(registerFSearch)) : '' %>" class="reset">Reset</a>
+            <span><%= jadwalRazia.length %> data</span>
+          </form>
         </div>
         <div class="panel-content">
           <div class="table-wrap kamtib-table-scroll">
