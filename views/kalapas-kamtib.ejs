@@ -318,20 +318,15 @@
         <div class="panel-header red">
           <span>GIAT PENGAWALAN</span>
           <form method="GET" action="/kalapas/table/kamtib" class="kamtib-panel-filter">
+            <input type="hidden" name="month" value="<%= selectedMonth %>">
+            <input type="hidden" name="year" value="<%= selectedYear %>">
             <input type="hidden" name="strapselSearch" value="<%= strapselSearch || '' %>">
             <input type="hidden" name="registerFSearch" value="<%= registerFSearch || '' %>">
             <span class="kamtib-panel-filter-label">Filter Giat Pengawalan</span>
-            <select name="month" aria-label="Filter bulan pengawalan">
-              <% monthOptions.forEach(opt => { %>
-                <option value="<%= opt.value %>" <%= opt.value === selectedMonth ? 'selected' : '' %>><%= opt.label %></option>
-              <% }) %>
-            </select>
-            <select name="year" aria-label="Filter tahun pengawalan">
-              <% yearOptions.forEach(year => { %>
-                <option value="<%= year %>" <%= String(year) === String(selectedYear) ? 'selected' : '' %>><%= year %></option>
-              <% }) %>
-            </select>
+            <input type="date" name="pengawalanTanggal" value="<%= selectedPengawalanDate || todayYmd %>" aria-label="Filter tanggal pengawalan">
+            <input type="text" name="pengawalanSearch" value="<%= pengawalanSearch || '' %>" placeholder="Cari tanggal, nama WBP, petugas, keterangan...">
             <button type="submit">Terapkan</button>
+            <a href="/kalapas/table/kamtib?month=<%= selectedMonth %>&year=<%= selectedYear %><%= strapselSearch ? ('&strapselSearch=' + encodeURIComponent(strapselSearch)) : '' %><%= registerFSearch ? ('&registerFSearch=' + encodeURIComponent(registerFSearch)) : '' %>" class="reset">Reset</a>
             <span><%= pengawalanList.length %> data</span>
           </form>
         </div>
@@ -372,11 +367,13 @@
           <form method="GET" action="/kalapas/table/kamtib" class="kamtib-panel-filter">
             <input type="hidden" name="month" value="<%= selectedMonth %>">
             <input type="hidden" name="year" value="<%= selectedYear %>">
+            <input type="hidden" name="pengawalanTanggal" value="<%= selectedPengawalanDate || todayYmd %>">
+            <input type="hidden" name="pengawalanSearch" value="<%= pengawalanSearch || '' %>">
             <input type="hidden" name="registerFSearch" value="<%= registerFSearch || '' %>">
             <span class="kamtib-panel-filter-label">Pencarian Strapsel</span>
             <input type="text" name="strapselSearch" value="<%= strapselSearch || '' %>" placeholder="Cari nama, blok, permasalahan, barang bukti...">
             <button type="submit">Terapkan</button>
-            <a href="/kalapas/table/kamtib?month=<%= selectedMonth %>&year=<%= selectedYear %><%= registerFSearch ? ('&registerFSearch=' + encodeURIComponent(registerFSearch)) : '' %>" class="reset">Reset</a>
+            <a href="/kalapas/table/kamtib?month=<%= selectedMonth %>&year=<%= selectedYear %><%= registerFSearch ? ('&registerFSearch=' + encodeURIComponent(registerFSearch)) : '' %><%= selectedPengawalanDate ? ('&pengawalanTanggal=' + encodeURIComponent(selectedPengawalanDate)) : '' %><%= pengawalanSearch ? ('&pengawalanSearch=' + encodeURIComponent(pengawalanSearch)) : '' %>" class="reset">Reset</a>
             <span><%= strapselList.length %> data</span>
           </form>
         </div>
@@ -421,11 +418,13 @@
           <form method="GET" action="/kalapas/table/kamtib" class="kamtib-panel-filter">
             <input type="hidden" name="month" value="<%= selectedMonth %>">
             <input type="hidden" name="year" value="<%= selectedYear %>">
+            <input type="hidden" name="pengawalanTanggal" value="<%= selectedPengawalanDate || todayYmd %>">
+            <input type="hidden" name="pengawalanSearch" value="<%= pengawalanSearch || '' %>">
             <input type="hidden" name="strapselSearch" value="<%= strapselSearch || '' %>">
             <span class="kamtib-panel-filter-label">Pencarian Register F</span>
             <input type="text" name="registerFSearch" value="<%= registerFSearch || '' %>" placeholder="Cari no register, nama, pelanggaran, hukuman...">
             <button type="submit">Terapkan</button>
-            <a href="/kalapas/table/kamtib?month=<%= selectedMonth %>&year=<%= selectedYear %><%= strapselSearch ? ('&strapselSearch=' + encodeURIComponent(strapselSearch)) : '' %>" class="reset">Reset</a>
+            <a href="/kalapas/table/kamtib?month=<%= selectedMonth %>&year=<%= selectedYear %><%= strapselSearch ? ('&strapselSearch=' + encodeURIComponent(strapselSearch)) : '' %><%= selectedPengawalanDate ? ('&pengawalanTanggal=' + encodeURIComponent(selectedPengawalanDate)) : '' %><%= pengawalanSearch ? ('&pengawalanSearch=' + encodeURIComponent(pengawalanSearch)) : '' %>" class="reset">Reset</a>
             <span><%= registerFList.length %> data</span>
           </form>
         </div>

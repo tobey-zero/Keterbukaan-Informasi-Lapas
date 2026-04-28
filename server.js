@@ -2774,14 +2774,50 @@ app.get('/kalapas/table/register-f', (req, res) => {
 
 app.get('/kalapas/table/kamtib', (req, res) => {
   const razia = getRaziaData();
+  const todayYmd = getTodayYmd();
   const strapselSearch = String(req.query.strapselSearch || '').trim();
   const registerFSearch = String(req.query.registerFSearch || '').trim();
+  const pengawalanSearch = String(req.query.pengawalanSearch || '').trim();
+  const selectedPengawalanDate = /^\d{4}-\d{2}-\d{2}$/.test(String(req.query.pengawalanTanggal || ''))
+    ? String(req.query.pengawalanTanggal)
+    : todayYmd;
+  const normalizeSearchText = (value) => String(value || '')
+    .toLowerCase()
+    .replace(/[^a-z0-9\s]/g, ' ')
+    .replace(/\s+/g, ' ')
+    .trim();
   const strapselSecurity = getSecurityData({ search: strapselSearch });
   const registerFSecurity = getSecurityData({ search: registerFSearch });
   const [defaultYear, defaultMonth] = getTodayYmd().split('-');
   const selectedYear = /^\d{4}$/.test(String(req.query.year || '')) ? String(req.query.year) : defaultYear;
   const selectedMonth = /^(0[1-9]|1[0-2])$/.test(String(req.query.month || '')) ? String(req.query.month) : defaultMonth;
-  const pengawalan = getPengawalanData({ month: selectedMonth, year: selectedYear });
+  const pengawalan = getPengawalanData();
+  const filteredPengawalanList = pengawalan.list.filter((item) => {
+    const normalizedDate = normalizeDateToYmd(item.tanggal);
+    if (normalizedDate !== selectedPengawalanDate) return false;
+
+    if (pengawalanSearch) {
+      const dateSlash = normalizedDate
+        ? `${normalizedDate.slice(8, 10)}/${normalizedDate.slice(5, 7)}/${normalizedDate.slice(0, 4)}`
+        : '';
+      const dateDash = normalizedDate
+        ? `${normalizedDate.slice(8, 10)}-${normalizedDate.slice(5, 7)}-${normalizedDate.slice(0, 4)}`
+        : '';
+      const searchBlob = normalizeSearchText([
+        item.tanggal,
+        normalizedDate,
+        dateSlash,
+        dateDash,
+        formatDateIndo(item.tanggal),
+        item.namaWbp,
+        item.petugas,
+        item.keterangan,
+      ].join(' '));
+      return searchBlob.includes(normalizeSearchText(pengawalanSearch));
+    }
+
+    return true;
+  });
   const pengaduanDiterimaCount = Number(db.prepare(`
     SELECT COUNT(*) AS c
     FROM pengaduan_masyarakat
@@ -2795,10 +2831,13 @@ app.get('/kalapas/table/kamtib', (req, res) => {
 
   res.render('kalapas-kamtib', {
     pageTitle: 'Kamtib',
-    subtitle: `Jadwal Razia: ${razia.jadwalRazia.length} | Barang Bukti: ${razia.barangBuktiRazia.length} | Giat Pengawalan: ${pengawalan.list.length} (${activeMonthLabel} ${selectedYear}) | Piket Jaga: ${piketJaga.daysInMonth} hari | Strapsel: ${strapselSecurity.strapselList.length} | Register F: ${registerFSecurity.registerFList.length}`,
+    subtitle: `Jadwal Razia: ${razia.jadwalRazia.length} | Barang Bukti: ${razia.barangBuktiRazia.length} | Giat Pengawalan: ${filteredPengawalanList.length} (Tanggal ${formatDateIndo(selectedPengawalanDate)}) | Piket Jaga: ${piketJaga.daysInMonth} hari | Strapsel: ${strapselSecurity.strapselList.length} | Register F: ${registerFSecurity.registerFList.length}`,
     jadwalRazia: razia.jadwalRazia,
     barangBuktiRazia: razia.barangBuktiRazia,
-    pengawalanList: pengawalan.list,
+    pengawalanList: filteredPengawalanList,
+    pengawalanSearch,
+    selectedPengawalanDate,
+    todayYmd,
     selectedMonth,
     selectedYear,
     strapselSearch,
