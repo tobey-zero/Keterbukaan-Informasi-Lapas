@@ -24,6 +24,47 @@
       font-size: 12px;
       font-weight: bold;
     }
+    .giiatja-submenu {
+      display: flex;
+      gap: 8px;
+      flex-wrap: wrap;
+      margin-bottom: 10px;
+    }
+    .giiatja-submenu a {
+      text-decoration: none;
+      border: 1px solid #93c5fd;
+      color: #1e3a8a;
+      background: #eff6ff;
+      border-radius: 6px;
+      padding: 7px 11px;
+      font-size: 12px;
+      font-weight: bold;
+    }
+    .giiatja-submenu a.active {
+      color: #fff;
+      background: #1a4bb8;
+      border-color: rgba(255,255,255,.3);
+    }
+    .giiatja-submenu a.warning {
+      border-color: #ef4444;
+      color: #991b1b;
+      background: #fef2f2;
+      position: relative;
+    }
+    .giiatja-submenu .warn-dot {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      width: 16px;
+      height: 16px;
+      margin-left: 6px;
+      border-radius: 999px;
+      background: #dc2626;
+      color: #fff;
+      font-size: 10px;
+      font-weight: 800;
+      line-height: 1;
+    }
     .giiatja-search-form {
       display: flex;
       gap: 8px;
@@ -89,6 +130,58 @@
       font-weight: bold;
       background: #eff6ff;
     }
+    .giiatja-meta {
+      display: flex;
+      gap: 8px;
+      align-items: center;
+      flex-wrap: wrap;
+      padding: 10px 12px;
+      border-bottom: 1px solid #dbe3f1;
+      background: #f8fafc;
+    }
+    .giiatja-meta .label {
+      font-size: 11px;
+      color: #334155;
+      font-weight: 700;
+      margin-bottom: 3px;
+      display: block;
+    }
+    .giiatja-meta input[type="date"] {
+      border: 1px solid #cbd5e1;
+      border-radius: 6px;
+      padding: 7px 10px;
+      font-size: 12px;
+      font-weight: 700;
+      color: #0f172a;
+      background: #fff;
+    }
+    .giiatja-meta button,
+    .giiatja-meta .reset-link {
+      text-decoration: none;
+      border: 1px solid #1d4ed8;
+      border-radius: 6px;
+      padding: 7px 10px;
+      font-size: 12px;
+      font-weight: 700;
+      cursor: pointer;
+      color: #fff;
+      background: #1d4ed8;
+    }
+    .giiatja-meta .reset-link {
+      color: #1d4ed8;
+      background: #eff6ff;
+      border-color: #cbd5e1;
+    }
+    .giiatja-notice {
+      margin: 10px;
+      padding: 9px 10px;
+      border-radius: 8px;
+      border: 1px solid #fecaca;
+      background: #fef2f2;
+      color: #991b1b;
+      font-size: 12px;
+      font-weight: 700;
+    }
   </style>
 </head>
 <body class="page-umum">
@@ -112,6 +205,13 @@
       <a href="<%= backUrl %>">⬅ Kembali ke Kalapas</a>
     </div>
 
+    <div class="giiatja-submenu">
+      <a href="/kalapas/table/giiatja?tab=kegiatan" class="<%= activeTab === 'kegiatan' ? 'active' : '' %>">🏭 Kegiatan Kerja</a>
+      <a href="/kalapas/table/giiatja?tab=sarana&tanggal_sarana=<%= encodeURIComponent(saranaDate || '') %>" class="<%= activeTab === 'sarana' ? 'active' : '' %> <%= !hasSaranaTodayUpdate ? 'warning' : '' %>">🧰 Sarana Kerja<% if (!hasSaranaTodayUpdate) { %><span class="warn-dot" title="Sarana kerja hari ini belum diisi">!</span><% } %></a>
+      <a href="/kalapas/table/giiatja?tab=hasil&tahun=<%= encodeURIComponent(pnbpSelectedYear || '') %>&premi_search=<%= encodeURIComponent(premiSearch || '') %>&premi_bulan=<%= encodeURIComponent(premiSelectedMonth || '') %>&premi_tahun=<%= encodeURIComponent(premiSelectedYear || '') %>" class="<%= activeTab === 'hasil' ? 'active' : '' %>">📊 Pengelolaan Hasil Kerja</a>
+    </div>
+
+    <% if (activeTab === 'kegiatan') { %>
     <div class="panel giiatja-panel">
       <div class="panel-header red">
         <span>KEGIATAN</span>
@@ -182,7 +282,9 @@
         </div>
       </div>
     </div>
+    <% } %>
 
+    <% if (activeTab === 'kegiatan') { %>
     <div class="panel giiatja-panel">
       <div class="panel-header red">
         <span>WARGA BINAAN YANG MENDAPATKAN PELATIHAN BERSERTIFIKAT</span>
@@ -190,13 +292,14 @@
       </div>
       <div class="panel-content">
         <form method="GET" action="/kalapas/table/giiatja" class="giiatja-search-form">
+          <input type="hidden" name="tab" value="kegiatan">
           <% if (pnbpSelectedYear && pnbpSelectedYear !== 'SEMUA') { %>
             <input type="hidden" name="tahun" value="<%= pnbpSelectedYear %>">
           <% } %>
           <input type="text" name="search" value="<%= searchKeyword || '' %>" placeholder="Cari nama / no registrasi / tanggal (contoh: 2026-04-18, 18/04/2026, 18 April 2026)">
           <button type="submit">🔎 Cari History</button>
           <% if (searchKeyword) { %>
-            <a href="/kalapas/table/giiatja<%= pnbpSelectedYear && pnbpSelectedYear !== 'SEMUA' ? `?tahun=${encodeURIComponent(pnbpSelectedYear)}` : '' %>">↺ Reset</a>
+            <a href="/kalapas/table/giiatja?tab=kegiatan<%= pnbpSelectedYear && pnbpSelectedYear !== 'SEMUA' ? `&tahun=${encodeURIComponent(pnbpSelectedYear)}` : '' %>">↺ Reset</a>
           <% } %>
         </form>
         <div class="giiatja-table-scroll table-wrap">
@@ -242,7 +345,99 @@
         </div>
       </div>
     </div>
+    <% } %>
 
+    <% if (activeTab === 'sarana') { %>
+    <div class="panel giiatja-panel">
+      <div class="panel-header red">
+        <span>MASTER PERLENGKAPAN SARANA DAN PRASARANA</span>
+        <span><%= saranaMasterList.length %> data</span>
+      </div>
+      <div class="panel-content">
+        <div class="giiatja-table-scroll table-wrap">
+          <table class="admin-table">
+            <thead>
+              <tr>
+                <th>NO</th>
+                <th>KODE</th>
+                <th>URAIAN</th>
+                <th>JUMLAH SATUAN</th>
+                <th>PENEMPATAN TIAP KEGIATAN KERJA</th>
+              </tr>
+            </thead>
+            <tbody>
+              <% (saranaMasterList || []).forEach((item, index) => { %>
+              <tr>
+                <td><%= index + 1 %></td>
+                <td><%= item.kode || '-' %></td>
+                <td><%= item.uraian || '-' %></td>
+                <td><%= item.jumlahSatuan || '-' %></td>
+                <td style="white-space:pre-line;"><%= item.penempatanKegiatan || '-' %></td>
+              </tr>
+              <% }) %>
+              <% if (!(saranaMasterList || []).length) { %>
+              <tr><td colspan="5" class="giiatja-empty">Belum ada data master sarana</td></tr>
+              <% } %>
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+
+    <div class="panel giiatja-panel">
+      <div class="panel-header red">
+        <span>PENGGUNAAN HARIAN SARANA DAN PRASARANA</span>
+        <span><%= saranaUsageList.length %> data</span>
+      </div>
+      <div class="panel-content">
+        <% if (!hasSaranaTodayUpdate) { %>
+          <div class="giiatja-notice">⚠️ Sarana kerja hari ini belum diisi.</div>
+        <% } %>
+        <div class="giiatja-meta">
+          <form method="GET" action="/kalapas/table/giiatja" style="display:flex;gap:8px;align-items:flex-end;flex-wrap:wrap;">
+            <input type="hidden" name="tab" value="sarana">
+            <div>
+              <span class="label">Tanggal Sarana</span>
+              <input type="date" name="tanggal_sarana" value="<%= saranaDate || '' %>">
+            </div>
+            <button type="submit">📅 Tampilkan</button>
+            <a href="/kalapas/table/giiatja?tab=sarana" class="reset-link">↺ Hari Ini</a>
+          </form>
+        </div>
+        <div class="giiatja-table-scroll table-wrap">
+          <table class="admin-table">
+            <thead>
+              <tr>
+                <th>NO</th>
+                <th>KODE</th>
+                <th>URAIAN</th>
+                <th>JUMLAH SATUAN</th>
+                <th>PENEMPATAN TIAP KEGIATAN KERJA</th>
+                <th>JUMLAH DIGUNAKAN HARIAN</th>
+              </tr>
+            </thead>
+            <tbody>
+              <% (saranaUsageList || []).forEach((item, index) => { %>
+              <tr>
+                <td><%= index + 1 %></td>
+                <td><%= item.kode || '-' %></td>
+                <td><%= item.uraian || '-' %></td>
+                <td><%= item.jumlahSatuan || '-' %></td>
+                <td style="white-space:pre-line;"><%= item.penempatanKegiatan || '-' %></td>
+                <td><%= item.jumlahDigunakan || '-' %></td>
+              </tr>
+              <% }) %>
+              <% if (!(saranaUsageList || []).length) { %>
+              <tr><td colspan="6" class="giiatja-empty">Belum ada data penggunaan sarana pada tanggal ini</td></tr>
+              <% } %>
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+    <% } %>
+
+    <% if (activeTab === 'hasil') { %>
     <div class="panel giiatja-panel">
       <div class="panel-header red">
         <span>PENERIMAAN NEGARA BUKAN PAJAK (PNBP)</span>
@@ -250,8 +445,18 @@
       </div>
       <div class="panel-content">
         <form method="GET" action="/kalapas/table/giiatja" class="giiatja-search-form" style="margin: 10px 10px 0;">
+          <input type="hidden" name="tab" value="hasil">
           <% if (searchKeyword) { %>
             <input type="hidden" name="search" value="<%= searchKeyword %>">
+          <% } %>
+          <% if (premiSearch) { %>
+            <input type="hidden" name="premi_search" value="<%= premiSearch %>">
+          <% } %>
+          <% if (premiSelectedMonth) { %>
+            <input type="hidden" name="premi_bulan" value="<%= premiSelectedMonth %>">
+          <% } %>
+          <% if (premiSelectedYear) { %>
+            <input type="hidden" name="premi_tahun" value="<%= premiSelectedYear %>">
           <% } %>
           <select name="tahun" style="min-width:220px; border:1px solid #cbd5e1; border-radius:6px; padding:7px 10px; font-size:12px;">
             <option value="SEMUA" <%= pnbpSelectedYear === 'SEMUA' ? 'selected' : '' %>>SEMUA TAHUN</option>
@@ -289,7 +494,7 @@
                 <td>
                   <a
                     class="giiatja-preview-btn"
-                    href="/kalapas/table/giiatja/pnbp-detail?tahun=<%= encodeURIComponent(item.tahun || pnbpSelectedYear || '') %>&periode=<%= encodeURIComponent(item.periodePnbp || '') %>&ref_tahun=<%= encodeURIComponent(pnbpSelectedYear || '') %>&search=<%= encodeURIComponent(searchKeyword || '') %>&premi_search=<%= encodeURIComponent(premiSearch || '') %>&premi_bulan=<%= encodeURIComponent(premiMonth || '') %>&premi_tahun=<%= encodeURIComponent(premiYear || '') %>"
+                    href="/kalapas/table/giiatja/pnbp-detail?tahun=<%= encodeURIComponent(item.tahun || pnbpSelectedYear || '') %>&periode=<%= encodeURIComponent(item.periodePnbp || '') %>&ref_tahun=<%= encodeURIComponent(pnbpSelectedYear || '') %>&search=<%= encodeURIComponent(searchKeyword || '') %>&premi_search=<%= encodeURIComponent(premiSearch || '') %>&premi_bulan=<%= encodeURIComponent(premiMonth || '') %>&premi_tahun=<%= encodeURIComponent(premiYear || '') %>&tab=hasil"
                   >Detail</a>
                 </td>
               </tr>
@@ -310,6 +515,7 @@
       </div>
       <div class="panel-content">
         <form method="GET" action="/kalapas/table/giiatja" class="giiatja-search-form" style="margin-bottom:10px;display:flex;gap:8px;flex-wrap:wrap;">
+          <input type="hidden" name="tab" value="hasil">
           <input
             type="text"
             name="premi_search"
@@ -330,9 +536,11 @@
             <% }) %>
           </select>
           <button type="submit">🔎 Filter Premi</button>
-          <a href="/kalapas/table/giiatja" class="btn-link">Reset</a>
+          <a href="/kalapas/table/giiatja?tab=hasil" class="btn-link">Reset</a>
           <input type="hidden" name="search" value="<%= searchKeyword || '' %>">
           <input type="hidden" name="tahun" value="<%= pnbpSelectedYear || '' %>">
+          <input type="hidden" name="pemasaran_bulan" value="<%= pemasaranSelectedMonth || '' %>">
+          <input type="hidden" name="pemasaran_tahun" value="<%= pemasaranSelectedYear || '' %>">
         </form>
         <div class="giiatja-table-scroll table-wrap">
           <table class="admin-table">
@@ -370,6 +578,68 @@
         </div>
       </div>
     </div>
+
+    <div class="panel giiatja-panel">
+      <div class="panel-header red">
+        <span>PEMASARAN HASIL</span>
+        <span><%= pemasaranList.length %> data</span>
+      </div>
+      <div class="panel-content">
+        <form method="GET" action="/kalapas/table/giiatja" class="giiatja-search-form" style="margin-bottom:10px;display:flex;gap:8px;flex-wrap:wrap;">
+          <input type="hidden" name="tab" value="hasil">
+          <select name="pemasaran_bulan">
+            <option value="SEMUA">Semua Bulan</option>
+            <% (pemasaranMonths || []).forEach((month) => { %>
+              <option value="<%= month %>" <%= pemasaranSelectedMonth === month ? 'selected' : '' %>><%= month %></option>
+            <% }) %>
+          </select>
+          <select name="pemasaran_tahun">
+            <option value="SEMUA">Semua Tahun</option>
+            <% (pemasaranYears || []).forEach((year) => { %>
+              <option value="<%= year %>" <%= pemasaranSelectedYear === year ? 'selected' : '' %>><%= year %></option>
+            <% }) %>
+          </select>
+          <button type="submit">🔎 Filter Pemasaran</button>
+          <a href="/kalapas/table/giiatja?tab=hasil" class="btn-link">Reset</a>
+          <input type="hidden" name="search" value="<%= searchKeyword || '' %>">
+          <input type="hidden" name="tahun" value="<%= pnbpSelectedYear || '' %>">
+          <input type="hidden" name="premi_search" value="<%= premiSearch || '' %>">
+          <input type="hidden" name="premi_bulan" value="<%= premiSelectedMonth || '' %>">
+          <input type="hidden" name="premi_tahun" value="<%= premiSelectedYear || '' %>">
+        </form>
+        <div class="giiatja-table-scroll table-wrap">
+          <table class="admin-table">
+            <thead>
+              <tr>
+                <th colspan="5" style="text-align:left;">PERIODE: <%= pemasaranPeriodeBulan || '-' %></th>
+              </tr>
+              <tr>
+                <th>KEGIATAN</th>
+                <th>HASIL KERJA</th>
+                <th>PEMASARAN HASIL KERJA</th>
+                <th>JUMLAH INCOME</th>
+                <th>BULAN</th>
+              </tr>
+            </thead>
+            <tbody>
+              <% pemasaranList.forEach((item) => { %>
+              <tr>
+                <td><%= item.kegiatan || '-' %></td>
+                <td><%= item.hasilKerja || '-' %></td>
+                <td><%= item.pemasaranHasilKerja || '-' %></td>
+                <td><%= item.jumlahIncome || '-' %></td>
+                <td><%= ((item.periodeBulan || '-') + ' ' + (item.periodeTahun || '-')).trim() %></td>
+              </tr>
+              <% }) %>
+              <% if (!pemasaranList.length) { %>
+              <tr><td colspan="5" class="giiatja-empty">Belum ada data</td></tr>
+              <% } %>
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+    <% } %>
   </div>
 </body>
 </html>

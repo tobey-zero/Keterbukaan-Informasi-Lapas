@@ -474,6 +474,49 @@ db.exec(`
     sort_order INTEGER NOT NULL DEFAULT 1
   );
 
+  CREATE TABLE IF NOT EXISTS giiatja_pemasaran_hasil (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    kegiatan TEXT NOT NULL DEFAULT '',
+    hasil_kerja TEXT NOT NULL DEFAULT '',
+    pemasaran_hasil_kerja TEXT NOT NULL DEFAULT '',
+    jumlah_income TEXT NOT NULL DEFAULT '',
+    periode_bulan TEXT NOT NULL DEFAULT '',
+    periode_tahun TEXT NOT NULL DEFAULT '',
+    sort_order INTEGER NOT NULL DEFAULT 1
+  );
+
+  CREATE TABLE IF NOT EXISTS giiatja_sarana_prasarana (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    tanggal TEXT NOT NULL DEFAULT (date('now','localtime')),
+    kode TEXT NOT NULL DEFAULT '',
+    uraian TEXT NOT NULL DEFAULT '',
+    jumlah_satuan TEXT NOT NULL DEFAULT '',
+    penempatan_kegiatan TEXT NOT NULL DEFAULT '',
+    jumlah_digunakan_harian TEXT NOT NULL DEFAULT '',
+    sort_order INTEGER NOT NULL DEFAULT 1,
+    created_at TEXT NOT NULL DEFAULT (datetime('now','localtime'))
+  );
+
+  CREATE TABLE IF NOT EXISTS giiatja_sarana_master (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    kode TEXT NOT NULL DEFAULT '',
+    uraian TEXT NOT NULL DEFAULT '',
+    jumlah_satuan TEXT NOT NULL DEFAULT '',
+    penempatan_kegiatan TEXT NOT NULL DEFAULT '',
+    sort_order INTEGER NOT NULL DEFAULT 1,
+    created_at TEXT NOT NULL DEFAULT (datetime('now','localtime'))
+  );
+
+  CREATE TABLE IF NOT EXISTS giiatja_sarana_penggunaan_harian (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    tanggal TEXT NOT NULL DEFAULT (date('now','localtime')),
+    sarana_id INTEGER NOT NULL,
+    jumlah_digunakan TEXT NOT NULL DEFAULT '',
+    sort_order INTEGER NOT NULL DEFAULT 1,
+    created_at TEXT NOT NULL DEFAULT (datetime('now','localtime')),
+    FOREIGN KEY (sarana_id) REFERENCES giiatja_sarana_master(id) ON DELETE CASCADE
+  );
+
   CREATE TABLE IF NOT EXISTS housing_blocks (
     id INTEGER PRIMARY KEY AUTOINCREMENT,
     gedung TEXT NOT NULL DEFAULT '',
@@ -763,6 +806,44 @@ const giiatjaPremiColumnNames = giiatjaPremiColumns.map(col => col.name);
 if (!giiatjaPremiColumnNames.includes('periode_bulan')) db.exec("ALTER TABLE giiatja_premi_wbp ADD COLUMN periode_bulan TEXT NOT NULL DEFAULT ''");
 if (!giiatjaPremiColumnNames.includes('periode_tahun')) db.exec("ALTER TABLE giiatja_premi_wbp ADD COLUMN periode_tahun TEXT NOT NULL DEFAULT ''");
 
+const giiatjaPemasaranColumns = db.prepare("PRAGMA table_info('giiatja_pemasaran_hasil')").all();
+const giiatjaPemasaranColumnNames = giiatjaPemasaranColumns.map(col => col.name);
+if (!giiatjaPemasaranColumnNames.includes('kegiatan')) db.exec("ALTER TABLE giiatja_pemasaran_hasil ADD COLUMN kegiatan TEXT NOT NULL DEFAULT ''");
+if (!giiatjaPemasaranColumnNames.includes('hasil_kerja')) db.exec("ALTER TABLE giiatja_pemasaran_hasil ADD COLUMN hasil_kerja TEXT NOT NULL DEFAULT ''");
+if (!giiatjaPemasaranColumnNames.includes('pemasaran_hasil_kerja')) db.exec("ALTER TABLE giiatja_pemasaran_hasil ADD COLUMN pemasaran_hasil_kerja TEXT NOT NULL DEFAULT ''");
+if (!giiatjaPemasaranColumnNames.includes('jumlah_income')) db.exec("ALTER TABLE giiatja_pemasaran_hasil ADD COLUMN jumlah_income TEXT NOT NULL DEFAULT ''");
+if (!giiatjaPemasaranColumnNames.includes('periode_bulan')) db.exec("ALTER TABLE giiatja_pemasaran_hasil ADD COLUMN periode_bulan TEXT NOT NULL DEFAULT ''");
+if (!giiatjaPemasaranColumnNames.includes('periode_tahun')) db.exec("ALTER TABLE giiatja_pemasaran_hasil ADD COLUMN periode_tahun TEXT NOT NULL DEFAULT ''");
+if (!giiatjaPemasaranColumnNames.includes('sort_order')) db.exec("ALTER TABLE giiatja_pemasaran_hasil ADD COLUMN sort_order INTEGER NOT NULL DEFAULT 1");
+
+const giiatjaSaranaColumns = db.prepare("PRAGMA table_info('giiatja_sarana_prasarana')").all();
+const giiatjaSaranaColumnNames = giiatjaSaranaColumns.map(col => col.name);
+if (!giiatjaSaranaColumnNames.includes('tanggal')) db.exec("ALTER TABLE giiatja_sarana_prasarana ADD COLUMN tanggal TEXT NOT NULL DEFAULT (date('now','localtime'))");
+if (!giiatjaSaranaColumnNames.includes('kode')) db.exec("ALTER TABLE giiatja_sarana_prasarana ADD COLUMN kode TEXT NOT NULL DEFAULT ''");
+if (!giiatjaSaranaColumnNames.includes('uraian')) db.exec("ALTER TABLE giiatja_sarana_prasarana ADD COLUMN uraian TEXT NOT NULL DEFAULT ''");
+if (!giiatjaSaranaColumnNames.includes('jumlah_satuan')) db.exec("ALTER TABLE giiatja_sarana_prasarana ADD COLUMN jumlah_satuan TEXT NOT NULL DEFAULT ''");
+if (!giiatjaSaranaColumnNames.includes('penempatan_kegiatan')) db.exec("ALTER TABLE giiatja_sarana_prasarana ADD COLUMN penempatan_kegiatan TEXT NOT NULL DEFAULT ''");
+if (!giiatjaSaranaColumnNames.includes('jumlah_digunakan_harian')) db.exec("ALTER TABLE giiatja_sarana_prasarana ADD COLUMN jumlah_digunakan_harian TEXT NOT NULL DEFAULT ''");
+if (!giiatjaSaranaColumnNames.includes('sort_order')) db.exec("ALTER TABLE giiatja_sarana_prasarana ADD COLUMN sort_order INTEGER NOT NULL DEFAULT 1");
+if (!giiatjaSaranaColumnNames.includes('created_at')) db.exec("ALTER TABLE giiatja_sarana_prasarana ADD COLUMN created_at TEXT NOT NULL DEFAULT (datetime('now','localtime'))");
+
+const giiatjaSaranaMasterColumns = db.prepare("PRAGMA table_info('giiatja_sarana_master')").all();
+const giiatjaSaranaMasterColumnNames = giiatjaSaranaMasterColumns.map(col => col.name);
+if (!giiatjaSaranaMasterColumnNames.includes('kode')) db.exec("ALTER TABLE giiatja_sarana_master ADD COLUMN kode TEXT NOT NULL DEFAULT ''");
+if (!giiatjaSaranaMasterColumnNames.includes('uraian')) db.exec("ALTER TABLE giiatja_sarana_master ADD COLUMN uraian TEXT NOT NULL DEFAULT ''");
+if (!giiatjaSaranaMasterColumnNames.includes('jumlah_satuan')) db.exec("ALTER TABLE giiatja_sarana_master ADD COLUMN jumlah_satuan TEXT NOT NULL DEFAULT ''");
+if (!giiatjaSaranaMasterColumnNames.includes('penempatan_kegiatan')) db.exec("ALTER TABLE giiatja_sarana_master ADD COLUMN penempatan_kegiatan TEXT NOT NULL DEFAULT ''");
+if (!giiatjaSaranaMasterColumnNames.includes('sort_order')) db.exec("ALTER TABLE giiatja_sarana_master ADD COLUMN sort_order INTEGER NOT NULL DEFAULT 1");
+if (!giiatjaSaranaMasterColumnNames.includes('created_at')) db.exec("ALTER TABLE giiatja_sarana_master ADD COLUMN created_at TEXT NOT NULL DEFAULT (datetime('now','localtime'))");
+
+const giiatjaSaranaPenggunaanColumns = db.prepare("PRAGMA table_info('giiatja_sarana_penggunaan_harian')").all();
+const giiatjaSaranaPenggunaanColumnNames = giiatjaSaranaPenggunaanColumns.map(col => col.name);
+if (!giiatjaSaranaPenggunaanColumnNames.includes('tanggal')) db.exec("ALTER TABLE giiatja_sarana_penggunaan_harian ADD COLUMN tanggal TEXT NOT NULL DEFAULT (date('now','localtime'))");
+if (!giiatjaSaranaPenggunaanColumnNames.includes('sarana_id')) db.exec("ALTER TABLE giiatja_sarana_penggunaan_harian ADD COLUMN sarana_id INTEGER NOT NULL DEFAULT 0");
+if (!giiatjaSaranaPenggunaanColumnNames.includes('jumlah_digunakan')) db.exec("ALTER TABLE giiatja_sarana_penggunaan_harian ADD COLUMN jumlah_digunakan TEXT NOT NULL DEFAULT ''");
+if (!giiatjaSaranaPenggunaanColumnNames.includes('sort_order')) db.exec("ALTER TABLE giiatja_sarana_penggunaan_harian ADD COLUMN sort_order INTEGER NOT NULL DEFAULT 1");
+if (!giiatjaSaranaPenggunaanColumnNames.includes('created_at')) db.exec("ALTER TABLE giiatja_sarana_penggunaan_harian ADD COLUMN created_at TEXT NOT NULL DEFAULT (datetime('now','localtime'))");
+
 const pengaduanColumns = db.prepare("PRAGMA table_info('pengaduan_masyarakat')").all();
 const pengaduanColumnNames = pengaduanColumns.map(col => col.name);
 if (!pengaduanColumnNames.includes('no_pengaduan')) db.exec("ALTER TABLE pengaduan_masyarakat ADD COLUMN no_pengaduan TEXT NOT NULL DEFAULT ''");
@@ -820,6 +901,13 @@ const defaultGiiatjaPremiMonth = 'APRIL';
 const defaultGiiatjaPremiYear = String(new Date().getFullYear());
 db.prepare(`
   UPDATE giiatja_premi_wbp
+  SET
+    periode_bulan = COALESCE(NULLIF(TRIM(periode_bulan), ''), ?),
+    periode_tahun = COALESCE(NULLIF(TRIM(periode_tahun), ''), ?)
+`).run(defaultGiiatjaPremiMonth, defaultGiiatjaPremiYear);
+
+db.prepare(`
+  UPDATE giiatja_pemasaran_hasil
   SET
     periode_bulan = COALESCE(NULLIF(TRIM(periode_bulan), ''), ?),
     periode_tahun = COALESCE(NULLIF(TRIM(periode_tahun), ''), ?)

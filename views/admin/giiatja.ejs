@@ -24,9 +24,11 @@
       <div class="card">
         <div class="card-body" style="display:flex;gap:8px;flex-wrap:wrap;">
           <a href="/admin/giiatja?menu=kegiatan" class="btn btn-sm <%- isMenu('kegiatan') ? 'btn-primary' : 'btn-secondary' %>">🏭 Kegiatan</a>
+          <a href="/admin/giiatja?menu=sarana" class="btn btn-sm <%- isMenu('sarana') ? 'btn-primary' : 'btn-secondary' %>">🧰 Sarana Kerja</a>
           <a href="/admin/giiatja?menu=pelatihan" class="btn btn-sm <%- isMenu('pelatihan') ? 'btn-primary' : 'btn-secondary' %>">🎓 Pelatihan</a>
           <a href="/admin/giiatja?menu=pnbp" class="btn btn-sm <%- isMenu('pnbp') ? 'btn-primary' : 'btn-secondary' %>">💳 PNBP</a>
           <a href="/admin/giiatja?menu=premi" class="btn btn-sm <%- isMenu('premi') ? 'btn-primary' : 'btn-secondary' %>">💰 Premi</a>
+          <a href="/admin/giiatja?menu=pemasaran" class="btn btn-sm <%- isMenu('pemasaran') ? 'btn-primary' : 'btn-secondary' %>">🧾 Pemasaran Hasil</a>
         </div>
       </div>
 
@@ -196,6 +198,163 @@ PETUGAS B"></textarea></div>
                 </tr>
                 <% }) %>
                 <% if (!kegiatanList.length) { %><tr><td colspan="7" style="text-align:center;color:#aaa;padding:20px;">Belum ada data</td></tr><% } %>
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+
+      <div class="card" <%- isMenu('sarana') ? '' : 'style="display:none;"' %>>
+        <div class="card-header"><h3>➕ Master Perlengkapan Sarana dan Prasarana</h3></div>
+        <div class="card-body">
+          <form method="POST" action="/admin/giiatja/sarana/master/add">
+            <div class="form-grid col-4" style="margin-bottom:12px;">
+              <div class="form-group"><label>Urutan</label><input type="number" min="1" name="sort_order" value="1"></div>
+              <div class="form-group"><label>Kode</label><input type="text" name="kode" required placeholder="cth: SRN-01"></div>
+              <div class="form-group"><label>Uraian</label><input type="text" name="uraian" required placeholder="cth: GERGAJI BESI"></div>
+              <div class="form-group"><label>Jumlah Satuan</label><input type="text" name="jumlah_satuan" required placeholder="cth: 12 UNIT"></div>
+              <div class="form-group" style="grid-column: span 2;"><label>Penempatan Tiap Kegiatan Kerja</label><textarea name="penempatan_kegiatan" rows="2" required placeholder="cth: PANGKAS, LAS, BENGKEL"></textarea></div>
+            </div>
+            <button type="submit" class="btn btn-primary btn-sm">➕ Tambah Master Sarana</button>
+          </form>
+        </div>
+      </div>
+
+      <% if (editSaranaMaster) { %>
+      <div class="edit-panel" <%- isMenu('sarana') ? '' : 'style="display:none;"' %>>
+        <h4>✏️ Edit Master Sarana (ID: <%= editSaranaMaster.id %>)</h4>
+        <form method="POST" action="/admin/giiatja/sarana/master/<%= editSaranaMaster.id %>/update">
+          <div class="form-grid col-4" style="margin-bottom:12px;">
+            <div class="form-group"><label>Urutan</label><input type="number" min="1" name="sort_order" value="<%= editSaranaMaster.sort_order || 1 %>"></div>
+            <div class="form-group"><label>Kode</label><input type="text" name="kode" value="<%= editSaranaMaster.kode || '' %>" required></div>
+            <div class="form-group"><label>Uraian</label><input type="text" name="uraian" value="<%= editSaranaMaster.uraian || '' %>" required></div>
+            <div class="form-group"><label>Jumlah Satuan</label><input type="text" name="jumlah_satuan" value="<%= editSaranaMaster.jumlah_satuan || '' %>" required></div>
+            <div class="form-group" style="grid-column: span 2;"><label>Penempatan Tiap Kegiatan Kerja</label><textarea name="penempatan_kegiatan" rows="2" required><%= editSaranaMaster.penempatan_kegiatan || '' %></textarea></div>
+          </div>
+          <div style="display:flex;gap:8px;">
+            <button type="submit" class="btn btn-success btn-sm">💾 Simpan</button>
+            <a href="/admin/giiatja?menu=sarana" class="btn btn-secondary btn-sm">✕ Batal</a>
+          </div>
+        </form>
+      </div>
+      <% } %>
+
+      <div class="card" <%- isMenu('sarana') ? '' : 'style="display:none;"' %>>
+        <div class="card-header"><h3>Daftar Master Perlengkapan Sarana dan Prasarana (<%= saranaMasterList.length %> data)</h3></div>
+        <div class="card-body" style="padding:0;">
+          <div class="table-wrap">
+            <table class="admin-table">
+              <thead><tr><th>No</th><th>Kode</th><th>Uraian</th><th>Jumlah Satuan</th><th>Penempatan Tiap Kegiatan Kerja</th><th>Aksi</th></tr></thead>
+              <tbody>
+                <% saranaMasterList.forEach((item, i) => { %>
+                <tr>
+                  <td><%= i + 1 %></td>
+                  <td><%= item.kode || '-' %></td>
+                  <td><%= item.uraian || '-' %></td>
+                  <td><%= item.jumlah_satuan || '-' %></td>
+                  <td style="white-space:pre-line;"><%= item.penempatan_kegiatan || '-' %></td>
+                  <td>
+                    <div class="actions">
+                      <a href="/admin/giiatja?menu=sarana&editSaranaMaster=<%= item.id %>" class="btn btn-warning btn-xs">✏️</a>
+                      <form method="POST" action="/admin/giiatja/sarana/master/<%= item.id %>/delete" style="display:inline" onsubmit="return confirm('Hapus master sarana ini?')">
+                        <button class="btn btn-danger btn-xs">🗑</button>
+                      </form>
+                    </div>
+                  </td>
+                </tr>
+                <% }) %>
+                <% if (!saranaMasterList.length) { %><tr><td colspan="6" style="text-align:center;color:#aaa;padding:20px;">Belum ada data master sarana</td></tr><% } %>
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+
+      <div class="card" <%- isMenu('sarana') ? '' : 'style="display:none;"' %>>
+        <div class="card-header"><h3>📅 Filter dan Input Penggunaan Harian Sarana</h3></div>
+        <div class="card-body">
+          <form method="GET" action="/admin/giiatja" style="display:flex;gap:8px;align-items:flex-end;flex-wrap:wrap;margin-bottom:12px;">
+            <input type="hidden" name="menu" value="sarana">
+            <div class="form-group" style="margin:0;min-width:240px;">
+              <label>Tanggal</label>
+              <input type="date" name="tanggal_sarana" value="<%= selectedSaranaDate || '' %>">
+            </div>
+            <button type="submit" class="btn btn-primary btn-sm">📅 Tampilkan</button>
+            <a href="/admin/giiatja?menu=sarana" class="btn btn-secondary btn-sm">↺ Hari Ini</a>
+          </form>
+
+          <form method="POST" action="/admin/giiatja/sarana/penggunaan/add">
+            <input type="hidden" name="tanggal" value="<%= selectedSaranaDate || '' %>">
+            <div class="form-grid col-4" style="margin-bottom:12px;">
+              <div class="form-group"><label>Urutan</label><input type="number" min="1" name="sort_order" value="1"></div>
+              <div class="form-group">
+                <label>Perlengkapan Sarana</label>
+                <select name="sarana_id" required>
+                  <option value="">-- Pilih Master Sarana --</option>
+                  <% saranaMasterList.forEach((item) => { %>
+                    <option value="<%= item.id %>"><%= item.kode %> - <%= item.uraian %></option>
+                  <% }) %>
+                </select>
+              </div>
+              <div class="form-group"><label>Jumlah Digunakan Harian</label><input type="text" name="jumlah_digunakan" required placeholder="cth: 5 UNIT / HARI"></div>
+            </div>
+            <button type="submit" class="btn btn-primary btn-sm">➕ Tambah Penggunaan Harian</button>
+          </form>
+        </div>
+      </div>
+
+      <% if (editSaranaPenggunaan) { %>
+      <div class="edit-panel" <%- isMenu('sarana') ? '' : 'style="display:none;"' %>>
+        <h4>✏️ Edit Penggunaan Harian Sarana (ID: <%= editSaranaPenggunaan.id %>)</h4>
+        <form method="POST" action="/admin/giiatja/sarana/penggunaan/<%= editSaranaPenggunaan.id %>/update">
+          <input type="hidden" name="tanggal" value="<%= selectedSaranaDate || editSaranaPenggunaan.tanggal || '' %>">
+          <div class="form-grid col-4" style="margin-bottom:12px;">
+            <div class="form-group"><label>Urutan</label><input type="number" min="1" name="sort_order" value="<%= editSaranaPenggunaan.sort_order || 1 %>"></div>
+            <div class="form-group">
+              <label>Perlengkapan Sarana</label>
+              <select name="sarana_id" required>
+                <% saranaMasterList.forEach((item) => { %>
+                  <option value="<%= item.id %>" <%= Number(editSaranaPenggunaan.sarana_id) === Number(item.id) ? 'selected' : '' %>><%= item.kode %> - <%= item.uraian %></option>
+                <% }) %>
+              </select>
+            </div>
+            <div class="form-group"><label>Jumlah Digunakan Harian</label><input type="text" name="jumlah_digunakan" value="<%= editSaranaPenggunaan.jumlah_digunakan || '' %>" required></div>
+          </div>
+          <div style="display:flex;gap:8px;">
+            <button type="submit" class="btn btn-success btn-sm">💾 Simpan</button>
+            <a href="/admin/giiatja?menu=sarana&tanggal_sarana=<%= encodeURIComponent(selectedSaranaDate || '') %>" class="btn btn-secondary btn-sm">✕ Batal</a>
+          </div>
+        </form>
+      </div>
+      <% } %>
+
+      <div class="card" <%- isMenu('sarana') ? '' : 'style="display:none;"' %>>
+        <div class="card-header"><h3>Daftar Penggunaan Harian Sarana (<%= saranaPenggunaanList.length %> data)</h3></div>
+        <div class="card-body" style="padding:0;">
+          <div class="table-wrap">
+            <table class="admin-table">
+              <thead><tr><th>No</th><th>Kode</th><th>Uraian</th><th>Jumlah Satuan</th><th>Penempatan Tiap Kegiatan Kerja</th><th>Jumlah Digunakan Harian</th><th>Aksi</th></tr></thead>
+              <tbody>
+                <% saranaPenggunaanList.forEach((item, i) => { %>
+                <tr>
+                  <td><%= i + 1 %></td>
+                  <td><%= item.kode || '-' %></td>
+                  <td><%= item.uraian || '-' %></td>
+                  <td><%= item.jumlah_satuan || '-' %></td>
+                  <td style="white-space:pre-line;"><%= item.penempatan_kegiatan || '-' %></td>
+                  <td><%= item.jumlah_digunakan || '-' %></td>
+                  <td>
+                    <div class="actions">
+                      <a href="/admin/giiatja?menu=sarana&editSaranaPenggunaan=<%= item.id %>&tanggal_sarana=<%= encodeURIComponent(selectedSaranaDate || '') %>" class="btn btn-warning btn-xs">✏️</a>
+                      <form method="POST" action="/admin/giiatja/sarana/penggunaan/<%= item.id %>/delete" style="display:inline" onsubmit="return confirm('Hapus data penggunaan harian ini?')">
+                        <input type="hidden" name="tanggal_sarana" value="<%= selectedSaranaDate || '' %>">
+                        <button class="btn btn-danger btn-xs">🗑</button>
+                      </form>
+                    </div>
+                  </td>
+                </tr>
+                <% }) %>
+                <% if (!saranaPenggunaanList.length) { %><tr><td colspan="7" style="text-align:center;color:#aaa;padding:20px;">Belum ada data penggunaan sarana untuk tanggal ini</td></tr><% } %>
               </tbody>
             </table>
           </div>
@@ -546,6 +705,122 @@ NAMA PESERTA 2"></textarea></div>
             </div>
             <button type="submit" class="btn btn-primary btn-sm">➕ Tambah Premi</button>
           </form>
+        </div>
+      </div>
+
+      <div class="card" <%- isMenu('pemasaran') ? '' : 'style="display:none;"' %>>
+        <div class="card-header"><h3>➕ Tabel Pemasaran Hasil</h3></div>
+        <div class="card-body">
+          <form method="POST" action="/admin/giiatja/pemasaran/add">
+            <div class="form-grid col-4" style="margin-bottom:12px;">
+              <div class="form-group"><label>Urutan</label><input type="number" min="1" name="sort_order" value="1"></div>
+              <div class="form-group"><label>Kegiatan</label><input type="text" name="kegiatan" required></div>
+              <div class="form-group"><label>Hasil Kerja</label><input type="text" name="hasil_kerja" required></div>
+              <div class="form-group"><label>Pemasaran Hasil Kerja</label><input type="text" name="pemasaran_hasil_kerja" required></div>
+              <div class="form-group"><label>Jumlah Income</label><input type="text" name="jumlah_income" required placeholder="cth: 12.000.000"></div>
+              <div class="form-group">
+                <label>Periode Bulan</label>
+                <select name="periode_bulan" required>
+                  <option value="">Pilih Bulan</option>
+                  <% ['JANUARI','FEBRUARI','MARET','APRIL','MEI','JUNI','JULI','AGUSTUS','SEPTEMBER','OKTOBER','NOVEMBER','DESEMBER'].forEach((m) => { %>
+                    <option value="<%= m %>"><%= m %></option>
+                  <% }) %>
+                </select>
+              </div>
+              <div class="form-group"><label>Periode Tahun</label><input type="number" name="periode_tahun" min="2000" max="2100" value="<%= new Date().getFullYear() %>" required></div>
+            </div>
+            <button type="submit" class="btn btn-primary btn-sm">➕ Tambah Pemasaran Hasil</button>
+          </form>
+        </div>
+      </div>
+
+      <% if (editPemasaran) { %>
+      <div class="edit-panel" <%- isMenu('pemasaran') ? '' : 'style="display:none;"' %>>
+        <h4>✏️ Edit Pemasaran Hasil (ID: <%= editPemasaran.id %>)</h4>
+        <form method="POST" action="/admin/giiatja/pemasaran/<%= editPemasaran.id %>/update">
+          <div class="form-grid col-4" style="margin-bottom:12px;">
+            <div class="form-group"><label>Urutan</label><input type="number" min="1" name="sort_order" value="<%= editPemasaran.sort_order || 1 %>"></div>
+            <div class="form-group"><label>Kegiatan</label><input type="text" name="kegiatan" value="<%= editPemasaran.kegiatan || '' %>" required></div>
+            <div class="form-group"><label>Hasil Kerja</label><input type="text" name="hasil_kerja" value="<%= editPemasaran.hasil_kerja || '' %>" required></div>
+            <div class="form-group"><label>Pemasaran Hasil Kerja</label><input type="text" name="pemasaran_hasil_kerja" value="<%= editPemasaran.pemasaran_hasil_kerja || '' %>" required></div>
+            <div class="form-group"><label>Jumlah Income</label><input type="text" name="jumlah_income" value="<%= editPemasaran.jumlah_income || '' %>" required></div>
+            <div class="form-group">
+              <label>Periode Bulan</label>
+              <select name="periode_bulan" required>
+                <option value="">Pilih Bulan</option>
+                <% ['JANUARI','FEBRUARI','MARET','APRIL','MEI','JUNI','JULI','AGUSTUS','SEPTEMBER','OKTOBER','NOVEMBER','DESEMBER'].forEach((m) => { %>
+                  <option value="<%= m %>" <%= (String(editPemasaran.periode_bulan || '').toUpperCase() === m) ? 'selected' : '' %>><%= m %></option>
+                <% }) %>
+              </select>
+            </div>
+            <div class="form-group"><label>Periode Tahun</label><input type="number" name="periode_tahun" min="2000" max="2100" value="<%= editPemasaran.periode_tahun || new Date().getFullYear() %>" required></div>
+          </div>
+          <div style="display:flex;gap:8px;">
+            <button type="submit" class="btn btn-success btn-sm">💾 Simpan</button>
+            <a href="/admin/giiatja?menu=pemasaran" class="btn btn-secondary btn-sm">✕ Batal</a>
+          </div>
+        </form>
+      </div>
+      <% } %>
+
+      <div class="card" <%- isMenu('pemasaran') ? '' : 'style="display:none;"' %>>
+        <div class="card-header"><h3>Daftar Pemasaran Hasil (<%= pemasaranList.length %> data)</h3></div>
+        <div class="card-body" style="border-bottom:1px solid rgba(255,255,255,.06);">
+          <form method="GET" action="/admin/giiatja" class="form-grid col-4">
+            <div class="form-group">
+              <label>Filter Bulan</label>
+              <select name="pemasaran_bulan">
+                <option value="SEMUA">Semua Bulan</option>
+                <% pemasaranMonthOptions.forEach((month) => { %>
+                  <option value="<%= month %>" <%= selectedPemasaranMonth === month ? 'selected' : '' %>><%= month %></option>
+                <% }) %>
+              </select>
+            </div>
+            <div class="form-group">
+              <label>Filter Tahun</label>
+              <select name="pemasaran_tahun">
+                <option value="SEMUA">Semua Tahun</option>
+                <% pemasaranYearOptions.forEach((year) => { %>
+                  <option value="<%= year %>" <%= selectedPemasaranYear === year ? 'selected' : '' %>><%= year %></option>
+                <% }) %>
+              </select>
+            </div>
+            <div class="form-group" style="display:flex;align-items:flex-end;gap:8px;">
+              <button type="submit" class="btn btn-primary btn-sm">🔎 Terapkan</button>
+              <a href="/admin/giiatja?menu=pemasaran" class="btn btn-secondary btn-sm">Reset</a>
+            </div>
+            <input type="hidden" name="menu" value="pemasaran">
+          </form>
+        </div>
+        <div class="card-body" style="padding:0;">
+          <div class="table-wrap">
+            <table class="admin-table">
+              <thead><tr><th>No</th><th>Kegiatan</th><th>Hasil Kerja</th><th>Pemasaran Hasil Kerja</th><th>Jumlah Income</th><th>Periode</th><th>Aksi</th></tr></thead>
+              <tbody>
+                <% pemasaranList.forEach((item, i) => { %>
+                <tr>
+                  <td><%= i + 1 %></td>
+                  <td><%= item.kegiatan || '-' %></td>
+                  <td><%= item.hasil_kerja || '-' %></td>
+                  <td><%= item.pemasaran_hasil_kerja || '-' %></td>
+                  <td><%= item.jumlah_income || '-' %></td>
+                  <td><%= ((item.periode_bulan || '-') + ' ' + (item.periode_tahun || '-')).trim() %></td>
+                  <td>
+                    <div class="actions">
+                      <a href="/admin/giiatja?menu=pemasaran&editPemasaran=<%= item.id %>&pemasaran_bulan=<%= encodeURIComponent(selectedPemasaranMonth || 'SEMUA') %>&pemasaran_tahun=<%= encodeURIComponent(selectedPemasaranYear || 'SEMUA') %>" class="btn btn-warning btn-xs">✏️</a>
+                      <form method="POST" action="/admin/giiatja/pemasaran/<%= item.id %>/delete" style="display:inline" onsubmit="return confirm('Hapus data ini?')">
+                        <input type="hidden" name="pemasaran_bulan" value="<%= selectedPemasaranMonth || 'SEMUA' %>">
+                        <input type="hidden" name="pemasaran_tahun" value="<%= selectedPemasaranYear || 'SEMUA' %>">
+                        <button class="btn btn-danger btn-xs">🗑</button>
+                      </form>
+                    </div>
+                  </td>
+                </tr>
+                <% }) %>
+                <% if (!pemasaranList.length) { %><tr><td colspan="7" style="text-align:center;color:#aaa;padding:20px;">Belum ada data</td></tr><% } %>
+              </tbody>
+            </table>
+          </div>
         </div>
       </div>
 

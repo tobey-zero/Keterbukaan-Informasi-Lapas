@@ -1488,12 +1488,18 @@ function getTuUmumData() {
 
 function getGiiatjaData(options = {}) {
   const pelatihanSearch = String(options.pelatihanSearch || '').trim();
+  const todayYmd = getTodayYmd();
+  const saranaDateFilter = /^\d{4}-\d{2}-\d{2}$/.test(String(options.saranaDate || ''))
+    ? String(options.saranaDate)
+    : todayYmd;
   const pnbpYearFilter = String(options.pnbpYear || '').trim();
   const pnbpDetailYearFilter = String(options.pnbpDetailYear || '').trim();
   const pnbpDetailPeriodFilter = String(options.pnbpDetailPeriod || '').trim();
   const premiSearch = String(options.premiSearch || '').trim();
   const premiMonthFilter = String(options.premiMonth || '').trim().toUpperCase();
   const premiYearFilter = String(options.premiYear || '').trim();
+  const pemasaranMonthFilter = String(options.pemasaranMonth || '').trim().toUpperCase();
+  const pemasaranYearFilter = String(options.pemasaranYear || '').trim();
 
   const parseNominal = (value) => {
     const digits = String(value ?? '').replace(/\D/g, '');
@@ -1605,6 +1611,41 @@ function getGiiatjaData(options = {}) {
     FROM giiatja_pelatihan_sertifikat
     ORDER BY id ASC`)
     .all();
+
+  const saranaMasterList = db.prepare(`
+    SELECT
+      id,
+      kode,
+      uraian,
+      jumlah_satuan AS jumlahSatuan,
+      penempatan_kegiatan AS penempatanKegiatan,
+      sort_order AS sortOrder
+    FROM giiatja_sarana_master
+    ORDER BY sort_order ASC, id ASC
+  `).all();
+
+  const saranaUsageList = db.prepare(`
+    SELECT
+      u.id,
+      u.tanggal,
+      u.sarana_id AS saranaId,
+      m.kode,
+      m.uraian,
+      m.jumlah_satuan AS jumlahSatuan,
+      m.penempatan_kegiatan AS penempatanKegiatan,
+      u.jumlah_digunakan AS jumlahDigunakan,
+      u.sort_order AS sortOrder
+    FROM giiatja_sarana_penggunaan_harian u
+    INNER JOIN giiatja_sarana_master m ON m.id = u.sarana_id
+    WHERE u.tanggal = ?
+    ORDER BY u.sort_order ASC, u.id ASC
+  `).all(saranaDateFilter);
+
+  const hasSaranaTodayUpdate = Number(db.prepare(`
+    SELECT COUNT(*) AS c
+    FROM giiatja_sarana_penggunaan_harian
+    WHERE tanggal = ?
+  `).get(todayYmd)?.c || 0) > 0;
 
   const normalizedSearchKeyword = normalizeSearchText(pelatihanSearch);
   const normalizedSearchDate = normalizeDateToYmd(pelatihanSearch) || '';
@@ -1820,6 +1861,56 @@ function getGiiatjaData(options = {}) {
     ? (premiSelectedYear === 'SEMUA' ? 'SEMUA PERIODE' : `SEMUA BULAN ${premiSelectedYear}`)
     : `${premiSelectedMonth}${premiSelectedYear === 'SEMUA' ? '' : ` ${premiSelectedYear}`}`;
 
+  const pemasaranRawList = db.prepare(`
+    SELECT
+      id,
+      kegiatan,
+      hasil_kerja AS hasilKerja,
+      pemasaran_hasil_kerja AS pemasaranHasilKerja,
+      jumlah_income AS jumlahIncome,
+      periode_bulan AS periodeBulan,
+      periode_tahun AS periodeTahun,
+      sort_order AS sortOrder
+    FROM giiatja_pemasaran_hasil
+    ORDER BY periode_tahun DESC,
+      ${monthOrderSql} ASC,
+      sort_order ASC,
+      id ASC
+  `).all();
+
+  const pemasaranMonths = Array.from(new Set(
+    pemasaranRawList.map(item => String(item.periodeBulan || '').trim().toUpperCase()).filter(Boolean)
+  )).sort((a, b) => {
+    const orders = ['JANUARI','FEBRUARI','MARET','APRIL','MEI','JUNI','JULI','AGUSTUS','SEPTEMBER','OKTOBER','NOVEMBER','DESEMBER'];
+    const ia = orders.indexOf(a);
+    const ib = orders.indexOf(b);
+    const va = ia === -1 ? 99 : ia;
+    const vb = ib === -1 ? 99 : ib;
+    return va - vb;
+  });
+  const pemasaranYears = Array.from(new Set(
+    pemasaranRawList.map(item => String(item.periodeTahun || '').trim()).filter(Boolean)
+  )).sort((a, b) => String(b).localeCompare(String(a), undefined, { numeric: true }));
+
+  const pemasaranSelectedMonth = pemasaranMonthFilter && pemasaranMonthFilter !== 'SEMUA'
+    ? pemasaranMonthFilter
+    : 'SEMUA';
+  const pemasaranSelectedYear = pemasaranYearFilter && pemasaranYearFilter !== 'SEMUA'
+    ? pemasaranYearFilter
+    : 'SEMUA';
+
+  const pemasaranList = pemasaranRawList.filter((item) => {
+    const month = String(item.periodeBulan || '').trim().toUpperCase();
+    const year = String(item.periodeTahun || '').trim();
+    if (pemasaranSelectedMonth !== 'SEMUA' && month !== pemasaranSelectedMonth) return false;
+    if (pemasaranSelectedYear !== 'SEMUA' && year !== pemasaranSelectedYear) return false;
+    return true;
+  });
+
+  const pemasaranPeriodeBulan = pemasaranSelectedMonth === 'SEMUA'
+    ? (pemasaranSelectedYear === 'SEMUA' ? 'SEMUA PERIODE' : `SEMUA BULAN ${pemasaranSelectedYear}`)
+    : `${pemasaranSelectedMonth}${pemasaranSelectedYear === 'SEMUA' ? '' : ` ${pemasaranSelectedYear}`}`;
+
   const totalJumlahPnbp = pnbpList.reduce((sum, item) => sum + parseNominal(item.jumlahPnbp), 0);
   const totalTargetRealisasi = pnbpList.reduce((sum, item) => sum + parseNominal(item.targetRealisasi), 0);
   const sisaTargetPnbp = Math.max(totalTargetRealisasi - totalJumlahPnbp, 0);
@@ -1835,6 +1926,10 @@ function getGiiatjaData(options = {}) {
     pelatihanList,
     pelatihanGroupedByMonth,
     pelatihanSearch,
+    saranaDate: saranaDateFilter,
+    saranaMasterList,
+    saranaUsageList,
+    hasSaranaTodayUpdate,
     pnbpYears,
     pnbpSelectedYear,
     pnbpList,
@@ -1849,14 +1944,22 @@ function getGiiatjaData(options = {}) {
     premiSelectedYear,
     premiSearch,
     premiList,
+    pemasaranMonths,
+    pemasaranYears,
+    pemasaranSelectedMonth,
+    pemasaranSelectedYear,
+    pemasaranList,
+    pemasaranPeriodeBulan,
     pnbpTahun,
     premiPeriodeBulan,
     giiatjaSummary: {
       kegiatan: kegiatanDetails.length,
       pelatihan: pelatihanList.length,
+      sarana: saranaMasterList.length,
       pnbp: pnbpList.length,
       premi: premiList.length,
-      total: kegiatanDetails.length + pelatihanList.length + pnbpList.length + premiList.length,
+      pemasaran: pemasaranList.length,
+      total: kegiatanDetails.length + pelatihanList.length + saranaMasterList.length + pnbpList.length + premiList.length + pemasaranList.length,
       pnbpChart: {
         totalJumlahPnbp,
         totalTargetRealisasi,
@@ -2121,7 +2224,12 @@ function getKalapasData() {
     WHERE TRIM(periode_tahun) = ?
       AND UPPER(TRIM(periode_bulan)) = ?
   `).get(currentYear, currentMonthLabel)?.c || 0) > 0;
-  const hasGiiatjaMonthlyUpdate = hasGiiatjaPelatihanThisMonth || hasGiiatjaPnbpThisMonth || hasGiiatjaPremiThisMonth;
+  const hasGiiatjaSaranaTodayUpdate = Number(db.prepare(`
+    SELECT COUNT(*) AS c
+    FROM giiatja_sarana_penggunaan_harian
+    WHERE tanggal = ?
+  `).get(todayYmd)?.c || 0) > 0;
+  const hasGiiatjaMonthlyUpdate = hasGiiatjaPelatihanThisMonth || hasGiiatjaPnbpThisMonth || hasGiiatjaPremiThisMonth || hasGiiatjaSaranaTodayUpdate;
   const totalPenghuniStatistik = Number(umum.totalPenghuni) || 0;
   const totalPentahapanPembinaan = Array.isArray(umum.pentahapanPembinaanDetail)
     ? umum.pentahapanPembinaanDetail.length
@@ -2195,6 +2303,7 @@ function getKalapasData() {
     dapurDistribusiMissingJam,
     hasKamtibMonthlyPengawalanUpdate,
     hasGiiatjaMonthlyUpdate,
+    hasGiiatjaSaranaTodayUpdate,
     hasPembinaanStatMismatch,
     totalPenghuniStatistik,
     totalPentahapanPembinaan,
@@ -3245,27 +3354,49 @@ app.get('/kalapas/table/pengawalan', (req, res) => {
 });
 
 app.get('/kalapas/table/giiatja', (req, res) => {
+  const requestedTab = String(req.query.tab || '').trim().toLowerCase();
+  const allowedTabs = ['kegiatan', 'sarana', 'hasil'];
+  const activeTab = allowedTabs.includes(requestedTab) ? requestedTab : 'kegiatan';
   const searchKeyword = String(req.query.search || '').trim();
+  const saranaDate = /^\d{4}-\d{2}-\d{2}$/.test(String(req.query.tanggal_sarana || ''))
+    ? String(req.query.tanggal_sarana)
+    : getTodayYmd();
   const pnbpYear = String(req.query.tahun || '').trim();
   const premiSearch = String(req.query.premi_search || '').trim();
   const premiMonth = String(req.query.premi_bulan || '').trim();
   const premiYear = String(req.query.premi_tahun || '').trim();
+  const pemasaranMonth = String(req.query.pemasaran_bulan || '').trim();
+  const pemasaranYear = String(req.query.pemasaran_tahun || '').trim();
   const data = getGiiatjaData({
     pelatihanSearch: searchKeyword,
+    saranaDate,
     pnbpYear,
     premiSearch,
     premiMonth,
     premiYear,
+    pemasaranMonth,
+    pemasaranYear,
   });
+
+  const subtitleByTab = {
+    kegiatan: `Kegiatan Kerja: ${data.kegiatanList.length} | WBP Bersertifikasi: ${data.pelatihanList.length}`,
+    sarana: `Sarana Kerja tanggal ${formatDateIndo(data.saranaDate)}: ${data.saranaUsageList.length} data penggunaan`,
+    hasil: `Pengelolaan Hasil Kerja — PNBP: ${data.pnbpList.length} | Premi: ${data.premiList.length} | Pemasaran Hasil: ${data.pemasaranList.length}`,
+  };
+
   res.render('kalapas-giiatja', {
     pageTitle: 'GIIATJA',
-    subtitle: `Kegiatan: ${data.kegiatanList.length} | Pelatihan Bersertifikat: ${data.pelatihanList.length} | PNBP: ${data.pnbpList.length} | Premi: ${data.premiList.length}`,
+    subtitle: subtitleByTab[activeTab] || subtitleByTab.kegiatan,
     backUrl: '/kalapas',
+    activeTab,
     searchKeyword,
+    saranaDate,
     pnbpYear,
     premiSearch,
     premiMonth,
     premiYear,
+    pemasaranMonth,
+    pemasaranYear,
     ...data,
   });
 });
@@ -3273,6 +3404,7 @@ app.get('/kalapas/table/giiatja', (req, res) => {
 app.get('/kalapas/table/giiatja/pnbp-detail', (req, res) => {
   const tahun = String(req.query.tahun || '').trim();
   const periode = String(req.query.periode || '').trim();
+  const tab = String(req.query.tab || '').trim().toLowerCase() === 'hasil' ? 'hasil' : '';
   const searchKeyword = String(req.query.search || '').trim();
   const pnbpYear = String(req.query.ref_tahun || tahun || '').trim();
   const premiSearch = String(req.query.premi_search || '').trim();
@@ -3281,6 +3413,7 @@ app.get('/kalapas/table/giiatja/pnbp-detail', (req, res) => {
 
   if (!tahun || !periode) {
     const fallbackQuery = new URLSearchParams();
+    if (tab) fallbackQuery.set('tab', tab);
     if (searchKeyword) fallbackQuery.set('search', searchKeyword);
     if (pnbpYear) fallbackQuery.set('tahun', pnbpYear);
     if (premiSearch) fallbackQuery.set('premi_search', premiSearch);
@@ -3299,6 +3432,7 @@ app.get('/kalapas/table/giiatja/pnbp-detail', (req, res) => {
     pageTitle: 'Detail Pendapatan PNBP',
     subtitle: `Periode: ${data.pnbpDetailPeriod || '-'} ${data.pnbpDetailYear || '-'} | Total: Rp ${formatRupiah(data.pnbpDetailPendapatanTotal || 0)}`,
     backUrl: '/kalapas/table/giiatja',
+    tab,
     searchKeyword,
     pnbpYear,
     premiSearch,
@@ -5674,13 +5808,18 @@ app.post('/admin/register-f/:id/delete', requireAccess('register-f'), (req, res)
 // ── GIIATJA (Kegiatan Kerja) ─────────────────────────────────────
 app.get('/admin/giiatja', requireAccess('giiatja'), (req, res) => {
   const requestedMenu = String(req.query.menu || '').trim().toLowerCase();
-  const validMenus = ['kegiatan', 'pelatihan', 'pnbp', 'premi'];
+  const validMenus = ['kegiatan', 'sarana', 'pelatihan', 'pnbp', 'premi', 'pemasaran'];
+  const selectedSaranaDate = /^\d{4}-\d{2}-\d{2}$/.test(String(req.query.tanggal_sarana || ''))
+    ? String(req.query.tanggal_sarana)
+    : getTodayYmd();
   const selectedPnbpYear = String(req.query.pnbp_tahun || '').trim();
   const pendapatanPeriodQuery = normalizePnbpPeriod(req.query.pendapatan_periode || '');
   const pendapatanYearQuery = String(req.query.pendapatan_tahun || '').trim();
   const premiSearch = String(req.query.premi_search || '').trim();
   const selectedPremiMonth = String(req.query.premi_bulan || '').trim().toUpperCase();
   const selectedPremiYear = String(req.query.premi_tahun || '').trim();
+  const selectedPemasaranMonth = String(req.query.pemasaran_bulan || '').trim().toUpperCase();
+  const selectedPemasaranYear = String(req.query.pemasaran_tahun || '').trim();
   const kegiatanCategories = db.prepare('SELECT * FROM giiatja_kegiatan ORDER BY sort_order ASC, id ASC').all();
   const kegiatanDetails = db.prepare(`
     SELECT
@@ -5691,6 +5830,23 @@ app.get('/admin/giiatja', requireAccess('giiatja'), (req, res) => {
     ORDER BY c.sort_order ASC, c.id ASC, d.sort_order ASC, d.id ASC
   `).all();
   const pelatihanList = db.prepare('SELECT * FROM giiatja_pelatihan_sertifikat ORDER BY id ASC').all();
+  const saranaMasterList = db.prepare(`
+    SELECT *
+    FROM giiatja_sarana_master
+    ORDER BY sort_order ASC, id ASC
+  `).all();
+  const saranaPenggunaanList = db.prepare(`
+    SELECT
+      u.*,
+      m.kode,
+      m.uraian,
+      m.jumlah_satuan,
+      m.penempatan_kegiatan
+    FROM giiatja_sarana_penggunaan_harian u
+    INNER JOIN giiatja_sarana_master m ON m.id = u.sarana_id
+    WHERE u.tanggal = ?
+    ORDER BY u.sort_order ASC, u.id ASC
+  `).all(selectedSaranaDate);
   const pnbpAll = db.prepare(`
     SELECT *
     FROM giiatja_pnbp
@@ -5832,6 +5988,49 @@ app.get('/admin/giiatja', requireAccess('giiatja'), (req, res) => {
     return blob.includes(normalizedPremiSearch);
   });
 
+  const pemasaranAll = db.prepare(`
+    SELECT *
+    FROM giiatja_pemasaran_hasil
+    ORDER BY periode_tahun DESC,
+      CASE UPPER(TRIM(periode_bulan))
+        WHEN 'JANUARI' THEN 1
+        WHEN 'FEBRUARI' THEN 2
+        WHEN 'MARET' THEN 3
+        WHEN 'APRIL' THEN 4
+        WHEN 'MEI' THEN 5
+        WHEN 'JUNI' THEN 6
+        WHEN 'JULI' THEN 7
+        WHEN 'AGUSTUS' THEN 8
+        WHEN 'SEPTEMBER' THEN 9
+        WHEN 'OKTOBER' THEN 10
+        WHEN 'NOVEMBER' THEN 11
+        WHEN 'DESEMBER' THEN 12
+        ELSE 99
+      END ASC,
+      sort_order ASC,
+      id ASC
+  `).all();
+  const pemasaranMonthOptions = Array.from(new Set(
+    pemasaranAll.map(item => String(item.periode_bulan || '').trim().toUpperCase()).filter(Boolean)
+  )).sort((a, b) => {
+    const orders = ['JANUARI', 'FEBRUARI', 'MARET', 'APRIL', 'MEI', 'JUNI', 'JULI', 'AGUSTUS', 'SEPTEMBER', 'OKTOBER', 'NOVEMBER', 'DESEMBER'];
+    const ia = orders.indexOf(a);
+    const ib = orders.indexOf(b);
+    return (ia === -1 ? 99 : ia) - (ib === -1 ? 99 : ib);
+  });
+  const pemasaranYearOptions = Array.from(new Set(
+    pemasaranAll.map(item => String(item.periode_tahun || '').trim()).filter(Boolean)
+  )).sort((a, b) => String(b).localeCompare(String(a), undefined, { numeric: true }));
+  const activePemasaranMonth = selectedPemasaranMonth && selectedPemasaranMonth !== 'SEMUA' ? selectedPemasaranMonth : 'SEMUA';
+  const activePemasaranYear = selectedPemasaranYear && selectedPemasaranYear !== 'SEMUA' ? selectedPemasaranYear : 'SEMUA';
+  const pemasaranList = pemasaranAll.filter((item) => {
+    const month = String(item.periode_bulan || '').trim().toUpperCase();
+    const year = String(item.periode_tahun || '').trim();
+    if (activePemasaranMonth !== 'SEMUA' && month !== activePemasaranMonth) return false;
+    if (activePemasaranYear !== 'SEMUA' && year !== activePemasaranYear) return false;
+    return true;
+  });
+
   const editKategori = req.query.editKategori
     ? db.prepare('SELECT * FROM giiatja_kegiatan WHERE id=?').get(Number(req.query.editKategori))
     : null;
@@ -5840,6 +6039,20 @@ app.get('/admin/giiatja', requireAccess('giiatja'), (req, res) => {
     : null;
   const editPelatihan = req.query.editPelatihan
     ? db.prepare('SELECT * FROM giiatja_pelatihan_sertifikat WHERE id=?').get(Number(req.query.editPelatihan))
+    : null;
+  const editSaranaMaster = req.query.editSaranaMaster
+    ? db.prepare('SELECT * FROM giiatja_sarana_master WHERE id=?').get(Number(req.query.editSaranaMaster))
+    : null;
+  const editSaranaPenggunaan = req.query.editSaranaPenggunaan
+    ? db.prepare(`
+      SELECT
+        u.*,
+        m.kode,
+        m.uraian
+      FROM giiatja_sarana_penggunaan_harian u
+      INNER JOIN giiatja_sarana_master m ON m.id = u.sarana_id
+      WHERE u.id=?
+    `).get(Number(req.query.editSaranaPenggunaan))
     : null;
   const editPnbp = req.query.editPnbp
     ? db.prepare('SELECT * FROM giiatja_pnbp WHERE id=?').get(Number(req.query.editPnbp))
@@ -5853,13 +6066,18 @@ app.get('/admin/giiatja', requireAccess('giiatja'), (req, res) => {
   const editPremi = req.query.editPremi
     ? db.prepare('SELECT * FROM giiatja_premi_wbp WHERE id=?').get(Number(req.query.editPremi))
     : null;
+  const editPemasaran = req.query.editPemasaran
+    ? db.prepare('SELECT * FROM giiatja_pemasaran_hasil WHERE id=?').get(Number(req.query.editPemasaran))
+    : null;
 
   let giiatjaMenu = validMenus.includes(requestedMenu) ? requestedMenu : '';
   if (!giiatjaMenu) {
     if (editKategori || editKegiatan) giiatjaMenu = 'kegiatan';
+    else if (editSaranaMaster || editSaranaPenggunaan || req.query.tanggal_sarana) giiatjaMenu = 'sarana';
     else if (editPelatihan) giiatjaMenu = 'pelatihan';
     else if (editPnbp || editPnbpPendapatan || selectedPnbpYear || selectedPendapatanYear || selectedPendapatanPeriod) giiatjaMenu = 'pnbp';
     else if (editPremi || premiSearch || (selectedPremiMonth && selectedPremiMonth !== 'SEMUA') || (selectedPremiYear && selectedPremiYear !== 'SEMUA')) giiatjaMenu = 'premi';
+    else if (editPemasaran || (selectedPemasaranMonth && selectedPemasaranMonth !== 'SEMUA') || (selectedPemasaranYear && selectedPemasaranYear !== 'SEMUA')) giiatjaMenu = 'pemasaran';
     else giiatjaMenu = 'kegiatan';
   }
 
@@ -5867,24 +6085,35 @@ app.get('/admin/giiatja', requireAccess('giiatja'), (req, res) => {
     user: req.session.user,
     kegiatanCategories,
     kegiatanList: kegiatanDetails,
+    saranaMasterList,
+    saranaPenggunaanList,
     pelatihanList,
     pnbpList,
     premiList,
+    pemasaranList,
     editKategori,
     editKegiatan,
+    editSaranaMaster,
+    editSaranaPenggunaan,
     editPelatihan,
     editPnbp,
     editPnbpPendapatan,
     editPremi,
+    editPemasaran,
     pnbpYearOptions,
     selectedPnbpYear: selectedPnbpYear === 'SEMUA' ? 'SEMUA' : activePnbpYear,
     premiMonthOptions,
     premiYearOptions,
     selectedPremiMonth: activePremiMonth,
     selectedPremiYear: activePremiYear,
+    pemasaranMonthOptions,
+    pemasaranYearOptions,
+    selectedPemasaranMonth: activePemasaranMonth,
+    selectedPemasaranYear: activePemasaranYear,
     premiSearch,
     selectedPendapatanYear,
     selectedPendapatanPeriod,
+    selectedSaranaDate,
     pnbpPendapatanList,
     pnbpPendapatanTotal,
     pnbpPendapatanTotals,
@@ -6059,6 +6288,106 @@ app.post('/admin/giiatja/pelatihan/:id/delete', requireAccess('giiatja'), (req, 
   if (existing?.poto_sertifikat_path) removeUploadedFile(existing.poto_sertifikat_path);
   db.prepare('DELETE FROM giiatja_pelatihan_sertifikat WHERE id=?').run(id);
   res.redirect('/admin/giiatja?menu=pelatihan&success=1');
+});
+
+app.post('/admin/giiatja/sarana/master/add', requireAccess('giiatja'), (req, res) => {
+  const kode = String(req.body.kode || '').trim().toUpperCase();
+  const uraian = String(req.body.uraian || '').trim().toUpperCase();
+  const jumlahSatuan = String(req.body.jumlah_satuan || '').trim();
+  const penempatanKegiatan = String(req.body.penempatan_kegiatan || '').trim().toUpperCase();
+  const sortOrder = Number(req.body.sort_order || 0) || 1;
+
+  if (!kode || !uraian || !jumlahSatuan || !penempatanKegiatan) {
+    return res.redirect('/admin/giiatja?menu=sarana&error=Semua+kolom+master+sarana+wajib+diisi');
+  }
+
+  db.prepare(`
+    INSERT INTO giiatja_sarana_master
+      (kode, uraian, jumlah_satuan, penempatan_kegiatan, sort_order)
+    VALUES (?, ?, ?, ?, ?)
+  `).run(kode, uraian, jumlahSatuan, penempatanKegiatan, sortOrder);
+
+  return res.redirect('/admin/giiatja?menu=sarana&success=1');
+});
+
+app.post('/admin/giiatja/sarana/master/:id/update', requireAccess('giiatja'), (req, res) => {
+  const id = Number(req.params.id);
+  const kode = String(req.body.kode || '').trim().toUpperCase();
+  const uraian = String(req.body.uraian || '').trim().toUpperCase();
+  const jumlahSatuan = String(req.body.jumlah_satuan || '').trim();
+  const penempatanKegiatan = String(req.body.penempatan_kegiatan || '').trim().toUpperCase();
+  const sortOrder = Number(req.body.sort_order || 0) || 1;
+
+  if (!kode || !uraian || !jumlahSatuan || !penempatanKegiatan) {
+    return res.redirect(`/admin/giiatja?menu=sarana&editSaranaMaster=${id}&error=Semua+kolom+master+sarana+wajib+diisi`);
+  }
+
+  db.prepare(`
+    UPDATE giiatja_sarana_master
+    SET kode=?, uraian=?, jumlah_satuan=?, penempatan_kegiatan=?, sort_order=?
+    WHERE id=?
+  `).run(kode, uraian, jumlahSatuan, penempatanKegiatan, sortOrder, id);
+
+  return res.redirect('/admin/giiatja?menu=sarana&success=1');
+});
+
+app.post('/admin/giiatja/sarana/master/:id/delete', requireAccess('giiatja'), (req, res) => {
+  const id = Number(req.params.id);
+  db.prepare('DELETE FROM giiatja_sarana_master WHERE id=?').run(id);
+  return res.redirect('/admin/giiatja?menu=sarana&success=1');
+});
+
+app.post('/admin/giiatja/sarana/penggunaan/add', requireAccess('giiatja'), (req, res) => {
+  const tanggal = /^\d{4}-\d{2}-\d{2}$/.test(String(req.body.tanggal || ''))
+    ? String(req.body.tanggal)
+    : getTodayYmd();
+  const saranaId = Number(req.body.sarana_id || 0);
+  const jumlahDigunakan = String(req.body.jumlah_digunakan || '').trim();
+  const sortOrder = Number(req.body.sort_order || 0) || 1;
+
+  if (!saranaId || !jumlahDigunakan) {
+    return res.redirect(`/admin/giiatja?menu=sarana&tanggal_sarana=${encodeURIComponent(tanggal)}&error=Data+penggunaan+harian+belum+lengkap`);
+  }
+
+  db.prepare(`
+    INSERT INTO giiatja_sarana_penggunaan_harian
+      (tanggal, sarana_id, jumlah_digunakan, sort_order)
+    VALUES (?, ?, ?, ?)
+  `).run(tanggal, saranaId, jumlahDigunakan, sortOrder);
+
+  return res.redirect(`/admin/giiatja?menu=sarana&tanggal_sarana=${encodeURIComponent(tanggal)}&success=1`);
+});
+
+app.post('/admin/giiatja/sarana/penggunaan/:id/update', requireAccess('giiatja'), (req, res) => {
+  const id = Number(req.params.id);
+  const tanggal = /^\d{4}-\d{2}-\d{2}$/.test(String(req.body.tanggal || ''))
+    ? String(req.body.tanggal)
+    : getTodayYmd();
+  const saranaId = Number(req.body.sarana_id || 0);
+  const jumlahDigunakan = String(req.body.jumlah_digunakan || '').trim();
+  const sortOrder = Number(req.body.sort_order || 0) || 1;
+
+  if (!saranaId || !jumlahDigunakan) {
+    return res.redirect(`/admin/giiatja?menu=sarana&editSaranaPenggunaan=${id}&tanggal_sarana=${encodeURIComponent(tanggal)}&error=Data+penggunaan+harian+belum+lengkap`);
+  }
+
+  db.prepare(`
+    UPDATE giiatja_sarana_penggunaan_harian
+    SET tanggal=?, sarana_id=?, jumlah_digunakan=?, sort_order=?
+    WHERE id=?
+  `).run(tanggal, saranaId, jumlahDigunakan, sortOrder, id);
+
+  return res.redirect(`/admin/giiatja?menu=sarana&tanggal_sarana=${encodeURIComponent(tanggal)}&success=1`);
+});
+
+app.post('/admin/giiatja/sarana/penggunaan/:id/delete', requireAccess('giiatja'), (req, res) => {
+  const id = Number(req.params.id);
+  const tanggalSarana = /^\d{4}-\d{2}-\d{2}$/.test(String(req.body.tanggal_sarana || ''))
+    ? String(req.body.tanggal_sarana)
+    : getTodayYmd();
+
+  db.prepare('DELETE FROM giiatja_sarana_penggunaan_harian WHERE id=?').run(id);
+  return res.redirect(`/admin/giiatja?menu=sarana&tanggal_sarana=${encodeURIComponent(tanggalSarana)}&success=1`);
 });
 
 app.post('/admin/giiatja/pnbp/add', requireAccess('giiatja'), (req, res) => {
@@ -6326,6 +6655,59 @@ app.post('/admin/giiatja/premi/:id/delete', requireAccess('giiatja'), (req, res)
   if (premiYear) query.set('premi_tahun', premiYear);
   if (pnbpYear) query.set('pnbp_tahun', pnbpYear);
   res.redirect(`/admin/giiatja?${query.toString()}`);
+});
+
+app.post('/admin/giiatja/pemasaran/add', requireAccess('giiatja'), (req, res) => {
+  const kegiatan = String(req.body.kegiatan || '').trim().toUpperCase();
+  const hasilKerja = String(req.body.hasil_kerja || '').trim().toUpperCase();
+  const pemasaranHasilKerja = String(req.body.pemasaran_hasil_kerja || '').trim().toUpperCase();
+  const jumlahIncome = String(req.body.jumlah_income || '').trim();
+  const periodeBulan = String(req.body.periode_bulan || '').trim().toUpperCase();
+  const periodeTahun = String(req.body.periode_tahun || '').trim() || String(new Date().getFullYear());
+  const sortOrder = Number(req.body.sort_order || 0) || 1;
+  if (!kegiatan || !hasilKerja || !pemasaranHasilKerja || !jumlahIncome || !periodeBulan || !periodeTahun) {
+    return res.redirect('/admin/giiatja?menu=pemasaran&error=Semua+kolom+pemasaran+hasil+wajib+diisi');
+  }
+
+  db.prepare(`
+    INSERT INTO giiatja_pemasaran_hasil
+      (kegiatan, hasil_kerja, pemasaran_hasil_kerja, jumlah_income, periode_bulan, periode_tahun, sort_order)
+    VALUES (?, ?, ?, ?, ?, ?, ?)
+  `).run(kegiatan, hasilKerja, pemasaranHasilKerja, jumlahIncome, periodeBulan, periodeTahun, sortOrder);
+
+  return res.redirect('/admin/giiatja?menu=pemasaran&success=1');
+});
+
+app.post('/admin/giiatja/pemasaran/:id/update', requireAccess('giiatja'), (req, res) => {
+  const id = Number(req.params.id);
+  const kegiatan = String(req.body.kegiatan || '').trim().toUpperCase();
+  const hasilKerja = String(req.body.hasil_kerja || '').trim().toUpperCase();
+  const pemasaranHasilKerja = String(req.body.pemasaran_hasil_kerja || '').trim().toUpperCase();
+  const jumlahIncome = String(req.body.jumlah_income || '').trim();
+  const periodeBulan = String(req.body.periode_bulan || '').trim().toUpperCase();
+  const periodeTahun = String(req.body.periode_tahun || '').trim() || String(new Date().getFullYear());
+  const sortOrder = Number(req.body.sort_order || 0) || 1;
+  if (!kegiatan || !hasilKerja || !pemasaranHasilKerja || !jumlahIncome || !periodeBulan || !periodeTahun) {
+    return res.redirect(`/admin/giiatja?menu=pemasaran&editPemasaran=${id}&error=Semua+kolom+pemasaran+hasil+wajib+diisi`);
+  }
+
+  db.prepare(`
+    UPDATE giiatja_pemasaran_hasil
+    SET kegiatan=?, hasil_kerja=?, pemasaran_hasil_kerja=?, jumlah_income=?, periode_bulan=?, periode_tahun=?, sort_order=?
+    WHERE id=?
+  `).run(kegiatan, hasilKerja, pemasaranHasilKerja, jumlahIncome, periodeBulan, periodeTahun, sortOrder, id);
+
+  return res.redirect('/admin/giiatja?menu=pemasaran&success=1');
+});
+
+app.post('/admin/giiatja/pemasaran/:id/delete', requireAccess('giiatja'), (req, res) => {
+  const pemasaranMonth = String(req.body.pemasaran_bulan || '').trim();
+  const pemasaranYear = String(req.body.pemasaran_tahun || '').trim();
+  db.prepare('DELETE FROM giiatja_pemasaran_hasil WHERE id=?').run(Number(req.params.id));
+  const query = new URLSearchParams({ success: '1', menu: 'pemasaran' });
+  if (pemasaranMonth) query.set('pemasaran_bulan', pemasaranMonth);
+  if (pemasaranYear) query.set('pemasaran_tahun', pemasaranYear);
+  return res.redirect(`/admin/giiatja?${query.toString()}`);
 });
 
 // ── TU Bagian Umum ───────────────────────────────────────────────

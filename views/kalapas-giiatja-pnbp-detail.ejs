@@ -59,6 +59,7 @@
   <div class="detail-wrap">
     <% 
       const backParams = new URLSearchParams();
+      if (tab) backParams.set('tab', tab);
       if (searchKeyword) backParams.set('search', searchKeyword);
       if (pnbpYear) backParams.set('tahun', pnbpYear);
       if (premiSearch) backParams.set('premi_search', premiSearch);

@@ -894,10 +894,14 @@
                     <span class="quick-nav-tooltip"><%= !hasKamtibMonthlyPengawalanUpdate ? 'Bulan ini belum ada update Giat Pengawalan' : (`Ada ${pengaduanDiterimaCount} pengaduan berstatus diterima`) %></span>
                 <% } %>
             </a>
-            <a href="/kalapas/table/giiatja" class="<%= !hasGiiatjaMonthlyUpdate ? 'quick-nav-warning' : '' %>">🏭 GIIATJA
-                <% if (!hasGiiatjaMonthlyUpdate) { %>
-                    <span class="quick-nav-alert" title="Bulan ini GIIATJA belum ada update">!</span>
-                    <span class="quick-nav-tooltip">Bulan ini GIIATJA belum ada update</span>
+            <a href="/kalapas/table/giiatja" class="<%= (!hasGiiatjaMonthlyUpdate || !hasGiiatjaSaranaTodayUpdate) ? 'quick-nav-warning' : '' %>">🏭 GIIATJA
+                <% if (!hasGiiatjaMonthlyUpdate || !hasGiiatjaSaranaTodayUpdate) { %>
+                    <span class="quick-nav-alert" title="Notifikasi GIIATJA">!</span>
+                    <span class="quick-nav-tooltip"><%= (!hasGiiatjaMonthlyUpdate && !hasGiiatjaSaranaTodayUpdate)
+                        ? 'Bulan ini GIIATJA belum ada update & sarana kerja hari ini belum diisi'
+                        : (!hasGiiatjaMonthlyUpdate
+                            ? 'Bulan ini GIIATJA belum ada update'
+                            : 'Sarana kerja hari ini belum diisi') %></span>
                 <% } %>
             </a>
             <a href="/kalapas/table/tu-umum">📑 Tata Usaha</a>
