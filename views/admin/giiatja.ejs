@@ -538,11 +538,7 @@ NAMA PESERTA 2"></textarea></div>
                   <td>
                     <% const pesertaNames = String(item.peserta || '').split(/\r?\n/).map(line => line.trim()).filter(Boolean); %>
                     <% if (pesertaNames.length) { %>
-                      <ol style="margin:0; padding-left:18px; white-space:normal;">
-                        <% pesertaNames.forEach((name) => { %>
-                          <li><%= name %></li>
-                        <% }) %>
-                      </ol>
+                      <span style="white-space:pre-line;"><%= pesertaNames.join('\n') %></span>
                     <% } else { %>
                       -
                     <% } %>

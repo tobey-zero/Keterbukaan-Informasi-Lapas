@@ -1512,6 +1512,9 @@ function getTuUmumData() {
 function getGiiatjaData(options = {}) {
   const pelatihanSearch = String(options.pelatihanSearch || '').trim();
   const todayYmd = getTodayYmd();
+  const currentYear = String(todayYmd).slice(0, 4);
+  const currentMonth = String(todayYmd).slice(5, 7);
+  const currentMonthLabel = getIndonesianMonthUpper(currentMonth);
   const saranaDateFilter = /^\d{4}-\d{2}-\d{2}$/.test(String(options.saranaDate || ''))
     ? String(options.saranaDate)
     : todayYmd;
@@ -1952,6 +1955,23 @@ function getGiiatjaData(options = {}) {
     ? (pemasaranSelectedYear === 'SEMUA' ? 'SEMUA PERIODE' : `SEMUA BULAN ${pemasaranSelectedYear}`)
     : `${pemasaranSelectedMonth}${pemasaranSelectedYear === 'SEMUA' ? '' : ` ${pemasaranSelectedYear}`}`;
 
+  const hasPnbpThisMonthUpdate = pnbpRawList.some((item) => {
+    const year = String(item.tahun || '').trim();
+    const month = normalizePnbpPeriod(item.periodePnbp || '');
+    return year === currentYear && month === currentMonthLabel;
+  });
+  const hasPremiThisMonthUpdate = premiRawList.some((item) => {
+    const year = String(item.periodeTahun || '').trim();
+    const month = String(item.periodeBulan || '').trim().toUpperCase();
+    return year === currentYear && month === currentMonthLabel;
+  });
+  const hasPemasaranThisMonthUpdate = pemasaranRawList.some((item) => {
+    const year = String(item.periodeTahun || '').trim();
+    const month = String(item.periodeBulan || '').trim().toUpperCase();
+    return year === currentYear && month === currentMonthLabel;
+  });
+  const hasHasilThisMonthUpdate = hasPnbpThisMonthUpdate || hasPremiThisMonthUpdate || hasPemasaranThisMonthUpdate;
+
   const totalJumlahPnbp = pnbpList.reduce((sum, item) => sum + parseNominal(item.jumlahPnbp), 0);
   const totalTargetRealisasi = pnbpList.reduce((sum, item) => sum + parseNominal(item.targetRealisasi), 0);
   const sisaTargetPnbp = Math.max(totalTargetRealisasi - totalJumlahPnbp, 0);
@@ -1991,6 +2011,7 @@ function getGiiatjaData(options = {}) {
     pemasaranSelectedYear,
     pemasaranList,
     pemasaranPeriodeBulan,
+    hasHasilThisMonthUpdate,
     pnbpTahun,
     premiPeriodeBulan,
     giiatjaSummary: {

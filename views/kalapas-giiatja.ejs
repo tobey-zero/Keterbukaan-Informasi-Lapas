@@ -208,7 +208,7 @@
     <div class="giiatja-submenu">
       <a href="/kalapas/table/giiatja?tab=kegiatan" class="<%= activeTab === 'kegiatan' ? 'active' : '' %>">🏭 Kegiatan Kerja</a>
       <a href="/kalapas/table/giiatja?tab=sarana&tanggal_sarana=<%= encodeURIComponent(saranaDate || '') %>" class="<%= activeTab === 'sarana' ? 'active' : '' %> <%= !hasSaranaTodayUpdate ? 'warning' : '' %>">🧰 Sarana Kerja<% if (!hasSaranaTodayUpdate) { %><span class="warn-dot" title="Sarana kerja hari ini belum diisi">!</span><% } %></a>
-      <a href="/kalapas/table/giiatja?tab=hasil&tahun=<%= encodeURIComponent(pnbpSelectedYear || '') %>&premi_search=<%= encodeURIComponent(premiSearch || '') %>&premi_bulan=<%= encodeURIComponent(premiSelectedMonth || '') %>&premi_tahun=<%= encodeURIComponent(premiSelectedYear || '') %>" class="<%= activeTab === 'hasil' ? 'active' : '' %>">📊 Pengelolaan Hasil Kerja</a>
+      <a href="/kalapas/table/giiatja?tab=hasil&tahun=<%= encodeURIComponent(pnbpSelectedYear || '') %>&premi_search=<%= encodeURIComponent(premiSearch || '') %>&premi_bulan=<%= encodeURIComponent(premiSelectedMonth || '') %>&premi_tahun=<%= encodeURIComponent(premiSelectedYear || '') %>" class="<%= activeTab === 'hasil' ? 'active' : '' %> <%= !hasHasilThisMonthUpdate ? 'warning' : '' %>">📊 Pengelolaan Hasil Kerja<% if (!hasHasilThisMonthUpdate) { %><span class="warn-dot" title="Pengelolaan hasil kerja bulan ini belum diisi">!</span><% } %></a>
     </div>
 
     <% if (activeTab === 'kegiatan') { %>
@@ -438,6 +438,9 @@
     <% } %>
 
     <% if (activeTab === 'hasil') { %>
+    <% if (!hasHasilThisMonthUpdate) { %>
+    <div class="giiatja-notice">⚠️ Notifikasi: data Pengelolaan Hasil Kerja bulan ini belum update atau masih kosong.</div>
+    <% } %>
     <div class="panel giiatja-panel">
       <div class="panel-header red">
         <span>PENERIMAAN NEGARA BUKAN PAJAK (PNBP)</span>
