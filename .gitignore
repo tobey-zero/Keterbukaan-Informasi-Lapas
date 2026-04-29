@@ -12,8 +12,7 @@ data.db-shm
 *.db3
 
 # Folder Upload Media (Video dan Foto Menu)
-public/uploads/menu/*
-public/uploads/video/*
+public/uploads
 !public/uploads/menu/.gitkeep
 !public/uploads/video/.gitkeep
 

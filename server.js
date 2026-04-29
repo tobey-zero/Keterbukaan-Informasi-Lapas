@@ -2356,7 +2356,7 @@ app.get('/kalapas/table/dapur', (req, res) => {
   const selectedDate = /^\d{4}-\d{2}-\d{2}$/.test(String(req.query.tanggal || ''))
     ? String(req.query.tanggal)
     : getTodayYmd();
-  const selectedBamaMenuHari = String(req.query.menu_hari || '').trim() || 'Menu Hari VIII';
+  const selectedBamaMenuHari = 'Menu Hari VIII';
 
   const menuTitle = getAppSetting('menu_title', 'DAFTAR MENU MAKAN HARI INI');
   const selectedDateLabel = new Intl.DateTimeFormat('id-ID', {
@@ -4286,7 +4286,7 @@ function renderAdminMenuPage(req, res, menuSection) {
   const selectedBamaDate = /^\d{4}-\d{2}-\d{2}$/.test(String(req.query.tanggal_bama || ''))
     ? String(req.query.tanggal_bama)
     : getTodayYmd();
-  const selectedBamaMenuHari = String(req.query.menu_hari || '').trim() || 'Menu Hari VIII';
+  const selectedBamaMenuHari = 'Menu Hari VIII';
   const selectedDistribusiDate = /^\d{4}-\d{2}-\d{2}$/.test(String(req.query.tanggal_distribusi || ''))
     ? String(req.query.tanggal_distribusi)
     : getTodayYmd();
@@ -4866,7 +4866,7 @@ app.post('/admin/menu/permintaan/save', requireAccess('menu'), (req, res) => {
   const tanggal = /^\d{4}-\d{2}-\d{2}$/.test(String(req.body.tanggal_bama || ''))
     ? String(req.body.tanggal_bama)
     : getTodayYmd();
-  const menuHari = String(req.body.menu_hari || '').trim() || 'Menu Hari VIII';
+  const menuHari = 'Menu Hari VIII';
 
   const bahanList = db.prepare(`
     SELECT id, satuan_default AS satuanDefault
@@ -4896,14 +4896,14 @@ app.post('/admin/menu/permintaan/save', requireAccess('menu'), (req, res) => {
     upsert.run(tanggal, menuHari, bahanId, beratKotor, satuan, banyaknya, keterangan);
   });
 
-  return res.redirect(`/admin/menu/permintaan?tanggal_bama=${encodeURIComponent(tanggal)}&menu_hari=${encodeURIComponent(menuHari)}&success=1`);
+  return res.redirect(`/admin/menu/permintaan?tanggal_bama=${encodeURIComponent(tanggal)}&success=1`);
 });
 
 app.post('/admin/menu/diterima/save', requireAccess('menu'), (req, res) => {
   const tanggal = /^\d{4}-\d{2}-\d{2}$/.test(String(req.body.tanggal_bama || ''))
     ? String(req.body.tanggal_bama)
     : getTodayYmd();
-  const menuHari = String(req.body.menu_hari || '').trim() || 'Menu Hari VIII';
+  const menuHari = 'Menu Hari VIII';
 
   const bahanList = db.prepare(`
     SELECT id, satuan_default AS satuanDefault
@@ -4933,14 +4933,14 @@ app.post('/admin/menu/diterima/save', requireAccess('menu'), (req, res) => {
     upsert.run(tanggal, menuHari, bahanId, satuan, jumlahPermintaan, jumlahDiterima, keterangan);
   });
 
-  return res.redirect(`/admin/menu/diterima?tanggal_bama=${encodeURIComponent(tanggal)}&menu_hari=${encodeURIComponent(menuHari)}&success=1`);
+  return res.redirect(`/admin/menu/diterima?tanggal_bama=${encodeURIComponent(tanggal)}&success=1`);
 });
 
 app.post('/admin/menu/penyimpanan/save', requireAccess('menu'), (req, res) => {
   const tanggal = /^\d{4}-\d{2}-\d{2}$/.test(String(req.body.tanggal_bama || ''))
     ? String(req.body.tanggal_bama)
     : getTodayYmd();
-  const menuHari = String(req.body.menu_hari || '').trim() || 'Menu Hari VIII';
+  const menuHari = 'Menu Hari VIII';
 
   const bahanList = db.prepare(`
     SELECT id, satuan_default AS satuanDefault
@@ -4972,7 +4972,7 @@ app.post('/admin/menu/penyimpanan/save', requireAccess('menu'), (req, res) => {
     upsert.run(tanggal, menuHari, bahanId, satuan, barangMasuk, barangKeluar, barangSisa, keterangan);
   });
 
-  return res.redirect(`/admin/menu/penyimpanan?tanggal_bama=${encodeURIComponent(tanggal)}&menu_hari=${encodeURIComponent(menuHari)}&success=1`);
+  return res.redirect(`/admin/menu/penyimpanan?tanggal_bama=${encodeURIComponent(tanggal)}&success=1`);
 });
 
 // ── Pentahapan Pembinaan ──────────────────────────────────────────
