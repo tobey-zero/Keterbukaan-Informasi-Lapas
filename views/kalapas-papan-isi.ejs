@@ -36,6 +36,27 @@
       font-size:12px;
       font-weight:bold;
     }
+    .board-submenu {
+      display: flex;
+      gap: 8px;
+      flex-wrap: wrap;
+      margin-bottom: 12px;
+    }
+    .board-submenu a {
+      text-decoration: none;
+      border: 1px solid #93c5fd;
+      color: #1e3a8a;
+      background: #eff6ff;
+      border-radius: 6px;
+      padding: 7px 11px;
+      font-size: 12px;
+      font-weight: bold;
+    }
+    .board-submenu a.active {
+      color: #fff;
+      background: #1a4bb8;
+      border-color: rgba(255,255,255,.3);
+    }
 
     .board-grid {
       display:grid;
@@ -176,6 +197,12 @@
     <div class="board-toolbar">
       <a href="/kalapas">⬅ Kembali Dashboard Kalapas</a>
       <a href="/admin/papan-isi" target="_blank">⚙️ Kelola Data Papan</a>
+    </div>
+
+    <div class="board-submenu">
+      <a href="/kalapas/table/kamar-blok" class="<%= pengamananActiveTab === 'kamar-blok' ? 'active' : '' %>">🏢 Kamar / Blok</a>
+      <a href="/kalapas/papan-isi" class="<%= pengamananActiveTab === 'papan-isi' ? 'active' : '' %>">📋 Papan Isi</a>
+      <a href="/kalapas/table/luar-tembok" class="<%= pengamananActiveTab === 'luar-tembok' ? 'active' : '' %>">🚶 WBP Luar Tembok</a>
     </div>
 
     <div class="board-grid">

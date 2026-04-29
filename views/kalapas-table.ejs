@@ -24,6 +24,27 @@
       font-size: 12px;
       font-weight: bold;
     }
+    .kalapas-submenu {
+      display: flex;
+      gap: 8px;
+      flex-wrap: wrap;
+      margin-bottom: 10px;
+    }
+    .kalapas-submenu a {
+      text-decoration: none;
+      border: 1px solid #93c5fd;
+      color: #1e3a8a;
+      background: #eff6ff;
+      border-radius: 6px;
+      padding: 7px 11px;
+      font-size: 12px;
+      font-weight: bold;
+    }
+    .kalapas-submenu a.active {
+      color: #fff;
+      background: #1a4bb8;
+      border-color: rgba(255,255,255,.3);
+    }
     .kalapas-date-filter {
       display: flex;
       align-items: end;
@@ -346,6 +367,14 @@
     <div class="kalapas-table-toolbar">
       <a href="<%= backUrl %>">⬅ Kembali ke Kalapas</a>
     </div>
+
+    <% if (typeof pengamananSubmenu !== 'undefined' && pengamananSubmenu) { %>
+      <div class="kalapas-submenu">
+        <a href="/kalapas/table/kamar-blok" class="<%= pengamananSubmenu.active === 'kamar-blok' ? 'active' : '' %>">🏢 Kamar / Blok</a>
+        <a href="/kalapas/papan-isi" class="<%= pengamananSubmenu.active === 'papan-isi' ? 'active' : '' %>">📋 Papan Isi</a>
+        <a href="/kalapas/table/luar-tembok" class="<%= pengamananSubmenu.active === 'luar-tembok' ? 'active' : '' %>">🚶 WBP Luar Tembok</a>
+      </div>
+    <% } %>
 
     <% if (typeof financeSummary !== 'undefined' && financeSummary) { %>
       <div class="panel kalapas-table-panel">

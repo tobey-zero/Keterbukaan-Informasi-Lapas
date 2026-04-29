@@ -2668,20 +2668,7 @@ app.get('/kalapas/table/dapur', (req, res) => {
 });
 
 app.get('/kalapas/table/pengamanan', (req, res) => {
-  const activeTab = ['kamar-blok', 'papan-isi', 'luar-tembok'].includes(String(req.query.tab || '').toLowerCase())
-    ? String(req.query.tab).toLowerCase()
-    : 'kamar-blok';
-  const todayYmd = getTodayYmd();
-  const board = getBoardData();
-  const hasLuarTembokToday = (board.luarTembokDetail || []).some((item) => {
-    return normalizeDateToYmd(item.tanggal) === todayYmd;
-  });
-
-  res.render('kalapas-pengamanan', {
-    activePage: 'kalapas',
-    activeTab,
-    hasLuarTembokToday,
-  });
+  return res.redirect('/kalapas/table/kamar-blok');
 });
 
 app.get('/kalapas/papan-isi', (req, res) => {
@@ -2692,7 +2679,8 @@ app.get('/kalapas/papan-isi', (req, res) => {
     ...umum,
     ...housing,
     ...board,
-    activePage: 'kalapas'
+    activePage: 'kalapas',
+    pengamananActiveTab: 'papan-isi',
   });
 });
 
@@ -3814,7 +3802,8 @@ app.get('/kalapas/table/kamar-blok', (req, res) => {
     subtitle: `Total blok: ${housing.housingSummary.totalBlocks} | Total kamar: ${housing.housingSummary.totalKamar}`,
     columns: ['GEDUNG', 'BLOK', 'KAMAR', 'JUMLAH PENGHUNI', 'KAPASITAS', 'OKUPANSI'],
     rows,
-    backUrl: '/kalapas'
+    backUrl: '/kalapas',
+    pengamananSubmenu: { active: 'kamar-blok' },
   });
 });
 
@@ -3913,7 +3902,8 @@ app.get('/kalapas/table/luar-tembok', (req, res) => {
     },
     columns: ['NO REGISTRASI', 'NAMA', 'TANGGAL', 'PENDAMPING', 'KETERANGAN'],
     rows,
-    backUrl: '/kalapas'
+    backUrl: '/kalapas',
+    pengamananSubmenu: { active: 'luar-tembok' },
   });
 });
 

@@ -119,33 +119,10 @@
     </div>
 
     <div class="pengamanan-submenu">
-      <a href="/kalapas/table/pengamanan?tab=kamar-blok" class="<%= activeTab === 'kamar-blok' ? 'active' : '' %>">🏢 Kamar / Blok</a>
-      <a href="/kalapas/table/pengamanan?tab=papan-isi" class="<%= activeTab === 'papan-isi' ? 'active' : '' %>">📋 Papan Isi</a>
-      <a href="/kalapas/table/pengamanan?tab=luar-tembok" class="<%= activeTab === 'luar-tembok' ? 'active' : '' %>">🚶 WBP Luar Tembok</a>
+      <a href="/kalapas/table/kamar-blok">🏢 Kamar / Blok</a>
+      <a href="/kalapas/papan-isi">📋 Papan Isi</a>
+      <a href="/kalapas/table/luar-tembok">🚶 WBP Luar Tembok</a>
     </div>
-
-    <% if (activeTab === 'kamar-blok') { %>
-      <div class="pengamanan-card">
-        <h3>Kamar / Blok</h3>
-        <p>Menampilkan data gedung, blok, kamar, jumlah penghuni, kapasitas, dan okupansi.</p>
-        <a class="pengamanan-link" href="/kalapas/table/kamar-blok">Buka Tabel Kamar/Blok</a>
-      </div>
-    <% } else if (activeTab === 'papan-isi') { %>
-      <div class="pengamanan-card">
-        <h3>Tabel Papan Keadaan Isi</h3>
-        <p>Menampilkan tabel papan keadaan isi lapas secara lengkap.</p>
-        <a class="pengamanan-link" href="/kalapas/papan-isi">Buka Tabel Papan Keadaan Isi</a>
-      </div>
-    <% } else { %>
-      <div class="pengamanan-card <%= !hasLuarTembokToday ? 'alert-empty' : '' %>">
-        <h3>WBP di Luar Tembok</h3>
-        <% if (!hasLuarTembokToday) { %>
-          <p class="pengamanan-empty-note">WBP Luar Tembok Hari ini Kosong</p>
-        <% } %>
-        <p>Menampilkan tabel WBP yang berada di luar tembok.</p>
-        <a class="pengamanan-link" href="/kalapas/table/luar-tembok">Buka Tabel WBP di Luar Tembok</a>
-      </div>
-    <% } %>
   </div>
 </body>
 </html>
