@@ -476,6 +476,7 @@ db.exec(`
 
   CREATE TABLE IF NOT EXISTS giiatja_pemasaran_hasil (
     id INTEGER PRIMARY KEY AUTOINCREMENT,
+    tanggal TEXT NOT NULL DEFAULT (date('now','localtime')),
     kegiatan TEXT NOT NULL DEFAULT '',
     hasil_kerja TEXT NOT NULL DEFAULT '',
     pemasaran_hasil_kerja TEXT NOT NULL DEFAULT '',
@@ -808,6 +809,7 @@ if (!giiatjaPremiColumnNames.includes('periode_tahun')) db.exec("ALTER TABLE gii
 
 const giiatjaPemasaranColumns = db.prepare("PRAGMA table_info('giiatja_pemasaran_hasil')").all();
 const giiatjaPemasaranColumnNames = giiatjaPemasaranColumns.map(col => col.name);
+if (!giiatjaPemasaranColumnNames.includes('tanggal')) db.exec("ALTER TABLE giiatja_pemasaran_hasil ADD COLUMN tanggal TEXT NOT NULL DEFAULT (date('now','localtime'))");
 if (!giiatjaPemasaranColumnNames.includes('kegiatan')) db.exec("ALTER TABLE giiatja_pemasaran_hasil ADD COLUMN kegiatan TEXT NOT NULL DEFAULT ''");
 if (!giiatjaPemasaranColumnNames.includes('hasil_kerja')) db.exec("ALTER TABLE giiatja_pemasaran_hasil ADD COLUMN hasil_kerja TEXT NOT NULL DEFAULT ''");
 if (!giiatjaPemasaranColumnNames.includes('pemasaran_hasil_kerja')) db.exec("ALTER TABLE giiatja_pemasaran_hasil ADD COLUMN pemasaran_hasil_kerja TEXT NOT NULL DEFAULT ''");
@@ -909,9 +911,65 @@ db.prepare(`
 db.prepare(`
   UPDATE giiatja_pemasaran_hasil
   SET
+    tanggal = COALESCE(
+      NULLIF(TRIM(tanggal), ''),
+      CASE
+        WHEN COALESCE(NULLIF(TRIM(periode_tahun), ''), '') <> '' THEN
+          printf(
+            '%04d-%s-01',
+            CAST(COALESCE(NULLIF(TRIM(periode_tahun), ''), ?) AS INTEGER),
+            CASE UPPER(TRIM(periode_bulan))
+              WHEN 'JANUARI' THEN '01'
+              WHEN 'FEBRUARI' THEN '02'
+              WHEN 'MARET' THEN '03'
+              WHEN 'APRIL' THEN '04'
+              WHEN 'MEI' THEN '05'
+              WHEN 'JUNI' THEN '06'
+              WHEN 'JULI' THEN '07'
+              WHEN 'AGUSTUS' THEN '08'
+              WHEN 'SEPTEMBER' THEN '09'
+              WHEN 'OKTOBER' THEN '10'
+              WHEN 'NOVEMBER' THEN '11'
+              WHEN 'DESEMBER' THEN '12'
+              ELSE ?
+            END
+          )
+        ELSE date('now','localtime')
+      END
+    )
+`).run(defaultGiiatjaPremiYear, String(new Date().getMonth() + 1).padStart(2, '0'));
+
+db.prepare(`
+  UPDATE giiatja_pemasaran_hasil
+  SET
     periode_bulan = COALESCE(NULLIF(TRIM(periode_bulan), ''), ?),
     periode_tahun = COALESCE(NULLIF(TRIM(periode_tahun), ''), ?)
 `).run(defaultGiiatjaPremiMonth, defaultGiiatjaPremiYear);
+
+db.exec(`
+  UPDATE giiatja_pemasaran_hasil
+  SET
+    periode_tahun = COALESCE(NULLIF(TRIM(periode_tahun), ''), SUBSTR(tanggal, 1, 4), '${defaultGiiatjaPremiYear}'),
+    periode_bulan = COALESCE(
+      NULLIF(TRIM(periode_bulan), ''),
+      CASE SUBSTR(tanggal, 6, 2)
+        WHEN '01' THEN 'JANUARI'
+        WHEN '02' THEN 'FEBRUARI'
+        WHEN '03' THEN 'MARET'
+        WHEN '04' THEN 'APRIL'
+        WHEN '05' THEN 'MEI'
+        WHEN '06' THEN 'JUNI'
+        WHEN '07' THEN 'JULI'
+        WHEN '08' THEN 'AGUSTUS'
+        WHEN '09' THEN 'SEPTEMBER'
+        WHEN '10' THEN 'OKTOBER'
+        WHEN '11' THEN 'NOVEMBER'
+        WHEN '12' THEN 'DESEMBER'
+        ELSE '${defaultGiiatjaPremiMonth}'
+      END,
+      '${defaultGiiatjaPremiMonth}'
+    )
+`);
 
 db.exec(`
   UPDATE besaran_remisi

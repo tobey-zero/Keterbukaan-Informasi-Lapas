@@ -713,21 +713,11 @@ NAMA PESERTA 2"></textarea></div>
         <div class="card-body">
           <form method="POST" action="/admin/giiatja/pemasaran/add">
             <div class="form-grid col-4" style="margin-bottom:12px;">
-              <div class="form-group"><label>Urutan</label><input type="number" min="1" name="sort_order" value="1"></div>
+              <div class="form-group"><label>Tanggal</label><input type="date" name="tanggal" value="<%= new Date().toISOString().slice(0, 10) %>" required></div>
               <div class="form-group"><label>Kegiatan</label><input type="text" name="kegiatan" required></div>
               <div class="form-group"><label>Hasil Kerja</label><input type="text" name="hasil_kerja" required></div>
               <div class="form-group"><label>Pemasaran Hasil Kerja</label><input type="text" name="pemasaran_hasil_kerja" required></div>
               <div class="form-group"><label>Jumlah Income</label><input type="text" name="jumlah_income" required placeholder="cth: 12.000.000"></div>
-              <div class="form-group">
-                <label>Periode Bulan</label>
-                <select name="periode_bulan" required>
-                  <option value="">Pilih Bulan</option>
-                  <% ['JANUARI','FEBRUARI','MARET','APRIL','MEI','JUNI','JULI','AGUSTUS','SEPTEMBER','OKTOBER','NOVEMBER','DESEMBER'].forEach((m) => { %>
-                    <option value="<%= m %>"><%= m %></option>
-                  <% }) %>
-                </select>
-              </div>
-              <div class="form-group"><label>Periode Tahun</label><input type="number" name="periode_tahun" min="2000" max="2100" value="<%= new Date().getFullYear() %>" required></div>
             </div>
             <button type="submit" class="btn btn-primary btn-sm">➕ Tambah Pemasaran Hasil</button>
           </form>
@@ -739,21 +729,11 @@ NAMA PESERTA 2"></textarea></div>
         <h4>✏️ Edit Pemasaran Hasil (ID: <%= editPemasaran.id %>)</h4>
         <form method="POST" action="/admin/giiatja/pemasaran/<%= editPemasaran.id %>/update">
           <div class="form-grid col-4" style="margin-bottom:12px;">
-            <div class="form-group"><label>Urutan</label><input type="number" min="1" name="sort_order" value="<%= editPemasaran.sort_order || 1 %>"></div>
+            <div class="form-group"><label>Tanggal</label><input type="date" name="tanggal" value="<%= editPemasaran.tanggal || '' %>" required></div>
             <div class="form-group"><label>Kegiatan</label><input type="text" name="kegiatan" value="<%= editPemasaran.kegiatan || '' %>" required></div>
             <div class="form-group"><label>Hasil Kerja</label><input type="text" name="hasil_kerja" value="<%= editPemasaran.hasil_kerja || '' %>" required></div>
             <div class="form-group"><label>Pemasaran Hasil Kerja</label><input type="text" name="pemasaran_hasil_kerja" value="<%= editPemasaran.pemasaran_hasil_kerja || '' %>" required></div>
             <div class="form-group"><label>Jumlah Income</label><input type="text" name="jumlah_income" value="<%= editPemasaran.jumlah_income || '' %>" required></div>
-            <div class="form-group">
-              <label>Periode Bulan</label>
-              <select name="periode_bulan" required>
-                <option value="">Pilih Bulan</option>
-                <% ['JANUARI','FEBRUARI','MARET','APRIL','MEI','JUNI','JULI','AGUSTUS','SEPTEMBER','OKTOBER','NOVEMBER','DESEMBER'].forEach((m) => { %>
-                  <option value="<%= m %>" <%= (String(editPemasaran.periode_bulan || '').toUpperCase() === m) ? 'selected' : '' %>><%= m %></option>
-                <% }) %>
-              </select>
-            </div>
-            <div class="form-group"><label>Periode Tahun</label><input type="number" name="periode_tahun" min="2000" max="2100" value="<%= editPemasaran.periode_tahun || new Date().getFullYear() %>" required></div>
           </div>
           <div style="display:flex;gap:8px;">
             <button type="submit" class="btn btn-success btn-sm">💾 Simpan</button>
@@ -795,11 +775,12 @@ NAMA PESERTA 2"></textarea></div>
         <div class="card-body" style="padding:0;">
           <div class="table-wrap">
             <table class="admin-table">
-              <thead><tr><th>No</th><th>Kegiatan</th><th>Hasil Kerja</th><th>Pemasaran Hasil Kerja</th><th>Jumlah Income</th><th>Periode</th><th>Aksi</th></tr></thead>
+              <thead><tr><th>No</th><th>Tanggal</th><th>Kegiatan</th><th>Hasil Kerja</th><th>Pemasaran Hasil Kerja</th><th>Jumlah Income</th><th>Periode</th><th>Aksi</th></tr></thead>
               <tbody>
                 <% pemasaranList.forEach((item, i) => { %>
                 <tr>
                   <td><%= i + 1 %></td>
+                  <td><%= item.tanggal || '-' %></td>
                   <td><%= item.kegiatan || '-' %></td>
                   <td><%= item.hasil_kerja || '-' %></td>
                   <td><%= item.pemasaran_hasil_kerja || '-' %></td>
@@ -817,7 +798,7 @@ NAMA PESERTA 2"></textarea></div>
                   </td>
                 </tr>
                 <% }) %>
-                <% if (!pemasaranList.length) { %><tr><td colspan="7" style="text-align:center;color:#aaa;padding:20px;">Belum ada data</td></tr><% } %>
+                <% if (!pemasaranList.length) { %><tr><td colspan="8" style="text-align:center;color:#aaa;padding:20px;">Belum ada data</td></tr><% } %>
               </tbody>
             </table>
           </div>

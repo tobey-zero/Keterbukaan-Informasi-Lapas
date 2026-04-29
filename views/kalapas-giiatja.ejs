@@ -614,21 +614,21 @@
                 <th colspan="5" style="text-align:left;">PERIODE: <%= pemasaranPeriodeBulan || '-' %></th>
               </tr>
               <tr>
+                <th>TANGGAL</th>
                 <th>KEGIATAN</th>
                 <th>HASIL KERJA</th>
                 <th>PEMASARAN HASIL KERJA</th>
                 <th>JUMLAH INCOME</th>
-                <th>BULAN</th>
               </tr>
             </thead>
             <tbody>
               <% pemasaranList.forEach((item) => { %>
               <tr>
+                <td><%= item.tanggal || '-' %></td>
                 <td><%= item.kegiatan || '-' %></td>
                 <td><%= item.hasilKerja || '-' %></td>
                 <td><%= item.pemasaranHasilKerja || '-' %></td>
                 <td><%= item.jumlahIncome || '-' %></td>
-                <td><%= ((item.periodeBulan || '-') + ' ' + (item.periodeTahun || '-')).trim() %></td>
               </tr>
               <% }) %>
               <% if (!pemasaranList.length) { %>

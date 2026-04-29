@@ -582,6 +582,28 @@ function normalizePnbpPeriod(value) {
   return String(value || '').trim().toUpperCase();
 }
 
+function getIndonesianMonthUpper(monthNumber) {
+  const monthLabels = ['JANUARI', 'FEBRUARI', 'MARET', 'APRIL', 'MEI', 'JUNI', 'JULI', 'AGUSTUS', 'SEPTEMBER', 'OKTOBER', 'NOVEMBER', 'DESEMBER'];
+  const index = Number(monthNumber) - 1;
+  if (!Number.isInteger(index) || index < 0 || index >= monthLabels.length) return '';
+  return monthLabels[index];
+}
+
+function getPemasaranPeriodFromDate(tanggal) {
+  const normalizedDate = /^\d{4}-\d{2}-\d{2}$/.test(String(tanggal || '').trim())
+    ? String(tanggal).trim()
+    : '';
+  if (!normalizedDate) return null;
+  const [year, month] = normalizedDate.split('-');
+  const periodeBulan = getIndonesianMonthUpper(month);
+  if (!periodeBulan) return null;
+  return {
+    tanggal: normalizedDate,
+    periodeBulan,
+    periodeTahun: year,
+  };
+}
+
 function normalizeNominalString(value) {
   const parsed = parseMoneyNumber(value);
   return String(Math.round(parsed));
@@ -1500,6 +1522,7 @@ function getGiiatjaData(options = {}) {
   const premiYearFilter = String(options.premiYear || '').trim();
   const pemasaranMonthFilter = String(options.pemasaranMonth || '').trim().toUpperCase();
   const pemasaranYearFilter = String(options.pemasaranYear || '').trim();
+  const currentPemasaranPeriod = getPemasaranPeriodFromDate(todayYmd);
 
   const parseNominal = (value) => {
     const digits = String(value ?? '').replace(/\D/g, '');
@@ -1861,26 +1884,39 @@ function getGiiatjaData(options = {}) {
     ? (premiSelectedYear === 'SEMUA' ? 'SEMUA PERIODE' : `SEMUA BULAN ${premiSelectedYear}`)
     : `${premiSelectedMonth}${premiSelectedYear === 'SEMUA' ? '' : ` ${premiSelectedYear}`}`;
 
-  const pemasaranRawList = db.prepare(`
+  const pemasaranRawRows = db.prepare(`
     SELECT
       id,
+      tanggal,
       kegiatan,
       hasil_kerja AS hasilKerja,
       pemasaran_hasil_kerja AS pemasaranHasilKerja,
       jumlah_income AS jumlahIncome,
       periode_bulan AS periodeBulan,
-      periode_tahun AS periodeTahun,
-      sort_order AS sortOrder
+      periode_tahun AS periodeTahun
     FROM giiatja_pemasaran_hasil
-    ORDER BY periode_tahun DESC,
-      ${monthOrderSql} ASC,
-      sort_order ASC,
+    ORDER BY tanggal DESC,
       id ASC
   `).all();
 
-  const pemasaranMonths = Array.from(new Set(
+  const pemasaranRawList = pemasaranRawRows.map((item) => {
+    const fromDate = getPemasaranPeriodFromDate(item.tanggal);
+    const resolvedMonth = String(item.periodeBulan || '').trim().toUpperCase() || (fromDate?.periodeBulan || '');
+    const resolvedYear = String(item.periodeTahun || '').trim() || (fromDate?.periodeTahun || '');
+    return {
+      ...item,
+      periodeBulan: resolvedMonth,
+      periodeTahun: resolvedYear,
+    };
+  });
+
+  const pemasaranMonthBase = Array.from(new Set(
     pemasaranRawList.map(item => String(item.periodeBulan || '').trim().toUpperCase()).filter(Boolean)
-  )).sort((a, b) => {
+  ));
+  if (currentPemasaranPeriod?.periodeBulan && !pemasaranMonthBase.includes(currentPemasaranPeriod.periodeBulan)) {
+    pemasaranMonthBase.push(currentPemasaranPeriod.periodeBulan);
+  }
+  const pemasaranMonths = pemasaranMonthBase.sort((a, b) => {
     const orders = ['JANUARI','FEBRUARI','MARET','APRIL','MEI','JUNI','JULI','AGUSTUS','SEPTEMBER','OKTOBER','NOVEMBER','DESEMBER'];
     const ia = orders.indexOf(a);
     const ib = orders.indexOf(b);
@@ -1888,16 +1924,20 @@ function getGiiatjaData(options = {}) {
     const vb = ib === -1 ? 99 : ib;
     return va - vb;
   });
-  const pemasaranYears = Array.from(new Set(
+  const pemasaranYearBase = Array.from(new Set(
     pemasaranRawList.map(item => String(item.periodeTahun || '').trim()).filter(Boolean)
-  )).sort((a, b) => String(b).localeCompare(String(a), undefined, { numeric: true }));
+  ));
+  if (currentPemasaranPeriod?.periodeTahun && !pemasaranYearBase.includes(currentPemasaranPeriod.periodeTahun)) {
+    pemasaranYearBase.push(currentPemasaranPeriod.periodeTahun);
+  }
+  const pemasaranYears = pemasaranYearBase.sort((a, b) => String(b).localeCompare(String(a), undefined, { numeric: true }));
 
-  const pemasaranSelectedMonth = pemasaranMonthFilter && pemasaranMonthFilter !== 'SEMUA'
-    ? pemasaranMonthFilter
-    : 'SEMUA';
-  const pemasaranSelectedYear = pemasaranYearFilter && pemasaranYearFilter !== 'SEMUA'
-    ? pemasaranYearFilter
-    : 'SEMUA';
+  const pemasaranSelectedMonth = pemasaranMonthFilter
+    ? (pemasaranMonthFilter === 'SEMUA' ? 'SEMUA' : pemasaranMonthFilter)
+    : (currentPemasaranPeriod?.periodeBulan || 'SEMUA');
+  const pemasaranSelectedYear = pemasaranYearFilter
+    ? (pemasaranYearFilter === 'SEMUA' ? 'SEMUA' : pemasaranYearFilter)
+    : (currentPemasaranPeriod?.periodeTahun || 'SEMUA');
 
   const pemasaranList = pemasaranRawList.filter((item) => {
     const month = String(item.periodeBulan || '').trim().toUpperCase();
@@ -5988,28 +6028,21 @@ app.get('/admin/giiatja', requireAccess('giiatja'), (req, res) => {
     return blob.includes(normalizedPremiSearch);
   });
 
-  const pemasaranAll = db.prepare(`
+  const pemasaranAllRaw = db.prepare(`
     SELECT *
     FROM giiatja_pemasaran_hasil
-    ORDER BY periode_tahun DESC,
-      CASE UPPER(TRIM(periode_bulan))
-        WHEN 'JANUARI' THEN 1
-        WHEN 'FEBRUARI' THEN 2
-        WHEN 'MARET' THEN 3
-        WHEN 'APRIL' THEN 4
-        WHEN 'MEI' THEN 5
-        WHEN 'JUNI' THEN 6
-        WHEN 'JULI' THEN 7
-        WHEN 'AGUSTUS' THEN 8
-        WHEN 'SEPTEMBER' THEN 9
-        WHEN 'OKTOBER' THEN 10
-        WHEN 'NOVEMBER' THEN 11
-        WHEN 'DESEMBER' THEN 12
-        ELSE 99
-      END ASC,
-      sort_order ASC,
-      id ASC
+    ORDER BY tanggal DESC, id ASC
   `).all();
+  const pemasaranAll = pemasaranAllRaw.map((item) => {
+    const fromDate = getPemasaranPeriodFromDate(item.tanggal);
+    const periodeBulan = String(item.periode_bulan || '').trim().toUpperCase() || (fromDate?.periodeBulan || '');
+    const periodeTahun = String(item.periode_tahun || '').trim() || (fromDate?.periodeTahun || '');
+    return {
+      ...item,
+      periode_bulan: periodeBulan,
+      periode_tahun: periodeTahun,
+    };
+  });
   const pemasaranMonthOptions = Array.from(new Set(
     pemasaranAll.map(item => String(item.periode_bulan || '').trim().toUpperCase()).filter(Boolean)
   )).sort((a, b) => {
@@ -6661,19 +6694,20 @@ app.post('/admin/giiatja/pemasaran/add', requireAccess('giiatja'), (req, res) =>
   const kegiatan = String(req.body.kegiatan || '').trim().toUpperCase();
   const hasilKerja = String(req.body.hasil_kerja || '').trim().toUpperCase();
   const pemasaranHasilKerja = String(req.body.pemasaran_hasil_kerja || '').trim().toUpperCase();
+  const tanggal = String(req.body.tanggal || '').trim();
+  const periodFromDate = getPemasaranPeriodFromDate(tanggal);
   const jumlahIncome = String(req.body.jumlah_income || '').trim();
-  const periodeBulan = String(req.body.periode_bulan || '').trim().toUpperCase();
-  const periodeTahun = String(req.body.periode_tahun || '').trim() || String(new Date().getFullYear());
-  const sortOrder = Number(req.body.sort_order || 0) || 1;
-  if (!kegiatan || !hasilKerja || !pemasaranHasilKerja || !jumlahIncome || !periodeBulan || !periodeTahun) {
+  const periodeBulan = periodFromDate?.periodeBulan || '';
+  const periodeTahun = periodFromDate?.periodeTahun || '';
+  if (!kegiatan || !hasilKerja || !pemasaranHasilKerja || !jumlahIncome || !periodFromDate) {
     return res.redirect('/admin/giiatja?menu=pemasaran&error=Semua+kolom+pemasaran+hasil+wajib+diisi');
   }
 
   db.prepare(`
     INSERT INTO giiatja_pemasaran_hasil
-      (kegiatan, hasil_kerja, pemasaran_hasil_kerja, jumlah_income, periode_bulan, periode_tahun, sort_order)
+      (tanggal, kegiatan, hasil_kerja, pemasaran_hasil_kerja, jumlah_income, periode_bulan, periode_tahun)
     VALUES (?, ?, ?, ?, ?, ?, ?)
-  `).run(kegiatan, hasilKerja, pemasaranHasilKerja, jumlahIncome, periodeBulan, periodeTahun, sortOrder);
+  `).run(periodFromDate.tanggal, kegiatan, hasilKerja, pemasaranHasilKerja, jumlahIncome, periodeBulan, periodeTahun);
 
   return res.redirect('/admin/giiatja?menu=pemasaran&success=1');
 });
@@ -6683,19 +6717,20 @@ app.post('/admin/giiatja/pemasaran/:id/update', requireAccess('giiatja'), (req, 
   const kegiatan = String(req.body.kegiatan || '').trim().toUpperCase();
   const hasilKerja = String(req.body.hasil_kerja || '').trim().toUpperCase();
   const pemasaranHasilKerja = String(req.body.pemasaran_hasil_kerja || '').trim().toUpperCase();
+  const tanggal = String(req.body.tanggal || '').trim();
+  const periodFromDate = getPemasaranPeriodFromDate(tanggal);
   const jumlahIncome = String(req.body.jumlah_income || '').trim();
-  const periodeBulan = String(req.body.periode_bulan || '').trim().toUpperCase();
-  const periodeTahun = String(req.body.periode_tahun || '').trim() || String(new Date().getFullYear());
-  const sortOrder = Number(req.body.sort_order || 0) || 1;
-  if (!kegiatan || !hasilKerja || !pemasaranHasilKerja || !jumlahIncome || !periodeBulan || !periodeTahun) {
+  const periodeBulan = periodFromDate?.periodeBulan || '';
+  const periodeTahun = periodFromDate?.periodeTahun || '';
+  if (!kegiatan || !hasilKerja || !pemasaranHasilKerja || !jumlahIncome || !periodFromDate) {
     return res.redirect(`/admin/giiatja?menu=pemasaran&editPemasaran=${id}&error=Semua+kolom+pemasaran+hasil+wajib+diisi`);
   }
 
   db.prepare(`
     UPDATE giiatja_pemasaran_hasil
-    SET kegiatan=?, hasil_kerja=?, pemasaran_hasil_kerja=?, jumlah_income=?, periode_bulan=?, periode_tahun=?, sort_order=?
+    SET tanggal=?, kegiatan=?, hasil_kerja=?, pemasaran_hasil_kerja=?, jumlah_income=?, periode_bulan=?, periode_tahun=?
     WHERE id=?
-  `).run(kegiatan, hasilKerja, pemasaranHasilKerja, jumlahIncome, periodeBulan, periodeTahun, sortOrder, id);
+  `).run(periodFromDate.tanggal, kegiatan, hasilKerja, pemasaranHasilKerja, jumlahIncome, periodeBulan, periodeTahun, id);
 
   return res.redirect('/admin/giiatja?menu=pemasaran&success=1');
 });
