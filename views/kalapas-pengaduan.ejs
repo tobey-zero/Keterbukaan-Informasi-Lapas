@@ -59,7 +59,7 @@
     .pengaduan-kamtib-table {
       width: 100%;
       border-collapse: collapse;
-      min-width: 1100px;
+      min-width: 1250px;
     }
     .pengaduan-kamtib-table th,
     .pengaduan-kamtib-table td {
@@ -136,7 +136,7 @@
         </div>
         <div>
           <label>Pencarian</label>
-          <input type="text" name="search" value="<%= searchKeyword || '' %>" placeholder="Cari no pengaduan, nama, no wa, status, tanggal...">
+          <input type="text" name="search" value="<%= searchKeyword || '' %>" placeholder="Cari no pengaduan, nama, no wa, jenis, materi, status, tanggal...">
         </div>
         <button type="submit">Terapkan</button>
         <a href="/kalapas/table/pengaduan?month=<%= selectedMonth %>&year=<%= selectedYear %>">Reset</a>
@@ -153,6 +153,7 @@
             <th>NAMA</th>
             <th>NO WHATSAPP</th>
             <th>JENIS</th>
+            <th>MATERI ADUAN</th>
             <th>STATUS</th>
             <th>DOKUMENTASI</th>
             <th>TINDAK LANJUT</th>
@@ -167,6 +168,7 @@
             <td><%= item.nama || '-' %></td>
             <td><%= item.noWhatsapp || '-' %></td>
             <td><%= item.jenisPengaduan || '-' %></td>
+            <td style="white-space: pre-line;"><%= item.materiPengaduan || '-' %></td>
             <td><%= item.status || '-' %></td>
             <td>
               <% if (item.dokumentasiPath) { %>
@@ -187,7 +189,7 @@
           </tr>
           <% }) %>
           <% if (!list.length) { %>
-            <tr><td colspan="9" class="kamtib-empty">Belum ada data pada filter ini</td></tr>
+            <tr><td colspan="10" class="kamtib-empty">Belum ada data pada filter ini</td></tr>
           <% } %>
         </tbody>
       </table>

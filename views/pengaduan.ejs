@@ -127,13 +127,13 @@
                   <td><%= item.jenisPengaduan || '-' %></td>
                   <td style="white-space:pre-line;"><%= item.materiPengaduan || '-' %></td>
                   <td><span class="badge-status"><%= item.status || '-' %></span></td>
-                  <td style="white-space:pre-line;">
+                  <td>
                     <% if (String(item.status || '').toUpperCase() === 'DITOLAK') { %>
                       <%= item.alasanPenolakan || 'Belum ada alasan' %>
                     <% } else if ((String(item.status || '').toUpperCase() === 'DIPROSES' || String(item.status || '').toUpperCase() === 'SELESAI') && item.lampiranAdminPath) { %>
                       <a href="<%= item.lampiranAdminPath %>" target="_blank" rel="noopener noreferrer">Lihat berkas</a>
                     <% } else { %>
-                      -
+                      Laporan Anda Akan Segera Kami Tindak Lanjuti Dalam 2x24 Jam Kerja
                     <% } %>
                   </td>
                 </tr>
