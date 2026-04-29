@@ -129,6 +129,61 @@ db.exec(`
     FOREIGN KEY (blok_id) REFERENCES dapur_distribusi_blok(id)
   );
 
+  CREATE TABLE IF NOT EXISTS dapur_bama_master (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    nama_bahan TEXT NOT NULL,
+    satuan_default TEXT NOT NULL DEFAULT 'Kg',
+    sort_order INTEGER NOT NULL DEFAULT 0,
+    is_active INTEGER NOT NULL DEFAULT 1,
+    created_at TEXT NOT NULL DEFAULT (datetime('now','localtime'))
+  );
+
+  CREATE TABLE IF NOT EXISTS dapur_bama_permintaan (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    tanggal TEXT NOT NULL,
+    menu_hari TEXT NOT NULL DEFAULT '',
+    bama_id INTEGER NOT NULL,
+    berat_kotor TEXT NOT NULL DEFAULT '',
+    satuan TEXT NOT NULL DEFAULT '',
+    banyaknya TEXT NOT NULL DEFAULT '',
+    keterangan TEXT NOT NULL DEFAULT '',
+    created_at TEXT NOT NULL DEFAULT (datetime('now','localtime')),
+    updated_at TEXT NOT NULL DEFAULT (datetime('now','localtime')),
+    UNIQUE (tanggal, menu_hari, bama_id),
+    FOREIGN KEY (bama_id) REFERENCES dapur_bama_master(id)
+  );
+
+  CREATE TABLE IF NOT EXISTS dapur_bama_diterima (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    tanggal TEXT NOT NULL,
+    menu_hari TEXT NOT NULL DEFAULT '',
+    bama_id INTEGER NOT NULL,
+    satuan TEXT NOT NULL DEFAULT '',
+    jumlah_permintaan TEXT NOT NULL DEFAULT '',
+    jumlah_diterima TEXT NOT NULL DEFAULT '',
+    keterangan TEXT NOT NULL DEFAULT '',
+    created_at TEXT NOT NULL DEFAULT (datetime('now','localtime')),
+    updated_at TEXT NOT NULL DEFAULT (datetime('now','localtime')),
+    UNIQUE (tanggal, menu_hari, bama_id),
+    FOREIGN KEY (bama_id) REFERENCES dapur_bama_master(id)
+  );
+
+  CREATE TABLE IF NOT EXISTS dapur_bama_penyimpanan (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    tanggal TEXT NOT NULL,
+    menu_hari TEXT NOT NULL DEFAULT '',
+    bama_id INTEGER NOT NULL,
+    satuan TEXT NOT NULL DEFAULT '',
+    barang_masuk TEXT NOT NULL DEFAULT '',
+    barang_keluar TEXT NOT NULL DEFAULT '',
+    barang_sisa TEXT NOT NULL DEFAULT '',
+    keterangan TEXT NOT NULL DEFAULT '',
+    created_at TEXT NOT NULL DEFAULT (datetime('now','localtime')),
+    updated_at TEXT NOT NULL DEFAULT (datetime('now','localtime')),
+    UNIQUE (tanggal, menu_hari, bama_id),
+    FOREIGN KEY (bama_id) REFERENCES dapur_bama_master(id)
+  );
+
   CREATE TABLE IF NOT EXISTS pentahapan_pembinaan (
     id INTEGER PRIMARY KEY AUTOINCREMENT,
     nama_wbp TEXT NOT NULL,
@@ -971,6 +1026,36 @@ seedIfEmpty('dapur_distribusi_blok', () => {
     ['Klinik', 11],
     ['Tipikor', 12],
     ['Rehab', 13],
+  ];
+  rows.forEach((row) => insert.run(...row));
+});
+
+seedIfEmpty('dapur_bama_master', () => {
+  const insert = db.prepare('INSERT INTO dapur_bama_master (nama_bahan, satuan_default, sort_order, is_active) VALUES (?, ?, ?, 1)');
+  const rows = [
+    ['Beras untuk Laki-laki Dewasa', 'Kg', 1],
+    ['Ubi Kayu', 'Kg', 2],
+    ['Daging Sapi', 'Kg', 3],
+    ['Ayam ras/boiler', 'Kg', 4],
+    ['Ikan Kering', 'Kg', 5],
+    ['Ikan Segar', 'Kg', 6],
+    ['Telur ayam ras', 'Butir', 7],
+    ['Tempe', 'Kg', 8],
+    ['Tahu', 'Kg', 9],
+    ['Kacang-kacangan (Kacang tanah/merah/lainnya)', 'Kg', 10],
+    ['Kacang Hijau', 'Kg', 11],
+    ['Kelapa Daging', 'Kg', 12],
+    ['Sayuran Segar', 'Kg', 13],
+    ['Bumbu Segar', 'Kg', 14],
+    ['Garam Dapur', 'Kg', 15],
+    ['Gula Pasir', 'Kg', 16],
+    ['Gula Kelapa/Aren', 'Kg', 17],
+    ['Minyak Goreng', 'Kg', 18],
+    ['Buah-buahan', 'Buah', 19],
+    ['Racikan Sambal', 'Kg', 20],
+    ['Kecap', 'Kg', 21],
+    ['Air Minum', 'Liter', 22],
+    ['Gas', 'Tabung/50 kg', 23],
   ];
   rows.forEach((row) => insert.run(...row));
 });

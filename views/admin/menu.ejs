@@ -14,6 +14,9 @@
     <% const isMakanan = menuSection === 'makanan'; %>
     <% const isJadwal = menuSection === 'jadwal'; %>
     <% const isDistribusi = menuSection === 'distribusi'; %>
+    <% const isPermintaan = menuSection === 'permintaan'; %>
+    <% const isDiterima = menuSection === 'diterima'; %>
+    <% const isPenyimpanan = menuSection === 'penyimpanan'; %>
     <div class="topbar">
       <div class="topbar-title">
         <h2>🍽 Menu Makan</h2>
@@ -23,6 +26,9 @@
           <%= isMakanan ? 'Tetapkan Menu Makanan harian cukup pilih tanggal + template' : '' %>
           <%= isJadwal ? 'Kelola petugas dapur dan jadwal tugas harian' : '' %>
           <%= isDistribusi ? 'Entri distribusi makanan per sesi (08:00, 12:00, 16:00)' : '' %>
+          <%= isPermintaan ? 'Input daftar permintaan bahan makanan harian' : '' %>
+          <%= isDiterima ? 'Input berita acara penerimaan bahan makanan' : '' %>
+          <%= isPenyimpanan ? 'Input daftar penyimpanan bahan makanan harian' : '' %>
         </p>
       </div>
       <div class="topbar-actions"><a href="/" target="_blank" class="btn-public">🌐 Lihat Publik</a></div>
@@ -39,8 +45,171 @@
           <a href="/admin/menu/makanan" class="btn btn-sm <%= isMakanan ? 'btn-primary' : 'btn-secondary' %>">🍱 Menu Makanan</a>
           <a href="/admin/menu/jadwal" class="btn btn-sm <%= isJadwal ? 'btn-primary' : 'btn-secondary' %>">👨‍🍳 Jadwal Petugas</a>
           <a href="/admin/menu/distribusi" class="btn btn-sm <%= isDistribusi ? 'btn-primary' : 'btn-secondary' %>">📦 Distribusi</a>
+          <a href="/admin/menu/permintaan" class="btn btn-sm <%= isPermintaan ? 'btn-primary' : 'btn-secondary' %>">📄 Permintaan</a>
+          <a href="/admin/menu/diterima" class="btn btn-sm <%= isDiterima ? 'btn-primary' : 'btn-secondary' %>">📥 Diterima</a>
+          <a href="/admin/menu/penyimpanan" class="btn btn-sm <%= isPenyimpanan ? 'btn-primary' : 'btn-secondary' %>">🏪 Penyimpanan</a>
         </div>
       </div>
+
+      <% if (isPermintaan) { %>
+      <div class="card">
+        <div class="card-header"><h3>📄 Daftar Permintaan Bahan Makanan</h3></div>
+        <div class="card-body">
+          <form method="GET" action="/admin/menu/permintaan" style="display:flex; gap:10px; flex-wrap:wrap; align-items:end; margin-bottom:12px;">
+            <div class="form-group" style="min-width: 220px; margin:0;">
+              <label>Tanggal</label>
+              <input type="date" name="tanggal_bama" value="<%= selectedBamaDate || todayYmd %>">
+            </div>
+            <div class="form-group" style="min-width: 240px; margin:0;">
+              <label>Menu Hari</label>
+              <input type="text" name="menu_hari" value="<%= selectedBamaMenuHari || 'Menu Hari VIII' %>" placeholder="Contoh: Menu Hari VIII">
+            </div>
+            <div style="display:flex; gap:8px; align-items:center;">
+              <button type="submit" class="btn btn-primary btn-sm">🔎 Tampilkan</button>
+              <a href="/admin/menu/permintaan" class="btn btn-secondary btn-sm">↺ Hari ini</a>
+            </div>
+          </form>
+
+          <form method="POST" action="/admin/menu/permintaan/save">
+            <input type="hidden" name="tanggal_bama" value="<%= selectedBamaDate || todayYmd %>">
+            <input type="hidden" name="menu_hari" value="<%= selectedBamaMenuHari || 'Menu Hari VIII' %>">
+
+            <div style="margin-bottom:10px; font-size:12px; color:#475569; font-weight:700;">
+              Tanggal: <%= formatDateIndo(selectedBamaDate || todayYmd) %> | <%= selectedBamaMenuHari || 'Menu Hari VIII' %>
+            </div>
+
+            <div class="table-wrap">
+              <table class="admin-table">
+                <thead><tr><th>No</th><th>Jenis Bahan Makanan</th><th>Berat Kotor</th><th>Satuan</th><th>Banyaknya</th><th>Keterangan</th></tr></thead>
+                <tbody>
+                  <% bamaMasterList.forEach((item, i) => { const value = bamaPermintaanById?.[item.id] || {}; %>
+                  <tr>
+                    <td><%= i + 1 %></td>
+                    <td style="text-align:left;"><strong><%= item.namaBahan || '-' %></strong></td>
+                    <td><input type="text" name="berat_kotor_<%= item.id %>" value="<%= value.beratKotor || '' %>" placeholder="0,0000"></td>
+                    <td><input type="text" name="satuan_<%= item.id %>" value="<%= value.satuan || item.satuanDefault || 'Kg' %>"></td>
+                    <td><input type="text" name="banyaknya_<%= item.id %>" value="<%= value.banyaknya || '' %>" placeholder="0,0000"></td>
+                    <td><input type="text" name="keterangan_<%= item.id %>" value="<%= value.keterangan || '' %>" placeholder="Opsional"></td>
+                  </tr>
+                  <% }) %>
+                  <% if (!bamaMasterList.length) { %><tr><td colspan="6" style="text-align:center;color:#aaa;padding:20px;">Belum ada master bahan makanan</td></tr><% } %>
+                </tbody>
+              </table>
+            </div>
+            <div style="display:flex; gap:8px; align-items:center; margin-top:12px;">
+              <button type="submit" class="btn btn-primary btn-sm" <%= !bamaMasterList.length ? 'disabled' : '' %>>💾 Simpan Permintaan</button>
+            </div>
+          </form>
+        </div>
+      </div>
+      <% } %>
+
+      <% if (isDiterima) { %>
+      <div class="card">
+        <div class="card-header"><h3>📥 Berita Acara Penerimaan Bahan Makanan</h3></div>
+        <div class="card-body">
+          <form method="GET" action="/admin/menu/diterima" style="display:flex; gap:10px; flex-wrap:wrap; align-items:end; margin-bottom:12px;">
+            <div class="form-group" style="min-width: 220px; margin:0;">
+              <label>Tanggal</label>
+              <input type="date" name="tanggal_bama" value="<%= selectedBamaDate || todayYmd %>">
+            </div>
+            <div class="form-group" style="min-width: 240px; margin:0;">
+              <label>Menu Hari</label>
+              <input type="text" name="menu_hari" value="<%= selectedBamaMenuHari || 'Menu Hari VIII' %>" placeholder="Contoh: Menu Hari VIII">
+            </div>
+            <div style="display:flex; gap:8px; align-items:center;">
+              <button type="submit" class="btn btn-primary btn-sm">🔎 Tampilkan</button>
+              <a href="/admin/menu/diterima" class="btn btn-secondary btn-sm">↺ Hari ini</a>
+            </div>
+          </form>
+
+          <form method="POST" action="/admin/menu/diterima/save">
+            <input type="hidden" name="tanggal_bama" value="<%= selectedBamaDate || todayYmd %>">
+            <input type="hidden" name="menu_hari" value="<%= selectedBamaMenuHari || 'Menu Hari VIII' %>">
+
+            <div style="margin-bottom:10px; font-size:12px; color:#475569; font-weight:700;">
+              Tanggal: <%= formatDateIndo(selectedBamaDate || todayYmd) %> | <%= selectedBamaMenuHari || 'Menu Hari VIII' %>
+            </div>
+
+            <div class="table-wrap">
+              <table class="admin-table">
+                <thead><tr><th>No</th><th>Jenis BAMA</th><th>Satuan</th><th>Jumlah Permintaan BAMA</th><th>Jumlah BAMA yang Diterima</th><th>Keterangan</th></tr></thead>
+                <tbody>
+                  <% bamaMasterList.forEach((item, i) => { const value = bamaDiterimaById?.[item.id] || {}; %>
+                  <tr>
+                    <td><%= i + 1 %></td>
+                    <td style="text-align:left;"><strong><%= item.namaBahan || '-' %></strong></td>
+                    <td><input type="text" name="satuan_<%= item.id %>" value="<%= value.satuan || item.satuanDefault || 'Kg' %>"></td>
+                    <td><input type="text" name="jumlah_permintaan_<%= item.id %>" value="<%= value.jumlahPermintaan || '' %>" placeholder="0,0000"></td>
+                    <td><input type="text" name="jumlah_diterima_<%= item.id %>" value="<%= value.jumlahDiterima || '' %>" placeholder="0,0000"></td>
+                    <td><input type="text" name="keterangan_<%= item.id %>" value="<%= value.keterangan || '' %>" placeholder="Opsional"></td>
+                  </tr>
+                  <% }) %>
+                  <% if (!bamaMasterList.length) { %><tr><td colspan="6" style="text-align:center;color:#aaa;padding:20px;">Belum ada master bahan makanan</td></tr><% } %>
+                </tbody>
+              </table>
+            </div>
+            <div style="display:flex; gap:8px; align-items:center; margin-top:12px;">
+              <button type="submit" class="btn btn-primary btn-sm" <%= !bamaMasterList.length ? 'disabled' : '' %>>💾 Simpan Data Diterima</button>
+            </div>
+          </form>
+        </div>
+      </div>
+      <% } %>
+
+      <% if (isPenyimpanan) { %>
+      <div class="card">
+        <div class="card-header"><h3>🏪 Daftar Penyimpanan Bahan Makanan</h3></div>
+        <div class="card-body">
+          <form method="GET" action="/admin/menu/penyimpanan" style="display:flex; gap:10px; flex-wrap:wrap; align-items:end; margin-bottom:12px;">
+            <div class="form-group" style="min-width: 220px; margin:0;">
+              <label>Tanggal</label>
+              <input type="date" name="tanggal_bama" value="<%= selectedBamaDate || todayYmd %>">
+            </div>
+            <div class="form-group" style="min-width: 240px; margin:0;">
+              <label>Menu Hari</label>
+              <input type="text" name="menu_hari" value="<%= selectedBamaMenuHari || 'Menu Hari VIII' %>" placeholder="Contoh: Menu Hari VIII">
+            </div>
+            <div style="display:flex; gap:8px; align-items:center;">
+              <button type="submit" class="btn btn-primary btn-sm">🔎 Tampilkan</button>
+              <a href="/admin/menu/penyimpanan" class="btn btn-secondary btn-sm">↺ Hari ini</a>
+            </div>
+          </form>
+
+          <form method="POST" action="/admin/menu/penyimpanan/save">
+            <input type="hidden" name="tanggal_bama" value="<%= selectedBamaDate || todayYmd %>">
+            <input type="hidden" name="menu_hari" value="<%= selectedBamaMenuHari || 'Menu Hari VIII' %>">
+
+            <div style="margin-bottom:10px; font-size:12px; color:#475569; font-weight:700;">
+              Tanggal: <%= formatDateIndo(selectedBamaDate || todayYmd) %> | <%= selectedBamaMenuHari || 'Menu Hari VIII' %>
+            </div>
+
+            <div class="table-wrap">
+              <table class="admin-table">
+                <thead><tr><th>No</th><th>Nama Barang</th><th>Satuan</th><th>Barang Masuk</th><th>Barang Keluar</th><th>Barang Sisa</th><th>Keterangan</th></tr></thead>
+                <tbody>
+                  <% bamaMasterList.forEach((item, i) => { const value = bamaPenyimpananById?.[item.id] || {}; %>
+                  <tr>
+                    <td><%= i + 1 %></td>
+                    <td style="text-align:left;"><strong><%= item.namaBahan || '-' %></strong></td>
+                    <td><input type="text" name="satuan_<%= item.id %>" value="<%= value.satuan || item.satuanDefault || 'Kg' %>"></td>
+                    <td><input type="text" name="barang_masuk_<%= item.id %>" value="<%= value.barangMasuk || '' %>" placeholder="0,0000"></td>
+                    <td><input type="text" name="barang_keluar_<%= item.id %>" value="<%= value.barangKeluar || '' %>" placeholder="0,0000"></td>
+                    <td><input type="text" name="barang_sisa_<%= item.id %>" value="<%= value.barangSisa || '' %>" placeholder="0,0000"></td>
+                    <td><input type="text" name="keterangan_<%= item.id %>" value="<%= value.keterangan || '' %>" placeholder="Opsional"></td>
+                  </tr>
+                  <% }) %>
+                  <% if (!bamaMasterList.length) { %><tr><td colspan="7" style="text-align:center;color:#aaa;padding:20px;">Belum ada master bahan makanan</td></tr><% } %>
+                </tbody>
+              </table>
+            </div>
+            <div style="display:flex; gap:8px; align-items:center; margin-top:12px;">
+              <button type="submit" class="btn btn-primary btn-sm" <%= !bamaMasterList.length ? 'disabled' : '' %>>💾 Simpan Penyimpanan</button>
+            </div>
+          </form>
+        </div>
+      </div>
+      <% } %>
 
       <% if (isDistribusi) { %>
       <div class="card" id="template-distribusi-card">

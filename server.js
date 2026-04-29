@@ -2350,12 +2350,16 @@ app.get('/kalapas', (req, res) => {
 });
 
 app.get('/kalapas/table/dapur', (req, res) => {
-  const activeTab = ['menu', 'jadwal'].includes(String(req.query.tab || '').toLowerCase())
+  const activeTab = ['menu', 'jadwal', 'distribusi', 'permintaan', 'diterima', 'penyimpanan'].includes(String(req.query.tab || '').toLowerCase())
     ? String(req.query.tab).toLowerCase()
     : 'menu';
   const selectedDate = /^\d{4}-\d{2}-\d{2}$/.test(String(req.query.tanggal || ''))
     ? String(req.query.tanggal)
     : getTodayYmd();
+  const selectedBamaMenuHari = String(req.query.menu_hari || '').trim() || 'Menu Hari VIII';
+  const selectedDistribusiJam = ['08:00', '12:00', '16:00'].includes(String(req.query.jam_distribusi || ''))
+    ? String(req.query.jam_distribusi)
+    : '08:00';
 
   const menuTitle = getAppSetting('menu_title', 'DAFTAR MENU MAKAN HARI INI');
   const selectedDateLabel = new Intl.DateTimeFormat('id-ID', {
@@ -2404,6 +2408,65 @@ app.get('/kalapas/table/dapur', (req, res) => {
     ORDER BY p.nama COLLATE NOCASE ASC, j.id ASC
   `).all(selectedDate);
   const totalJadwalHistory = Number(db.prepare('SELECT COUNT(DISTINCT tanggal) AS c FROM dapur_jadwal').get()?.c || 0);
+  const bamaMasterList = db.prepare(`
+    SELECT id, nama_bahan AS namaBahan, satuan_default AS satuanDefault, sort_order AS sortOrder
+    FROM dapur_bama_master
+    WHERE is_active = 1
+    ORDER BY sort_order ASC, id ASC
+  `).all();
+  const permintaanRows = db.prepare(`
+    SELECT bama_id AS bamaId, berat_kotor AS beratKotor, satuan, banyaknya, keterangan
+    FROM dapur_bama_permintaan
+    WHERE tanggal = ?
+      AND menu_hari = ?
+  `).all(selectedDate, selectedBamaMenuHari);
+  const permintaanById = Object.fromEntries(permintaanRows.map((item) => [Number(item.bamaId), item]));
+
+  const diterimaRows = db.prepare(`
+    SELECT bama_id AS bamaId, satuan, jumlah_permintaan AS jumlahPermintaan, jumlah_diterima AS jumlahDiterima, keterangan
+    FROM dapur_bama_diterima
+    WHERE tanggal = ?
+      AND menu_hari = ?
+  `).all(selectedDate, selectedBamaMenuHari);
+  const diterimaById = Object.fromEntries(diterimaRows.map((item) => [Number(item.bamaId), item]));
+
+  const penyimpananRows = db.prepare(`
+    SELECT bama_id AS bamaId, satuan, barang_masuk AS barangMasuk, barang_keluar AS barangKeluar, barang_sisa AS barangSisa, keterangan
+    FROM dapur_bama_penyimpanan
+    WHERE tanggal = ?
+      AND menu_hari = ?
+  `).all(selectedDate, selectedBamaMenuHari);
+  const penyimpananById = Object.fromEntries(penyimpananRows.map((item) => [Number(item.bamaId), item]));
+
+  const distribusiRows = db.prepare(`
+    SELECT b.nama_blok AS namaBlok, b.sort_order AS sortOrder, e.jumlah
+    FROM dapur_distribusi_blok b
+    LEFT JOIN dapur_distribusi_entri e
+      ON e.blok_id = b.id
+      AND e.tanggal = ?
+      AND e.jam = ?
+    WHERE b.is_active = 1
+    ORDER BY b.sort_order ASC, b.id ASC
+  `).all(selectedDate, selectedDistribusiJam);
+  const activeDistribusiBlokCount = Number(db.prepare(`
+    SELECT COUNT(*) AS c
+    FROM dapur_distribusi_blok
+    WHERE is_active = 1
+  `).get()?.c || 0);
+  const distribusiStatusPerJam = ['08:00', '12:00', '16:00'].map((jam) => {
+    const totalInput = Number(db.prepare(`
+      SELECT COUNT(*) AS c
+      FROM dapur_distribusi_entri
+      WHERE tanggal = ?
+        AND jam = ?
+    `).get(selectedDate, jam)?.c || 0);
+    return {
+      jam,
+      totalInput,
+      complete: activeDistribusiBlokCount > 0 && totalInput >= activeDistribusiBlokCount,
+      hasInput: totalInput > 0,
+    };
+  });
 
   res.render('kalapas-dapur', {
     activePage: 'kalapas',
@@ -2413,6 +2476,14 @@ app.get('/kalapas/table/dapur', (req, res) => {
     selectedDateLabel,
     menuList,
     jadwalPetugasList,
+    selectedBamaMenuHari,
+    selectedDistribusiJam,
+    distribusiRows,
+    distribusiStatusPerJam,
+    bamaMasterList,
+    permintaanById,
+    diterimaById,
+    penyimpananById,
     historyDates,
     totalHistory: historyDates.length,
     totalJadwalHistory,
@@ -4209,6 +4280,10 @@ function renderAdminMenuPage(req, res, menuSection) {
   const selectedJadwalDate = /^\d{4}-\d{2}-\d{2}$/.test(String(req.query.tanggal_jadwal || ''))
     ? String(req.query.tanggal_jadwal)
     : getTodayYmd();
+  const selectedBamaDate = /^\d{4}-\d{2}-\d{2}$/.test(String(req.query.tanggal_bama || ''))
+    ? String(req.query.tanggal_bama)
+    : getTodayYmd();
+  const selectedBamaMenuHari = String(req.query.menu_hari || '').trim() || 'Menu Hari VIII';
   const selectedDistribusiDate = /^\d{4}-\d{2}-\d{2}$/.test(String(req.query.tanggal_distribusi || ''))
     ? String(req.query.tanggal_distribusi)
     : getTodayYmd();
@@ -4372,6 +4447,58 @@ function renderAdminMenuPage(req, res, menuSection) {
     };
   });
   const totalDistribusiHistory = Number(db.prepare('SELECT COUNT(DISTINCT tanggal) AS c FROM dapur_distribusi_entri').get()?.c || 0);
+  const bamaMasterList = db.prepare(`
+    SELECT id, nama_bahan AS namaBahan, satuan_default AS satuanDefault, sort_order AS sortOrder
+    FROM dapur_bama_master
+    WHERE is_active = 1
+    ORDER BY sort_order ASC, id ASC
+  `).all();
+
+  const bamaPermintaanRows = db.prepare(`
+    SELECT
+      bama_id AS bamaId,
+      berat_kotor AS beratKotor,
+      satuan,
+      banyaknya,
+      keterangan
+    FROM dapur_bama_permintaan
+    WHERE tanggal = ?
+      AND menu_hari = ?
+  `).all(selectedBamaDate, selectedBamaMenuHari);
+  const bamaPermintaanById = Object.fromEntries(
+    bamaPermintaanRows.map((row) => [Number(row.bamaId), row])
+  );
+
+  const bamaDiterimaRows = db.prepare(`
+    SELECT
+      bama_id AS bamaId,
+      satuan,
+      jumlah_permintaan AS jumlahPermintaan,
+      jumlah_diterima AS jumlahDiterima,
+      keterangan
+    FROM dapur_bama_diterima
+    WHERE tanggal = ?
+      AND menu_hari = ?
+  `).all(selectedBamaDate, selectedBamaMenuHari);
+  const bamaDiterimaById = Object.fromEntries(
+    bamaDiterimaRows.map((row) => [Number(row.bamaId), row])
+  );
+
+  const bamaPenyimpananRows = db.prepare(`
+    SELECT
+      bama_id AS bamaId,
+      satuan,
+      barang_masuk AS barangMasuk,
+      barang_keluar AS barangKeluar,
+      barang_sisa AS barangSisa,
+      keterangan
+    FROM dapur_bama_penyimpanan
+    WHERE tanggal = ?
+      AND menu_hari = ?
+  `).all(selectedBamaDate, selectedBamaMenuHari);
+  const bamaPenyimpananById = Object.fromEntries(
+    bamaPenyimpananRows.map((row) => [Number(row.bamaId), row])
+  );
 
   const menuTitle = getAppSetting('menu_title', 'DAFTAR MENU MAKAN HARI INI');
 
@@ -4381,6 +4508,9 @@ function renderAdminMenuPage(req, res, menuSection) {
     makanan: 'menu-makanan',
     jadwal: 'menu-jadwal',
     distribusi: 'menu-distribusi',
+    permintaan: 'menu-permintaan',
+    diterima: 'menu-diterima',
+    penyimpanan: 'menu-penyimpanan',
   };
 
   res.render('admin/menu', {
@@ -4407,6 +4537,12 @@ function renderAdminMenuPage(req, res, menuSection) {
     distribusiByBlokId,
     distribusiStatusPerJam,
     totalDistribusiHistory,
+    bamaMasterList,
+    selectedBamaDate,
+    selectedBamaMenuHari,
+    bamaPermintaanById,
+    bamaDiterimaById,
+    bamaPenyimpananById,
     menuTitle,
     todayYmd: getTodayYmd(),
     selectedTanggal,
@@ -4442,6 +4578,18 @@ app.get('/admin/menu/jadwal', requireAccess('menu'), (req, res) => {
 
 app.get('/admin/menu/distribusi', requireAccess('menu'), (req, res) => {
   return renderAdminMenuPage(req, res, 'distribusi');
+});
+
+app.get('/admin/menu/permintaan', requireAccess('menu'), (req, res) => {
+  return renderAdminMenuPage(req, res, 'permintaan');
+});
+
+app.get('/admin/menu/diterima', requireAccess('menu'), (req, res) => {
+  return renderAdminMenuPage(req, res, 'diterima');
+});
+
+app.get('/admin/menu/penyimpanan', requireAccess('menu'), (req, res) => {
+  return renderAdminMenuPage(req, res, 'penyimpanan');
 });
 
 app.post('/admin/menu/title/update', requireAccess('menu'), (req, res) => {
@@ -4704,6 +4852,119 @@ app.post('/admin/menu/distribusi/entry/save', requireAccess('menu'), (req, res) 
   });
 
   return res.redirect(`/admin/menu/distribusi?tanggal_distribusi=${encodeURIComponent(tanggal)}&jam_distribusi=${encodeURIComponent(jam)}&success=1#entri-distribusi-card`);
+});
+
+app.post('/admin/menu/permintaan/save', requireAccess('menu'), (req, res) => {
+  const tanggal = /^\d{4}-\d{2}-\d{2}$/.test(String(req.body.tanggal_bama || ''))
+    ? String(req.body.tanggal_bama)
+    : getTodayYmd();
+  const menuHari = String(req.body.menu_hari || '').trim() || 'Menu Hari VIII';
+
+  const bahanList = db.prepare(`
+    SELECT id, satuan_default AS satuanDefault
+    FROM dapur_bama_master
+    WHERE is_active = 1
+    ORDER BY sort_order ASC, id ASC
+  `).all();
+
+  const upsert = db.prepare(`
+    INSERT INTO dapur_bama_permintaan (tanggal, menu_hari, bama_id, berat_kotor, satuan, banyaknya, keterangan, updated_at)
+    VALUES (?, ?, ?, ?, ?, ?, ?, datetime('now','localtime'))
+    ON CONFLICT(tanggal, menu_hari, bama_id)
+    DO UPDATE SET
+      berat_kotor=excluded.berat_kotor,
+      satuan=excluded.satuan,
+      banyaknya=excluded.banyaknya,
+      keterangan=excluded.keterangan,
+      updated_at=datetime('now','localtime')
+  `);
+
+  bahanList.forEach((bahan) => {
+    const bahanId = Number(bahan.id);
+    const beratKotor = String(req.body[`berat_kotor_${bahanId}`] || '').trim();
+    const satuan = String(req.body[`satuan_${bahanId}`] || '').trim() || String(bahan.satuanDefault || 'Kg');
+    const banyaknya = String(req.body[`banyaknya_${bahanId}`] || '').trim();
+    const keterangan = String(req.body[`keterangan_${bahanId}`] || '').trim();
+    upsert.run(tanggal, menuHari, bahanId, beratKotor, satuan, banyaknya, keterangan);
+  });
+
+  return res.redirect(`/admin/menu/permintaan?tanggal_bama=${encodeURIComponent(tanggal)}&menu_hari=${encodeURIComponent(menuHari)}&success=1`);
+});
+
+app.post('/admin/menu/diterima/save', requireAccess('menu'), (req, res) => {
+  const tanggal = /^\d{4}-\d{2}-\d{2}$/.test(String(req.body.tanggal_bama || ''))
+    ? String(req.body.tanggal_bama)
+    : getTodayYmd();
+  const menuHari = String(req.body.menu_hari || '').trim() || 'Menu Hari VIII';
+
+  const bahanList = db.prepare(`
+    SELECT id, satuan_default AS satuanDefault
+    FROM dapur_bama_master
+    WHERE is_active = 1
+    ORDER BY sort_order ASC, id ASC
+  `).all();
+
+  const upsert = db.prepare(`
+    INSERT INTO dapur_bama_diterima (tanggal, menu_hari, bama_id, satuan, jumlah_permintaan, jumlah_diterima, keterangan, updated_at)
+    VALUES (?, ?, ?, ?, ?, ?, ?, datetime('now','localtime'))
+    ON CONFLICT(tanggal, menu_hari, bama_id)
+    DO UPDATE SET
+      satuan=excluded.satuan,
+      jumlah_permintaan=excluded.jumlah_permintaan,
+      jumlah_diterima=excluded.jumlah_diterima,
+      keterangan=excluded.keterangan,
+      updated_at=datetime('now','localtime')
+  `);
+
+  bahanList.forEach((bahan) => {
+    const bahanId = Number(bahan.id);
+    const satuan = String(req.body[`satuan_${bahanId}`] || '').trim() || String(bahan.satuanDefault || 'Kg');
+    const jumlahPermintaan = String(req.body[`jumlah_permintaan_${bahanId}`] || '').trim();
+    const jumlahDiterima = String(req.body[`jumlah_diterima_${bahanId}`] || '').trim();
+    const keterangan = String(req.body[`keterangan_${bahanId}`] || '').trim();
+    upsert.run(tanggal, menuHari, bahanId, satuan, jumlahPermintaan, jumlahDiterima, keterangan);
+  });
+
+  return res.redirect(`/admin/menu/diterima?tanggal_bama=${encodeURIComponent(tanggal)}&menu_hari=${encodeURIComponent(menuHari)}&success=1`);
+});
+
+app.post('/admin/menu/penyimpanan/save', requireAccess('menu'), (req, res) => {
+  const tanggal = /^\d{4}-\d{2}-\d{2}$/.test(String(req.body.tanggal_bama || ''))
+    ? String(req.body.tanggal_bama)
+    : getTodayYmd();
+  const menuHari = String(req.body.menu_hari || '').trim() || 'Menu Hari VIII';
+
+  const bahanList = db.prepare(`
+    SELECT id, satuan_default AS satuanDefault
+    FROM dapur_bama_master
+    WHERE is_active = 1
+    ORDER BY sort_order ASC, id ASC
+  `).all();
+
+  const upsert = db.prepare(`
+    INSERT INTO dapur_bama_penyimpanan (tanggal, menu_hari, bama_id, satuan, barang_masuk, barang_keluar, barang_sisa, keterangan, updated_at)
+    VALUES (?, ?, ?, ?, ?, ?, ?, ?, datetime('now','localtime'))
+    ON CONFLICT(tanggal, menu_hari, bama_id)
+    DO UPDATE SET
+      satuan=excluded.satuan,
+      barang_masuk=excluded.barang_masuk,
+      barang_keluar=excluded.barang_keluar,
+      barang_sisa=excluded.barang_sisa,
+      keterangan=excluded.keterangan,
+      updated_at=datetime('now','localtime')
+  `);
+
+  bahanList.forEach((bahan) => {
+    const bahanId = Number(bahan.id);
+    const satuan = String(req.body[`satuan_${bahanId}`] || '').trim() || String(bahan.satuanDefault || 'Kg');
+    const barangMasuk = String(req.body[`barang_masuk_${bahanId}`] || '').trim();
+    const barangKeluar = String(req.body[`barang_keluar_${bahanId}`] || '').trim();
+    const barangSisa = String(req.body[`barang_sisa_${bahanId}`] || '').trim();
+    const keterangan = String(req.body[`keterangan_${bahanId}`] || '').trim();
+    upsert.run(tanggal, menuHari, bahanId, satuan, barangMasuk, barangKeluar, barangSisa, keterangan);
+  });
+
+  return res.redirect(`/admin/menu/penyimpanan?tanggal_bama=${encodeURIComponent(tanggal)}&menu_hari=${encodeURIComponent(menuHari)}&success=1`);
 });
 
 // ── Pentahapan Pembinaan ──────────────────────────────────────────

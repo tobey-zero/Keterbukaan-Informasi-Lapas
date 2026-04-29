@@ -197,11 +197,15 @@
 
     <div class="dapur-submenu">
       <a href="/kalapas/table/dapur?tab=menu&tanggal=<%= encodeURIComponent(selectedDate) %>" class="<%= activeTab === 'menu' ? 'active' : '' %>">🍽 Menu</a>
-      <a href="/kalapas/table/dapur?tab=jadwal&tanggal=<%= encodeURIComponent(selectedDate) %>" class="<%= activeTab === 'jadwal' ? 'active' : '' %>">👨‍🍳 Jadwal</a>
+      <a href="/kalapas/table/dapur?tab=jadwal&tanggal=<%= encodeURIComponent(selectedDate) %>" class="<%= activeTab === 'jadwal' ? 'active' : '' %>">👨‍🍳 Jadwal Petugas</a>
+      <a href="/kalapas/table/dapur?tab=distribusi&tanggal=<%= encodeURIComponent(selectedDate) %>&jam_distribusi=<%= encodeURIComponent(selectedDistribusiJam || '08:00') %>" class="<%= activeTab === 'distribusi' ? 'active' : '' %>">📦 Distribusi Makanan</a>
+      <a href="/kalapas/table/dapur?tab=permintaan&tanggal=<%= encodeURIComponent(selectedDate) %>&menu_hari=<%= encodeURIComponent(selectedBamaMenuHari || 'Menu Hari VIII') %>" class="<%= activeTab === 'permintaan' ? 'active' : '' %>">📄 Permintaan Bahan Makanan</a>
+      <a href="/kalapas/table/dapur?tab=diterima&tanggal=<%= encodeURIComponent(selectedDate) %>&menu_hari=<%= encodeURIComponent(selectedBamaMenuHari || 'Menu Hari VIII') %>" class="<%= activeTab === 'diterima' ? 'active' : '' %>">📥 Penerimaan Bahan Makanan</a>
+      <a href="/kalapas/table/dapur?tab=penyimpanan&tanggal=<%= encodeURIComponent(selectedDate) %>&menu_hari=<%= encodeURIComponent(selectedBamaMenuHari || 'Menu Hari VIII') %>" class="<%= activeTab === 'penyimpanan' ? 'active' : '' %>">🏪 Penyimpanan Bahan Makanan</a>
     </div>
 
     <div class="panel">
-      <div class="panel-header"><%= activeTab === 'jadwal' ? 'JADWAL PETUGAS DAPUR' : 'INFORMASI DAPUR' %></div>
+      <div class="panel-header"><%= activeTab === 'jadwal' ? 'JADWAL PETUGAS DAPUR' : (activeTab === 'distribusi' ? 'DISTRIBUSI MAKANAN' : (activeTab === 'permintaan' ? 'PERMINTAAN BAHAN MAKANAN' : (activeTab === 'diterima' ? 'PENERIMAAN BAHAN MAKANAN' : (activeTab === 'penyimpanan' ? 'PENYIMPANAN BAHAN MAKANAN' : 'INFORMASI DAPUR')))) %></div>
       <% if (activeTab === 'menu') { %>
         <div class="dapur-filter">
           <form method="GET" action="/kalapas/table/dapur">
@@ -250,7 +254,7 @@
             </tbody>
           </table>
         </div>
-      <% } else { %>
+      <% } else if (activeTab === 'jadwal') { %>
         <div class="dapur-filter">
           <form method="GET" action="/kalapas/table/dapur">
             <input type="hidden" name="tab" value="jadwal">
@@ -291,6 +295,201 @@
               <% if (!jadwalPetugasList.length) { %>
                 <tr><td colspan="5" class="dapur-empty">Belum ada jadwal petugas pada tanggal ini</td></tr>
               <% } %>
+            </tbody>
+          </table>
+        </div>
+      <% } else if (activeTab === 'distribusi') { %>
+        <div class="dapur-filter">
+          <form method="GET" action="/kalapas/table/dapur">
+            <input type="hidden" name="tab" value="distribusi">
+            <div>
+              <span class="label">Tanggal Distribusi</span>
+              <input type="date" name="tanggal" value="<%= selectedDate %>">
+            </div>
+            <div>
+              <span class="label">Jam Distribusi</span>
+              <select name="jam_distribusi" style="border:1px solid #cbd5e1;border-radius:6px;padding:7px 10px;font-size:12px;font-weight:700;color:#0f172a;background:#fff;">
+                <% ['08:00', '12:00', '16:00'].forEach((jam) => { %>
+                  <option value="<%= jam %>" <%= jam === selectedDistribusiJam ? 'selected' : '' %>><%= jam %></option>
+                <% }) %>
+              </select>
+            </div>
+            <button type="submit">📅 Tampilkan</button>
+            <a href="/kalapas/table/dapur?tab=distribusi" class="reset">↺ Hari Ini</a>
+          </form>
+          <div class="dapur-meta">
+            <div><strong>DISTRIBUSI MAKANAN</strong></div>
+            <div>Tanggal aktif: <%= selectedDateLabel %> | Sesi: <%= selectedDistribusiJam %></div>
+          </div>
+        </div>
+
+        <div class="panel-content" style="padding-top:0;">
+          <table class="data-table dapur-table">
+            <thead>
+              <tr>
+                <th>#</th>
+                <th>Nama Blok</th>
+                <th>Jumlah Distribusi</th>
+              </tr>
+            </thead>
+            <tbody>
+              <% distribusiRows.forEach((item, idx) => { %>
+                <tr>
+                  <td><%= idx + 1 %></td>
+                  <td style="text-align:left;"><%= item.namaBlok || '-' %></td>
+                  <td><%= item.jumlah ?? '-' %></td>
+                </tr>
+              <% }) %>
+              <% if (!distribusiRows.length) { %>
+                <tr><td colspan="3" class="dapur-empty">Belum ada data distribusi</td></tr>
+              <% } %>
+            </tbody>
+          </table>
+          <div style="margin-top:10px;display:flex;gap:8px;flex-wrap:wrap;">
+            <% distribusiStatusPerJam.forEach((item) => { %>
+              <span style="display:inline-flex;align-items:center;gap:6px;border:1px solid <%= item.complete ? '#86efac' : '#fca5a5' %>;background:<%= item.complete ? '#f0fdf4' : '#fef2f2' %>;color:<%= item.complete ? '#166534' : '#991b1b' %>;border-radius:999px;padding:4px 10px;font-size:12px;font-weight:800;">
+                Jam <%= item.jam %> <%= item.complete ? '✓ Lengkap' : '• Belum Lengkap' %>
+              </span>
+            <% }) %>
+          </div>
+        </div>
+      <% } else if (activeTab === 'permintaan') { %>
+        <div class="dapur-filter">
+          <form method="GET" action="/kalapas/table/dapur">
+            <input type="hidden" name="tab" value="permintaan">
+            <div>
+              <span class="label">Tanggal</span>
+              <input type="date" name="tanggal" value="<%= selectedDate %>">
+            </div>
+            <div>
+              <span class="label">Menu Hari</span>
+              <input type="text" name="menu_hari" value="<%= selectedBamaMenuHari || 'Menu Hari VIII' %>">
+            </div>
+            <button type="submit">📅 Tampilkan</button>
+            <a href="/kalapas/table/dapur?tab=permintaan" class="reset">↺ Hari Ini</a>
+          </form>
+          <div class="dapur-meta">
+            <div><strong>PERMINTAAN BAHAN MAKANAN</strong></div>
+            <div>Tanggal aktif: <%= selectedDateLabel %> | <%= selectedBamaMenuHari || 'Menu Hari VIII' %></div>
+          </div>
+        </div>
+        <div class="panel-content" style="padding-top:0;">
+          <table class="data-table dapur-table">
+            <thead>
+              <tr>
+                <th>No</th>
+                <th>Jenis Bahan Makanan</th>
+                <th>Berat Kotor</th>
+                <th>Satuan</th>
+                <th>Banyaknya</th>
+                <th>Keterangan</th>
+              </tr>
+            </thead>
+            <tbody>
+              <% bamaMasterList.forEach((item, idx) => { const row = permintaanById?.[item.id] || {}; %>
+                <tr>
+                  <td><%= idx + 1 %></td>
+                  <td style="text-align:left;"><%= item.namaBahan || '-' %></td>
+                  <td><%= row.beratKotor || '-' %></td>
+                  <td><%= row.satuan || item.satuanDefault || '-' %></td>
+                  <td><%= row.banyaknya || '-' %></td>
+                  <td><%= row.keterangan || '-' %></td>
+                </tr>
+              <% }) %>
+            </tbody>
+          </table>
+        </div>
+      <% } else if (activeTab === 'diterima') { %>
+        <div class="dapur-filter">
+          <form method="GET" action="/kalapas/table/dapur">
+            <input type="hidden" name="tab" value="diterima">
+            <div>
+              <span class="label">Tanggal</span>
+              <input type="date" name="tanggal" value="<%= selectedDate %>">
+            </div>
+            <div>
+              <span class="label">Menu Hari</span>
+              <input type="text" name="menu_hari" value="<%= selectedBamaMenuHari || 'Menu Hari VIII' %>">
+            </div>
+            <button type="submit">📅 Tampilkan</button>
+            <a href="/kalapas/table/dapur?tab=diterima" class="reset">↺ Hari Ini</a>
+          </form>
+          <div class="dapur-meta">
+            <div><strong>PENERIMAAN BAHAN MAKANAN</strong></div>
+            <div>Tanggal aktif: <%= selectedDateLabel %> | <%= selectedBamaMenuHari || 'Menu Hari VIII' %></div>
+          </div>
+        </div>
+        <div class="panel-content" style="padding-top:0;">
+          <table class="data-table dapur-table">
+            <thead>
+              <tr>
+                <th>No</th>
+                <th>Jenis BAMA</th>
+                <th>Satuan</th>
+                <th>Jumlah Permintaan BAMA</th>
+                <th>Jumlah BAMA yang Diterima</th>
+                <th>Keterangan</th>
+              </tr>
+            </thead>
+            <tbody>
+              <% bamaMasterList.forEach((item, idx) => { const row = diterimaById?.[item.id] || {}; %>
+                <tr>
+                  <td><%= idx + 1 %></td>
+                  <td style="text-align:left;"><%= item.namaBahan || '-' %></td>
+                  <td><%= row.satuan || item.satuanDefault || '-' %></td>
+                  <td><%= row.jumlahPermintaan || '-' %></td>
+                  <td><%= row.jumlahDiterima || '-' %></td>
+                  <td><%= row.keterangan || '-' %></td>
+                </tr>
+              <% }) %>
+            </tbody>
+          </table>
+        </div>
+      <% } else { %>
+        <div class="dapur-filter">
+          <form method="GET" action="/kalapas/table/dapur">
+            <input type="hidden" name="tab" value="penyimpanan">
+            <div>
+              <span class="label">Tanggal</span>
+              <input type="date" name="tanggal" value="<%= selectedDate %>">
+            </div>
+            <div>
+              <span class="label">Menu Hari</span>
+              <input type="text" name="menu_hari" value="<%= selectedBamaMenuHari || 'Menu Hari VIII' %>">
+            </div>
+            <button type="submit">📅 Tampilkan</button>
+            <a href="/kalapas/table/dapur?tab=penyimpanan" class="reset">↺ Hari Ini</a>
+          </form>
+          <div class="dapur-meta">
+            <div><strong>PENYIMPANAN BAHAN MAKANAN</strong></div>
+            <div>Tanggal aktif: <%= selectedDateLabel %> | <%= selectedBamaMenuHari || 'Menu Hari VIII' %></div>
+          </div>
+        </div>
+        <div class="panel-content" style="padding-top:0;">
+          <table class="data-table dapur-table">
+            <thead>
+              <tr>
+                <th>No</th>
+                <th>Nama Barang</th>
+                <th>Satuan</th>
+                <th>Barang Masuk</th>
+                <th>Barang Keluar</th>
+                <th>Barang Sisa</th>
+                <th>Keterangan</th>
+              </tr>
+            </thead>
+            <tbody>
+              <% bamaMasterList.forEach((item, idx) => { const row = penyimpananById?.[item.id] || {}; %>
+                <tr>
+                  <td><%= idx + 1 %></td>
+                  <td style="text-align:left;"><%= item.namaBahan || '-' %></td>
+                  <td><%= row.satuan || item.satuanDefault || '-' %></td>
+                  <td><%= row.barangMasuk || '-' %></td>
+                  <td><%= row.barangKeluar || '-' %></td>
+                  <td><%= row.barangSisa || '-' %></td>
+                  <td><%= row.keterangan || '-' %></td>
+                </tr>
+              <% }) %>
             </tbody>
           </table>
         </div>
