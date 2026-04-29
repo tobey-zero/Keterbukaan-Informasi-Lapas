@@ -2668,6 +2668,9 @@ app.get('/kalapas/table/dapur', (req, res) => {
 });
 
 app.get('/kalapas/table/pengamanan', (req, res) => {
+  const activeTab = ['kamar-blok', 'papan-isi', 'luar-tembok'].includes(String(req.query.tab || '').toLowerCase())
+    ? String(req.query.tab).toLowerCase()
+    : 'kamar-blok';
   const todayYmd = getTodayYmd();
   const board = getBoardData();
   const hasLuarTembokToday = (board.luarTembokDetail || []).some((item) => {
@@ -2676,6 +2679,7 @@ app.get('/kalapas/table/pengamanan', (req, res) => {
 
   res.render('kalapas-pengamanan', {
     activePage: 'kalapas',
+    activeTab,
     hasLuarTembokToday,
   });
 });
