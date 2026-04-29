@@ -916,6 +916,7 @@ function getKamtibPengaduanData(filter = {}) {
       dokumentasi_path AS dokumentasiPath,
       status,
       alasan_penolakan AS alasanPenolakan,
+      deskripsi_tindak_lanjut AS deskripsiTindakLanjut,
       lampiran_admin_path AS lampiranAdminPath,
       tanggal_pengaduan AS tanggalPengaduan
     FROM pengaduan_masyarakat
@@ -949,6 +950,7 @@ function getKamtibPengaduanData(filter = {}) {
       item.materiPengaduan,
       item.status,
       item.alasanPenolakan,
+      item.deskripsiTindakLanjut,
       item.tanggalPengaduan,
       tanggalYmd,
       dateSlash,
@@ -2236,7 +2238,7 @@ app.get('/pengaduan-masyarakat', (req, res) => {
   const nik = String(req.query.nik || '').replace(/\D/g, '').slice(0, 16);
   const pengaduanList = nik
     ? db.prepare(`
-      SELECT no_pengaduan AS noPengaduan, nik, nama, no_whatsapp AS noWhatsapp, jenis_pengaduan AS jenisPengaduan, tanggal_pengaduan AS tanggalPengaduan, materi_pengaduan AS materiPengaduan, dokumentasi_path AS dokumentasiPath, status, alasan_penolakan AS alasanPenolakan, lampiran_admin_path AS lampiranAdminPath
+      SELECT no_pengaduan AS noPengaduan, nik, nama, no_whatsapp AS noWhatsapp, jenis_pengaduan AS jenisPengaduan, tanggal_pengaduan AS tanggalPengaduan, materi_pengaduan AS materiPengaduan, dokumentasi_path AS dokumentasiPath, status, alasan_penolakan AS alasanPenolakan, deskripsi_tindak_lanjut AS deskripsiTindakLanjut, lampiran_admin_path AS lampiranAdminPath
       FROM pengaduan_masyarakat
       WHERE nik = ?
       ORDER BY id DESC
@@ -3871,6 +3873,7 @@ app.post('/admin/pengaduan/:id/status', requireAccess('pengaduan'), pengaduanUpl
   const nik = String(req.body.nik || '').replace(/\D/g, '').slice(0, 16);
   const statusRaw = String(req.body.status || '').trim().toUpperCase();
   const alasanPenolakan = String(req.body.alasan_penolakan || '').trim();
+  const deskripsiTindakLanjut = String(req.body.deskripsi_tindak_lanjut || '').trim();
   const allowedStatus = ['DITERIMA', 'DIPROSES', 'SELESAI', 'DITOLAK'];
   const status = allowedStatus.includes(statusRaw) ? statusRaw : 'DITERIMA';
   const uploadedLampiranPath = req.file ? `/uploads/pengaduan/${req.file.filename}` : null;
@@ -3899,14 +3902,22 @@ app.post('/admin/pengaduan/:id/status', requireAccess('pengaduan'), pengaduanUpl
     return res.redirect(`/admin/pengaduan?${queryRejected.toString()}`);
   }
 
-  if ((status === 'DIPROSES' || status === 'SELESAI') && !lampiranCandidatePath) {
+  if ((status === 'DIPROSES' || status === 'SELESAI') && !deskripsiTindakLanjut) {
     if (uploadedLampiranPath) removeUploadedFile(uploadedLampiranPath);
-    const queryLampiran = new URLSearchParams({ error: 'Lampiran+berkas+admin+wajib+diisi+saat+status+DIPROSES+atau+SELESAI' });
+    const queryDeskripsi = new URLSearchParams({ error: 'Deskripsi+tindak+lanjut+wajib+diisi+saat+status+DIPROSES+atau+SELESAI' });
+    if (nik) queryDeskripsi.set('nik', nik);
+    return res.redirect(`/admin/pengaduan?${queryDeskripsi.toString()}`);
+  }
+
+  if (status === 'SELESAI' && !lampiranCandidatePath) {
+    if (uploadedLampiranPath) removeUploadedFile(uploadedLampiranPath);
+    const queryLampiran = new URLSearchParams({ error: 'Lampiran+berkas+admin+wajib+diisi+saat+status+SELESAI' });
     if (nik) queryLampiran.set('nik', nik);
     return res.redirect(`/admin/pengaduan?${queryLampiran.toString()}`);
   }
 
   let finalAlasanPenolakan = '';
+  let finalDeskripsiTindakLanjut = '';
   let finalLampiranAdminPath = lampiranCandidatePath;
 
   if (status === 'DITOLAK') {
@@ -3914,12 +3925,19 @@ app.post('/admin/pengaduan/:id/status', requireAccess('pengaduan'), pengaduanUpl
     finalLampiranAdminPath = null;
     if (uploadedLampiranPath) removeUploadedFile(uploadedLampiranPath);
     if (existingLampiranPath) removeUploadedFile(existingLampiranPath);
-  } else if (uploadedLampiranPath && existingLampiranPath && uploadedLampiranPath !== existingLampiranPath) {
-    removeUploadedFile(existingLampiranPath);
+  } else if (status === 'DIPROSES' || status === 'SELESAI') {
+    finalDeskripsiTindakLanjut = deskripsiTindakLanjut;
+    if (uploadedLampiranPath && existingLampiranPath && uploadedLampiranPath !== existingLampiranPath) {
+      removeUploadedFile(existingLampiranPath);
+    }
+  } else {
+    finalLampiranAdminPath = null;
+    if (uploadedLampiranPath) removeUploadedFile(uploadedLampiranPath);
+    if (existingLampiranPath) removeUploadedFile(existingLampiranPath);
   }
 
-  db.prepare('UPDATE pengaduan_masyarakat SET status=?, alasan_penolakan=?, lampiran_admin_path=? WHERE id=?')
-    .run(status, finalAlasanPenolakan, finalLampiranAdminPath, id);
+  db.prepare('UPDATE pengaduan_masyarakat SET status=?, alasan_penolakan=?, deskripsi_tindak_lanjut=?, lampiran_admin_path=? WHERE id=?')
+    .run(status, finalAlasanPenolakan, finalDeskripsiTindakLanjut, finalLampiranAdminPath, id);
   const query = new URLSearchParams({ success: '1' });
   if (nik) query.set('nik', nik);
   return res.redirect(`/admin/pengaduan?${query.toString()}`);

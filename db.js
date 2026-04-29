@@ -338,6 +338,7 @@ db.exec(`
     dokumentasi_path TEXT,
     status TEXT NOT NULL DEFAULT 'DITERIMA',
     alasan_penolakan TEXT NOT NULL DEFAULT '',
+    deskripsi_tindak_lanjut TEXT NOT NULL DEFAULT '',
     lampiran_admin_path TEXT,
     tanggal_pengaduan TEXT NOT NULL DEFAULT (date('now','localtime')),
     created_at TEXT NOT NULL DEFAULT (datetime('now','localtime'))
@@ -773,6 +774,7 @@ if (!pengaduanColumnNames.includes('materi_pengaduan')) db.exec("ALTER TABLE pen
 if (!pengaduanColumnNames.includes('dokumentasi_path')) db.exec('ALTER TABLE pengaduan_masyarakat ADD COLUMN dokumentasi_path TEXT');
 if (!pengaduanColumnNames.includes('status')) db.exec("ALTER TABLE pengaduan_masyarakat ADD COLUMN status TEXT NOT NULL DEFAULT 'DITERIMA'");
 if (!pengaduanColumnNames.includes('alasan_penolakan')) db.exec("ALTER TABLE pengaduan_masyarakat ADD COLUMN alasan_penolakan TEXT NOT NULL DEFAULT ''");
+if (!pengaduanColumnNames.includes('deskripsi_tindak_lanjut')) db.exec("ALTER TABLE pengaduan_masyarakat ADD COLUMN deskripsi_tindak_lanjut TEXT NOT NULL DEFAULT ''");
 if (!pengaduanColumnNames.includes('lampiran_admin_path')) db.exec('ALTER TABLE pengaduan_masyarakat ADD COLUMN lampiran_admin_path TEXT');
 if (!pengaduanColumnNames.includes('tanggal_pengaduan')) db.exec("ALTER TABLE pengaduan_masyarakat ADD COLUMN tanggal_pengaduan TEXT NOT NULL DEFAULT (date('now','localtime'))");
 if (!pengaduanColumnNames.includes('created_at')) db.exec("ALTER TABLE pengaduan_masyarakat ADD COLUMN created_at TEXT NOT NULL DEFAULT (datetime('now','localtime'))");

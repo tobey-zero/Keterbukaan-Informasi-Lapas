@@ -81,7 +81,12 @@
                         <% if (item.lampiran_admin_path) { %>
                           <a href="<%= item.lampiran_admin_path %>" target="_blank" rel="noopener noreferrer" class="btn btn-secondary btn-xs" style="margin-bottom:4px;">🔍 View Lampiran</a>
                         <% } %>
-                        <input type="file" name="lampiran_admin" accept="image/*,application/pdf">
+                        <input type="file" name="lampiran_admin" class="lampiran-input" data-has-existing="<%= item.lampiran_admin_path ? '1' : '0' %>" accept="image/*,application/pdf">
+                      </div>
+
+                      <div class="deskripsi-wrap" style="display:none; width:100%;">
+                        <div style="font-size:11px;color:#475569;font-weight:600;margin-bottom:4px;">Deskripsi Tindak Lanjut</div>
+                        <textarea name="deskripsi_tindak_lanjut" class="deskripsi-input" rows="2" style="width:100%;min-width:220px;" placeholder="Tulis deskripsi tindak lanjut..."><%= item.deskripsi_tindak_lanjut || '' %></textarea>
                       </div>
 
                       <div class="alasan-wrap" style="display:none; width:100%;">
@@ -111,17 +116,33 @@
     forms.forEach((form) => {
       const select = form.querySelector('.status-select');
       const lampiranWrap = form.querySelector('.lampiran-admin-wrap');
+      const lampiranInput = form.querySelector('.lampiran-input');
       const alasanWrap = form.querySelector('.alasan-wrap');
       const alasanInput = form.querySelector('.alasan-input');
+      const deskripsiWrap = form.querySelector('.deskripsi-wrap');
+      const deskripsiInput = form.querySelector('.deskripsi-input');
+      const lampiranLabel = lampiranWrap ? lampiranWrap.querySelector('div') : null;
 
       const updateVisibility = () => {
         const status = String(select.value || '').toUpperCase();
         const showLampiran = status === 'DIPROSES' || status === 'SELESAI';
         const showAlasan = status === 'DITOLAK';
+        const showDeskripsi = status === 'DIPROSES' || status === 'SELESAI';
+        const hasExistingLampiran = lampiranInput && String(lampiranInput.dataset.hasExisting || '0') === '1';
 
         lampiranWrap.style.display = showLampiran ? 'block' : 'none';
         alasanWrap.style.display = showAlasan ? 'block' : 'none';
+        deskripsiWrap.style.display = showDeskripsi ? 'block' : 'none';
         alasanInput.required = showAlasan;
+        deskripsiInput.required = showDeskripsi;
+        if (lampiranInput) {
+          lampiranInput.required = status === 'SELESAI' && !hasExistingLampiran;
+        }
+        if (lampiranLabel && showLampiran) {
+          lampiranLabel.textContent = status === 'SELESAI'
+            ? 'Lampiran Berkas Admin (WAJIB untuk status SELESAI, gambar/PDF max 8MB)'
+            : 'Lampiran Berkas Admin (opsional untuk status DIPROSES, gambar/PDF max 8MB)';
+        }
       };
 
       select.addEventListener('change', updateVisibility);
