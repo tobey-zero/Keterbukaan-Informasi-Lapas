@@ -13,6 +13,7 @@
     <% const isTemplate = menuSection === 'template'; %>
     <% const isMakanan = menuSection === 'makanan'; %>
     <% const isJadwal = menuSection === 'jadwal'; %>
+    <% const isDistribusi = menuSection === 'distribusi'; %>
     <div class="topbar">
       <div class="topbar-title">
         <h2>🍽 Menu Makan</h2>
@@ -21,6 +22,7 @@
           <%= isTemplate ? 'Kelola Template Hari agar menu tidak perlu disusun ulang' : '' %>
           <%= isMakanan ? 'Tetapkan Menu Makanan harian cukup pilih tanggal + template' : '' %>
           <%= isJadwal ? 'Kelola petugas dapur dan jadwal tugas harian' : '' %>
+          <%= isDistribusi ? 'Entri distribusi makanan per sesi (08:00, 12:00, 16:00)' : '' %>
         </p>
       </div>
       <div class="topbar-actions"><a href="/" target="_blank" class="btn-public">🌐 Lihat Publik</a></div>
@@ -36,8 +38,125 @@
           <a href="/admin/menu/template" class="btn btn-sm <%= isTemplate ? 'btn-primary' : 'btn-secondary' %>">📅 Template Hari</a>
           <a href="/admin/menu/makanan" class="btn btn-sm <%= isMakanan ? 'btn-primary' : 'btn-secondary' %>">🍱 Menu Makanan</a>
           <a href="/admin/menu/jadwal" class="btn btn-sm <%= isJadwal ? 'btn-primary' : 'btn-secondary' %>">👨‍🍳 Jadwal Petugas</a>
+          <a href="/admin/menu/distribusi" class="btn btn-sm <%= isDistribusi ? 'btn-primary' : 'btn-secondary' %>">📦 Distribusi</a>
         </div>
       </div>
+
+      <% if (isDistribusi) { %>
+      <div class="card" id="template-distribusi-card">
+        <div class="card-header"><h3>🏢 Template Blok Distribusi</h3></div>
+        <div class="card-body">
+          <form method="POST" action="<%= editDistribusiBlok ? `/admin/menu/distribusi/blok/${editDistribusiBlok.id}/update` : '/admin/menu/distribusi/blok/add' %>">
+            <div class="form-grid col-3" style="margin-bottom:12px;">
+              <div class="form-group">
+                <label>Nama Blok</label>
+                <input type="text" name="nama_blok" value="<%= editDistribusiBlok ? (editDistribusiBlok.namaBlok || '') : '' %>" placeholder="Contoh: Mawar T3 Lt.1.1" required>
+              </div>
+              <div class="form-group">
+                <label>Urutan</label>
+                <input type="number" min="1" name="sort_order" value="<%= editDistribusiBlok ? (editDistribusiBlok.sortOrder || '') : '' %>" placeholder="Contoh: 1">
+              </div>
+            </div>
+            <div style="display:flex; gap:8px; align-items:center;">
+              <button type="submit" class="btn btn-primary btn-sm"><%= editDistribusiBlok ? '💾 Simpan Template' : '➕ Tambah Template Blok' %></button>
+              <% if (editDistribusiBlok) { %>
+                <a href="/admin/menu/distribusi#template-distribusi-card" class="btn btn-secondary btn-sm">✕ Batal Edit</a>
+              <% } %>
+            </div>
+          </form>
+
+          <div class="table-wrap" style="margin-top:14px;">
+            <table class="admin-table">
+              <thead><tr><th>#</th><th>Nama Blok</th><th>Urutan</th><th>Status</th><th>Aksi</th></tr></thead>
+              <tbody>
+                <% distribusiBlokAllList.forEach((item, i) => { %>
+                <tr>
+                  <td><%= i + 1 %></td>
+                  <td><%= item.namaBlok || '-' %></td>
+                  <td><%= item.sortOrder || '-' %></td>
+                  <td><%= Number(item.isActive) === 1 ? 'Aktif' : 'Nonaktif' %></td>
+                  <td>
+                    <div class="actions">
+                      <a href="/admin/menu/distribusi?editDistribusiBlok=<%= item.id %>#template-distribusi-card" class="btn btn-warning btn-xs">✏️ Edit</a>
+                      <% if (Number(item.isActive) === 1) { %>
+                      <form method="POST" action="/admin/menu/distribusi/blok/<%= item.id %>/delete" style="display:inline" onsubmit="return confirm('Nonaktifkan template blok ini?')">
+                        <button class="btn btn-danger btn-xs">🗑 Nonaktifkan</button>
+                      </form>
+                      <% } %>
+                    </div>
+                  </td>
+                </tr>
+                <% }) %>
+                <% if (!distribusiBlokAllList.length) { %><tr><td colspan="5" style="text-align:center;color:#aaa;padding:20px;">Belum ada template blok</td></tr><% } %>
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+
+      <div class="card" id="entri-distribusi-card">
+        <div class="card-header"><h3>📝 Entri Distribusi Makanan (3x per hari)</h3></div>
+        <div class="card-body">
+          <form method="GET" action="/admin/menu/distribusi" style="display:flex; gap:10px; flex-wrap:wrap; align-items:end; margin-bottom:12px;">
+            <div class="form-group" style="min-width: 220px; margin:0;">
+              <label>Tanggal entri</label>
+              <input type="date" name="tanggal_distribusi" value="<%= selectedDistribusiDate || todayYmd %>">
+            </div>
+            <div class="form-group" style="min-width: 180px; margin:0;">
+              <label>Sesi/Jam</label>
+              <select name="jam_distribusi">
+                <% expectedDistribusiJam.forEach((jam) => { %>
+                  <option value="<%= jam %>" <%= jam === selectedDistribusiJam ? 'selected' : '' %>><%= jam %></option>
+                <% }) %>
+              </select>
+            </div>
+            <div style="display:flex; gap:8px; align-items:center;">
+              <button type="submit" class="btn btn-primary btn-sm">🔎 Tampilkan</button>
+              <a href="/admin/menu/distribusi" class="btn btn-secondary btn-sm">↺ Hari ini</a>
+            </div>
+          </form>
+
+          <form method="POST" action="/admin/menu/distribusi/entry/save">
+            <input type="hidden" name="tanggal_distribusi" value="<%= selectedDistribusiDate || todayYmd %>">
+            <input type="hidden" name="jam_distribusi" value="<%= selectedDistribusiJam || '08:00' %>">
+
+            <div style="margin-bottom:10px; font-size:12px; color:#475569; font-weight:700;">
+              Tanggal aktif: <%= formatDateIndo(selectedDistribusiDate || todayYmd) %> | Sesi: <%= selectedDistribusiJam %> | Total tanggal entri tersimpan: <%= totalDistribusiHistory %>
+            </div>
+
+            <div class="table-wrap">
+              <table class="admin-table">
+                <thead><tr><th>#</th><th>Nama Blok</th><th>Jumlah Distribusi</th></tr></thead>
+                <tbody>
+                  <% distribusiBlokList.forEach((blok, i) => { %>
+                  <tr>
+                    <td><%= i + 1 %></td>
+                    <td><strong><%= blok.namaBlok || '-' %></strong></td>
+                    <td>
+                      <input type="number" min="0" name="jumlah_<%= blok.id %>" value="<%= Number(distribusiByBlokId?.[blok.id] ?? 0) %>" style="max-width:140px;">
+                    </td>
+                  </tr>
+                  <% }) %>
+                  <% if (!distribusiBlokList.length) { %><tr><td colspan="3" style="text-align:center;color:#aaa;padding:20px;">Belum ada template blok aktif</td></tr><% } %>
+                </tbody>
+              </table>
+            </div>
+
+            <div style="display:flex; gap:8px; align-items:center; margin-top:12px;">
+              <button type="submit" class="btn btn-primary btn-sm" <%= !distribusiBlokList.length ? 'disabled' : '' %>>💾 Simpan Entri Sesi</button>
+            </div>
+          </form>
+
+          <div style="margin-top:12px; display:flex; gap:8px; flex-wrap:wrap; align-items:center;">
+            <% distribusiStatusPerJam.forEach((item) => { %>
+              <span style="display:inline-flex; align-items:center; gap:6px; border:1px solid <%= item.complete ? '#86efac' : '#fca5a5' %>; background:<%= item.complete ? '#f0fdf4' : '#fef2f2' %>; color:<%= item.complete ? '#166534' : '#991b1b' %>; border-radius:999px; padding:4px 10px; font-size:12px; font-weight:800;">
+                Jam <%= item.jam %> <%= item.complete ? '✓ Lengkap' : '• Belum Lengkap' %>
+              </span>
+            <% }) %>
+          </div>
+        </div>
+      </div>
+      <% } %>
 
       <% if (isJadwal) { %>
       <div class="card" id="petugas-dapur-card">

@@ -2076,6 +2076,23 @@ function getKalapasData() {
     FROM menu_harian_set
     WHERE tanggal = ?
   `).get(todayYmd)?.c || 0) > 0;
+  const dapurDistribusiTemplateCount = Number(db.prepare(`
+    SELECT COUNT(*) AS c
+    FROM dapur_distribusi_blok
+    WHERE is_active = 1
+  `).get()?.c || 0);
+  const dapurDistribusiExpectedJam = ['08:00', '12:00', '16:00'];
+  const dapurDistribusiMissingJam = dapurDistribusiExpectedJam.filter((jam) => {
+    const totalEntiJam = Number(db.prepare(`
+      SELECT COUNT(*) AS c
+      FROM dapur_distribusi_entri
+      WHERE tanggal = ?
+        AND jam = ?
+    `).get(todayYmd, jam)?.c || 0);
+    if (dapurDistribusiTemplateCount <= 0) return true;
+    return totalEntiJam < dapurDistribusiTemplateCount;
+  });
+  const hasDapurDistribusiPending = dapurDistribusiMissingJam.length > 0;
   const hasKamtibMonthlyPengawalanUpdate = Number(db.prepare(`
     SELECT COUNT(*) AS c
     FROM giat_pengawalan
@@ -2172,6 +2189,8 @@ function getKalapasData() {
     hasLuarTembokToday,
     hasPapanIsiTodayUpdate,
     hasDapurTodayUpdate,
+    hasDapurDistribusiPending,
+    dapurDistribusiMissingJam,
     hasKamtibMonthlyPengawalanUpdate,
     hasGiiatjaMonthlyUpdate,
     hasPembinaanStatMismatch,
@@ -4190,6 +4209,13 @@ function renderAdminMenuPage(req, res, menuSection) {
   const selectedJadwalDate = /^\d{4}-\d{2}-\d{2}$/.test(String(req.query.tanggal_jadwal || ''))
     ? String(req.query.tanggal_jadwal)
     : getTodayYmd();
+  const selectedDistribusiDate = /^\d{4}-\d{2}-\d{2}$/.test(String(req.query.tanggal_distribusi || ''))
+    ? String(req.query.tanggal_distribusi)
+    : getTodayYmd();
+  const expectedDistribusiJam = ['08:00', '12:00', '16:00'];
+  const selectedDistribusiJam = expectedDistribusiJam.includes(String(req.query.jam_distribusi || ''))
+    ? String(req.query.jam_distribusi)
+    : expectedDistribusiJam[0];
   const masterList = db.prepare(`SELECT
     id,
     waktu,
@@ -4303,6 +4329,50 @@ function renderAdminMenuPage(req, res, menuSection) {
       LIMIT 1
     `).get(Number(req.query.editJadwal))
     : null;
+  const distribusiBlokList = db.prepare(`
+    SELECT id, nama_blok AS namaBlok, sort_order AS sortOrder, is_active AS isActive
+    FROM dapur_distribusi_blok
+    WHERE is_active = 1
+    ORDER BY sort_order ASC, id ASC
+  `).all();
+  const distribusiBlokAllList = db.prepare(`
+    SELECT id, nama_blok AS namaBlok, sort_order AS sortOrder, is_active AS isActive
+    FROM dapur_distribusi_blok
+    ORDER BY sort_order ASC, id ASC
+  `).all();
+  const editDistribusiBlok = req.query.editDistribusiBlok
+    ? db.prepare('SELECT id, nama_blok AS namaBlok, sort_order AS sortOrder, is_active AS isActive FROM dapur_distribusi_blok WHERE id=?').get(Number(req.query.editDistribusiBlok))
+    : null;
+  const distribusiEntries = db.prepare(`
+    SELECT
+      e.id,
+      e.tanggal,
+      e.jam,
+      e.blok_id AS blokId,
+      e.jumlah,
+      b.nama_blok AS namaBlok
+    FROM dapur_distribusi_entri e
+    INNER JOIN dapur_distribusi_blok b ON b.id = e.blok_id
+    WHERE e.tanggal = ?
+      AND e.jam = ?
+    ORDER BY b.sort_order ASC, b.id ASC
+  `).all(selectedDistribusiDate, selectedDistribusiJam);
+  const distribusiByBlokId = Object.fromEntries(distribusiEntries.map((item) => [Number(item.blokId), Number(item.jumlah) || 0]));
+  const distribusiStatusPerJam = expectedDistribusiJam.map((jam) => {
+    const total = Number(db.prepare(`
+      SELECT COUNT(*) AS c
+      FROM dapur_distribusi_entri
+      WHERE tanggal = ?
+        AND jam = ?
+    `).get(selectedDistribusiDate, jam)?.c || 0);
+    return {
+      jam,
+      total,
+      complete: distribusiBlokList.length > 0 && total >= distribusiBlokList.length,
+    };
+  });
+  const totalDistribusiHistory = Number(db.prepare('SELECT COUNT(DISTINCT tanggal) AS c FROM dapur_distribusi_entri').get()?.c || 0);
+
   const menuTitle = getAppSetting('menu_title', 'DAFTAR MENU MAKAN HARI INI');
 
   const activeMap = {
@@ -4310,6 +4380,7 @@ function renderAdminMenuPage(req, res, menuSection) {
     template: 'menu-template',
     makanan: 'menu-makanan',
     jadwal: 'menu-jadwal',
+    distribusi: 'menu-distribusi',
   };
 
   res.render('admin/menu', {
@@ -4327,6 +4398,15 @@ function renderAdminMenuPage(req, res, menuSection) {
     editPetugas,
     jadwalPetugasList,
     editJadwal,
+    distribusiBlokList,
+    distribusiBlokAllList,
+    editDistribusiBlok,
+    expectedDistribusiJam,
+    selectedDistribusiDate,
+    selectedDistribusiJam,
+    distribusiByBlokId,
+    distribusiStatusPerJam,
+    totalDistribusiHistory,
     menuTitle,
     todayYmd: getTodayYmd(),
     selectedTanggal,
@@ -4358,6 +4438,10 @@ app.get('/admin/menu/makanan', requireAccess('menu'), (req, res) => {
 
 app.get('/admin/menu/jadwal', requireAccess('menu'), (req, res) => {
   return renderAdminMenuPage(req, res, 'jadwal');
+});
+
+app.get('/admin/menu/distribusi', requireAccess('menu'), (req, res) => {
+  return renderAdminMenuPage(req, res, 'distribusi');
 });
 
 app.post('/admin/menu/title/update', requireAccess('menu'), (req, res) => {
@@ -4550,6 +4634,76 @@ app.post('/admin/menu/jadwal/:id/delete', requireAccess('menu'), (req, res) => {
     : getTodayYmd();
   db.prepare('DELETE FROM dapur_jadwal WHERE id=?').run(id);
   return res.redirect(`/admin/menu/jadwal?tanggal_jadwal=${encodeURIComponent(tanggalJadwal)}&success=1`);
+});
+
+app.post('/admin/menu/distribusi/blok/add', requireAccess('menu'), (req, res) => {
+  const namaBlok = (req.body.nama_blok || '').trim();
+  const sortOrder = Number(req.body.sort_order || 0);
+  if (!namaBlok) {
+    return res.redirect('/admin/menu/distribusi?error=Nama+blok+harus+diisi#template-distribusi-card');
+  }
+
+  const nextSortOrder = Number.isFinite(sortOrder) && sortOrder > 0
+    ? sortOrder
+    : Number(db.prepare('SELECT COALESCE(MAX(sort_order), 0) + 1 AS n FROM dapur_distribusi_blok').get()?.n || 1);
+  db.prepare('INSERT INTO dapur_distribusi_blok (nama_blok, sort_order, is_active) VALUES (?, ?, 1)').run(namaBlok, nextSortOrder);
+  return res.redirect('/admin/menu/distribusi?success=1#template-distribusi-card');
+});
+
+app.post('/admin/menu/distribusi/blok/:id/update', requireAccess('menu'), (req, res) => {
+  const id = Number(req.params.id);
+  const namaBlok = (req.body.nama_blok || '').trim();
+  const sortOrder = Number(req.body.sort_order || 0);
+  if (!namaBlok) {
+    return res.redirect(`/admin/menu/distribusi?editDistribusiBlok=${id}&error=Nama+blok+harus+diisi#template-distribusi-card`);
+  }
+
+  const nextSortOrder = Number.isFinite(sortOrder) && sortOrder > 0 ? sortOrder : 1;
+  db.prepare('UPDATE dapur_distribusi_blok SET nama_blok=?, sort_order=? WHERE id=?').run(namaBlok, nextSortOrder, id);
+  return res.redirect('/admin/menu/distribusi?success=1#template-distribusi-card');
+});
+
+app.post('/admin/menu/distribusi/blok/:id/delete', requireAccess('menu'), (req, res) => {
+  const id = Number(req.params.id);
+  db.prepare('UPDATE dapur_distribusi_blok SET is_active=0 WHERE id=?').run(id);
+  return res.redirect('/admin/menu/distribusi?success=1#template-distribusi-card');
+});
+
+app.post('/admin/menu/distribusi/entry/save', requireAccess('menu'), (req, res) => {
+  const expectedJam = ['08:00', '12:00', '16:00'];
+  const tanggal = /^\d{4}-\d{2}-\d{2}$/.test(String(req.body.tanggal_distribusi || ''))
+    ? String(req.body.tanggal_distribusi)
+    : getTodayYmd();
+  const jam = expectedJam.includes(String(req.body.jam_distribusi || ''))
+    ? String(req.body.jam_distribusi)
+    : expectedJam[0];
+
+  const blokList = db.prepare(`
+    SELECT id
+    FROM dapur_distribusi_blok
+    WHERE is_active = 1
+    ORDER BY sort_order ASC, id ASC
+  `).all();
+
+  if (!blokList.length) {
+    return res.redirect(`/admin/menu/distribusi?tanggal_distribusi=${encodeURIComponent(tanggal)}&jam_distribusi=${encodeURIComponent(jam)}&error=Template+blok+belum+ada#template-distribusi-card`);
+  }
+
+  const upsert = db.prepare(`
+    INSERT INTO dapur_distribusi_entri (tanggal, jam, blok_id, jumlah, updated_at)
+    VALUES (?, ?, ?, ?, datetime('now','localtime'))
+    ON CONFLICT(tanggal, jam, blok_id)
+    DO UPDATE SET jumlah=excluded.jumlah, updated_at=datetime('now','localtime')
+  `);
+
+  blokList.forEach((blok) => {
+    const rawJumlah = String(req.body[`jumlah_${blok.id}`] || '').trim();
+    const parsed = Number(rawJumlah.replace(/[^0-9-]/g, ''));
+    const jumlah = Number.isFinite(parsed) ? Math.max(0, parsed) : 0;
+    upsert.run(tanggal, jam, Number(blok.id), jumlah);
+  });
+
+  return res.redirect(`/admin/menu/distribusi?tanggal_distribusi=${encodeURIComponent(tanggal)}&jam_distribusi=${encodeURIComponent(jam)}&success=1#entri-distribusi-card`);
 });
 
 // ── Pentahapan Pembinaan ──────────────────────────────────────────

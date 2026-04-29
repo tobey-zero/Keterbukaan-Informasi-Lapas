@@ -872,10 +872,14 @@
                     <span class="quick-nav-tooltip">Papan Isi belum ada update hari ini</span>
                 <% } %>
             </a>
-            <a href="/kalapas/table/dapur" class="<%= !hasDapurTodayUpdate ? 'quick-nav-warning' : '' %>">🍽️ Dapur
-                <% if (!hasDapurTodayUpdate) { %>
-                    <span class="quick-nav-alert" title="Menu dapur hari ini belum diupdate">!</span>
-                    <span class="quick-nav-tooltip">Menu dapur hari ini belum diupdate</span>
+            <a href="/kalapas/table/dapur" class="<%= (!hasDapurTodayUpdate || hasDapurDistribusiPending) ? 'quick-nav-warning' : '' %>">🍽️ Dapur
+                <% if (!hasDapurTodayUpdate || hasDapurDistribusiPending) { %>
+                    <span class="quick-nav-alert" title="Notifikasi Dapur">!</span>
+                                        <span class="quick-nav-tooltip"><%= (!hasDapurTodayUpdate && hasDapurDistribusiPending)
+                                            ? (`Menu dapur belum diupdate & distribusi belum lengkap (jam: ${dapurDistribusiMissingJam.join(', ')})`)
+                                            : (!hasDapurTodayUpdate
+                                                ? 'Menu dapur hari ini belum diupdate'
+                                                : (`Distribusi makanan hari ini belum lengkap (jam: ${dapurDistribusiMissingJam.join(', ')})`)) %></span>
                 <% } %>
             </a>
             <a href="/kalapas/table/pengamanan" class="<%= !hasLuarTembokToday ? 'quick-nav-warning' : '' %>">🔒 Pengamanan

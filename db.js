@@ -109,6 +109,26 @@ db.exec(`
     FOREIGN KEY (petugas_id) REFERENCES dapur_petugas(id)
   );
 
+  CREATE TABLE IF NOT EXISTS dapur_distribusi_blok (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    nama_blok TEXT NOT NULL,
+    sort_order INTEGER NOT NULL DEFAULT 0,
+    is_active INTEGER NOT NULL DEFAULT 1,
+    created_at TEXT NOT NULL DEFAULT (datetime('now','localtime'))
+  );
+
+  CREATE TABLE IF NOT EXISTS dapur_distribusi_entri (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    tanggal TEXT NOT NULL,
+    jam TEXT NOT NULL,
+    blok_id INTEGER NOT NULL,
+    jumlah INTEGER NOT NULL DEFAULT 0,
+    created_at TEXT NOT NULL DEFAULT (datetime('now','localtime')),
+    updated_at TEXT NOT NULL DEFAULT (datetime('now','localtime')),
+    UNIQUE (tanggal, jam, blok_id),
+    FOREIGN KEY (blok_id) REFERENCES dapur_distribusi_blok(id)
+  );
+
   CREATE TABLE IF NOT EXISTS pentahapan_pembinaan (
     id INTEGER PRIMARY KEY AUTOINCREMENT,
     nama_wbp TEXT NOT NULL,
@@ -933,6 +953,26 @@ seedIfEmpty('menu_harian_set', () => {
   const firstList = db.prepare('SELECT id FROM menu_harian_list ORDER BY sort_order ASC, id ASC LIMIT 1').get();
   if (!firstList?.id) return;
   db.prepare('INSERT INTO menu_harian_set (tanggal, list_id) VALUES (?, ?)').run('2026-04-15', firstList.id);
+});
+
+seedIfEmpty('dapur_distribusi_blok', () => {
+  const insert = db.prepare('INSERT INTO dapur_distribusi_blok (nama_blok, sort_order, is_active) VALUES (?, ?, 1)');
+  const rows = [
+    ['Mawar T3 Lt.1.1', 1],
+    ['Mawar T3 Lt.1.2', 2],
+    ['Mawar T3 Lt.1.3', 3],
+    ['Anggrek T7 Lt.1.1', 4],
+    ['Anggrek T7 Lt.1.2', 5],
+    ['Anggrek T7 Lt.1.3', 6],
+    ['Melati T5 Lt.1.1', 7],
+    ['Melati T5 Lt.1.2', 8],
+    ['Melati T5 Lt.1.3', 9],
+    ['Strap Sel', 10],
+    ['Klinik', 11],
+    ['Tipikor', 12],
+    ['Rehab', 13],
+  ];
+  rows.forEach((row) => insert.run(...row));
 });
 
 seedIfEmpty('pentahapan_pembinaan', () => {
