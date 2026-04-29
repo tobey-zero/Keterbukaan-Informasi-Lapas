@@ -12,6 +12,7 @@
     <% const isMaster = menuSection === 'master'; %>
     <% const isTemplate = menuSection === 'template'; %>
     <% const isMakanan = menuSection === 'makanan'; %>
+    <% const isJadwal = menuSection === 'jadwal'; %>
     <div class="topbar">
       <div class="topbar-title">
         <h2>🍽 Menu Makan</h2>
@@ -19,6 +20,7 @@
           <%= isMaster ? 'Kelola data Master Menu dasar untuk dapur' : '' %>
           <%= isTemplate ? 'Kelola Template Hari agar menu tidak perlu disusun ulang' : '' %>
           <%= isMakanan ? 'Tetapkan Menu Makanan harian cukup pilih tanggal + template' : '' %>
+          <%= isJadwal ? 'Kelola petugas dapur dan jadwal tugas harian' : '' %>
         </p>
       </div>
       <div class="topbar-actions"><a href="/" target="_blank" class="btn-public">🌐 Lihat Publik</a></div>
@@ -33,8 +35,143 @@
           <a href="/admin/menu/master" class="btn btn-sm <%= isMaster ? 'btn-primary' : 'btn-secondary' %>">📚 Master Menu</a>
           <a href="/admin/menu/template" class="btn btn-sm <%= isTemplate ? 'btn-primary' : 'btn-secondary' %>">📅 Template Hari</a>
           <a href="/admin/menu/makanan" class="btn btn-sm <%= isMakanan ? 'btn-primary' : 'btn-secondary' %>">🍱 Menu Makanan</a>
+          <a href="/admin/menu/jadwal" class="btn btn-sm <%= isJadwal ? 'btn-primary' : 'btn-secondary' %>">👨‍🍳 Jadwal Petugas</a>
         </div>
       </div>
+
+      <% if (isJadwal) { %>
+      <div class="card" id="petugas-dapur-card">
+        <div class="card-header"><h3>👥 Data Petugas Dapur</h3></div>
+        <div class="card-body">
+          <form method="POST" action="<%= editPetugas ? `/admin/menu/petugas/${editPetugas.id}/update` : '/admin/menu/petugas/add' %>">
+            <div class="form-grid col-3" style="margin-bottom:12px;">
+              <div class="form-group">
+                <label>NIP</label>
+                <input type="text" name="nip" value="<%= editPetugas ? (editPetugas.nip || '') : '' %>" required>
+              </div>
+              <div class="form-group">
+                <label>Nama</label>
+                <input type="text" name="nama" value="<%= editPetugas ? (editPetugas.nama || '') : '' %>" required>
+              </div>
+              <div class="form-group">
+                <label>Jabatan</label>
+                <input type="text" name="jabatan" value="<%= editPetugas ? (editPetugas.jabatan || '') : '' %>" required>
+              </div>
+            </div>
+            <div style="display:flex; gap:8px; align-items:center;">
+              <button type="submit" class="btn btn-primary btn-sm"><%= editPetugas ? '💾 Simpan Petugas' : '➕ Tambah Petugas' %></button>
+              <% if (editPetugas) { %>
+                <a href="/admin/menu/jadwal#petugas-dapur-card" class="btn btn-secondary btn-sm">✕ Batal Edit Petugas</a>
+              <% } %>
+            </div>
+          </form>
+
+          <div class="table-wrap" style="margin-top:14px;">
+            <table class="admin-table">
+              <thead><tr><th>#</th><th>NIP</th><th>Nama</th><th>Jabatan</th><th>Aksi</th></tr></thead>
+              <tbody>
+                <% dapurPetugasList.forEach((item, i) => { %>
+                <tr>
+                  <td><%= i + 1 %></td>
+                  <td><%= item.nip || '-' %></td>
+                  <td><%= item.nama || '-' %></td>
+                  <td><%= item.jabatan || '-' %></td>
+                  <td>
+                    <div class="actions">
+                      <a href="/admin/menu/jadwal?editPetugas=<%= item.id %>#petugas-dapur-card" class="btn btn-warning btn-xs">✏️ Edit</a>
+                      <form method="POST" action="/admin/menu/petugas/<%= item.id %>/delete" style="display:inline" onsubmit="return confirm('Hapus petugas ini?')">
+                        <button class="btn btn-danger btn-xs">🗑 Hapus</button>
+                      </form>
+                    </div>
+                  </td>
+                </tr>
+                <% }) %>
+                <% if (!dapurPetugasList.length) { %><tr><td colspan="5" style="text-align:center;color:#aaa;padding:20px;">Belum ada data petugas</td></tr><% } %>
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+
+      <div class="card" id="jadwal-petugas-card">
+        <div class="card-header"><h3>🗓 Jadwal Petugas Dapur / Hari</h3></div>
+        <div class="card-body">
+          <form method="POST" action="<%= editJadwal ? `/admin/menu/jadwal/${editJadwal.id}/update` : '/admin/menu/jadwal/add' %>">
+            <div class="form-grid col-3" style="margin-bottom:12px;">
+              <div class="form-group">
+                <label>Tanggal</label>
+                <input type="date" name="tanggal" value="<%= editJadwal ? (editJadwal.tanggal || selectedJadwalDate || todayYmd) : (selectedJadwalDate || todayYmd) %>" required>
+              </div>
+              <div class="form-group">
+                <label>Pilih Petugas</label>
+                <select name="petugas_id" required>
+                  <option value="">-- Pilih petugas --</option>
+                  <% dapurPetugasList.forEach((petugas) => { %>
+                    <option value="<%= petugas.id %>" <%= Number(editJadwal?.petugasId || 0) === Number(petugas.id) ? 'selected' : '' %>><%= `${petugas.nip} | ${petugas.nama} | ${petugas.jabatan}` %></option>
+                  <% }) %>
+                </select>
+              </div>
+              <div class="form-group" style="grid-column: span 3;">
+                <label>Deskripsi Tugas</label>
+                <textarea name="deskripsi_tugas" rows="3" placeholder="Contoh: Menyiapkan sarapan blok A dan distribusi snack pagi" required><%= editJadwal ? (editJadwal.deskripsiTugas || '') : '' %></textarea>
+              </div>
+            </div>
+            <div style="display:flex; gap:8px; align-items:center;">
+              <button type="submit" class="btn btn-primary btn-sm" <%= !dapurPetugasList.length ? 'disabled' : '' %>><%= editJadwal ? '💾 Simpan Jadwal' : '➕ Tambah Jadwal' %></button>
+              <% if (editJadwal) { %>
+                <a href="/admin/menu/jadwal?tanggal_jadwal=<%= encodeURIComponent(selectedJadwalDate || todayYmd) %>#jadwal-petugas-card" class="btn btn-secondary btn-sm">✕ Batal Edit Jadwal</a>
+              <% } %>
+            </div>
+            <% if (!dapurPetugasList.length) { %>
+              <div style="margin-top:8px; font-size:12px; color:#b91c1c; font-weight:700;">Tambahkan data petugas terlebih dahulu sebelum membuat jadwal.</div>
+            <% } %>
+          </form>
+
+          <div style="margin-top:10px; display:flex; gap:12px; align-items:end; justify-content:space-between; flex-wrap:wrap;">
+            <div style="font-size:12px; color:#64748b; font-weight:700;">
+              Tanggal aktif: <%= formatDateIndo(selectedJadwalDate || todayYmd) %> | Total tanggal jadwal tersimpan: <%= totalJadwalHistory %>
+            </div>
+            <form method="GET" action="/admin/menu/jadwal" style="display:flex; gap:10px; flex-wrap:wrap; align-items:end; justify-content:flex-end;">
+              <div class="form-group" style="min-width: 220px; margin:0;">
+                <label>Tanggal jadwal</label>
+                <input type="date" name="tanggal_jadwal" value="<%= selectedJadwalDate || todayYmd %>">
+              </div>
+              <div style="display:flex; gap:8px; align-items:center;">
+                <button type="submit" class="btn btn-primary btn-sm">🔎 Tampilkan</button>
+                <a href="/admin/menu/jadwal" class="btn btn-secondary btn-sm">↺ Hari ini</a>
+              </div>
+            </form>
+          </div>
+
+          <div class="table-wrap" style="margin-top:14px;">
+            <table class="admin-table">
+              <thead><tr><th>#</th><th>Tanggal</th><th>NIP</th><th>Nama</th><th>Jabatan</th><th>Deskripsi Tugas</th><th>Aksi</th></tr></thead>
+              <tbody>
+                <% jadwalPetugasList.forEach((item, i) => { %>
+                <tr>
+                  <td><%= i + 1 %></td>
+                  <td><%= formatDateIndo(item.tanggal || '-') %></td>
+                  <td><%= item.nip || '-' %></td>
+                  <td><%= item.nama || '-' %></td>
+                  <td><%= item.jabatan || '-' %></td>
+                  <td style="white-space:pre-line;"><%= item.deskripsiTugas || '-' %></td>
+                  <td>
+                    <div class="actions">
+                      <a href="/admin/menu/jadwal?tanggal_jadwal=<%= encodeURIComponent(selectedJadwalDate || todayYmd) %>&editJadwal=<%= item.id %>#jadwal-petugas-card" class="btn btn-warning btn-xs">✏️ Edit</a>
+                      <form method="POST" action="/admin/menu/jadwal/<%= item.id %>/delete?tanggal_jadwal=<%= encodeURIComponent(selectedJadwalDate || todayYmd) %>" style="display:inline" onsubmit="return confirm('Hapus jadwal ini?')">
+                        <button class="btn btn-danger btn-xs">🗑 Hapus</button>
+                      </form>
+                    </div>
+                  </td>
+                </tr>
+                <% }) %>
+                <% if (!jadwalPetugasList.length) { %><tr><td colspan="7" style="text-align:center;color:#aaa;padding:20px;">Belum ada jadwal pada tanggal ini</td></tr><% } %>
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+      <% } %>
 
       <% if (isMakanan) { %>
       <div class="card">

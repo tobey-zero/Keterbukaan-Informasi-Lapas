@@ -2331,6 +2331,9 @@ app.get('/kalapas', (req, res) => {
 });
 
 app.get('/kalapas/table/dapur', (req, res) => {
+  const activeTab = ['menu', 'jadwal'].includes(String(req.query.tab || '').toLowerCase())
+    ? String(req.query.tab).toLowerCase()
+    : 'menu';
   const selectedDate = /^\d{4}-\d{2}-\d{2}$/.test(String(req.query.tanggal || ''))
     ? String(req.query.tanggal)
     : getTodayYmd();
@@ -2368,15 +2371,32 @@ app.get('/kalapas/table/dapur', (req, res) => {
     FROM menu_harian_set
     ORDER BY tanggal DESC
   `).all().map((item) => String(item.tanggal));
+  const jadwalPetugasList = db.prepare(`
+    SELECT
+      j.id,
+      j.tanggal,
+      j.deskripsi_tugas AS deskripsiTugas,
+      p.nip,
+      p.nama,
+      p.jabatan
+    FROM dapur_jadwal j
+    INNER JOIN dapur_petugas p ON p.id = j.petugas_id
+    WHERE j.tanggal = ?
+    ORDER BY p.nama COLLATE NOCASE ASC, j.id ASC
+  `).all(selectedDate);
+  const totalJadwalHistory = Number(db.prepare('SELECT COUNT(DISTINCT tanggal) AS c FROM dapur_jadwal').get()?.c || 0);
 
   res.render('kalapas-dapur', {
     activePage: 'kalapas',
+    activeTab,
     menuTitle,
     selectedDate,
     selectedDateLabel,
     menuList,
+    jadwalPetugasList,
     historyDates,
     totalHistory: historyDates.length,
+    totalJadwalHistory,
     backUrl: '/kalapas',
   });
 });
@@ -4167,6 +4187,9 @@ app.post('/admin/kata-bijak/update', requireAccess('kata-bijak'), (req, res) => 
 // ── Menu Makan ────────────────────────────────────────────────────
 function renderAdminMenuPage(req, res, menuSection) {
   const selectedTanggal = (req.query.tanggal || '').trim() || getTodayYmd();
+  const selectedJadwalDate = /^\d{4}-\d{2}-\d{2}$/.test(String(req.query.tanggal_jadwal || ''))
+    ? String(req.query.tanggal_jadwal)
+    : getTodayYmd();
   const masterList = db.prepare(`SELECT
     id,
     waktu,
@@ -4241,12 +4264,52 @@ function renderAdminMenuPage(req, res, menuSection) {
   const selectedMasterIds = editDayList
     ? db.prepare('SELECT menu_master_id AS menuMasterId FROM menu_harian_list_item WHERE list_id=? ORDER BY sort_order ASC, id ASC').all(editDayList.id).map(item => Number(item.menuMasterId))
     : [];
+  const dapurPetugasList = db.prepare(`
+    SELECT id, nip, nama, jabatan
+    FROM dapur_petugas
+    ORDER BY nama COLLATE NOCASE ASC, id ASC
+  `).all();
+  const editPetugas = req.query.editPetugas
+    ? db.prepare('SELECT id, nip, nama, jabatan FROM dapur_petugas WHERE id=?').get(Number(req.query.editPetugas))
+    : null;
+  const jadwalPetugasList = db.prepare(`
+    SELECT
+      j.id,
+      j.tanggal,
+      j.petugas_id AS petugasId,
+      j.deskripsi_tugas AS deskripsiTugas,
+      p.nip,
+      p.nama,
+      p.jabatan
+    FROM dapur_jadwal j
+    INNER JOIN dapur_petugas p ON p.id = j.petugas_id
+    WHERE j.tanggal = ?
+    ORDER BY p.nama COLLATE NOCASE ASC, j.id ASC
+  `).all(selectedJadwalDate);
+  const totalJadwalHistory = Number(db.prepare('SELECT COUNT(DISTINCT tanggal) AS c FROM dapur_jadwal').get()?.c || 0);
+  const editJadwal = req.query.editJadwal
+    ? db.prepare(`
+      SELECT
+        j.id,
+        j.tanggal,
+        j.petugas_id AS petugasId,
+        j.deskripsi_tugas AS deskripsiTugas,
+        p.nip,
+        p.nama,
+        p.jabatan
+      FROM dapur_jadwal j
+      INNER JOIN dapur_petugas p ON p.id = j.petugas_id
+      WHERE j.id = ?
+      LIMIT 1
+    `).get(Number(req.query.editJadwal))
+    : null;
   const menuTitle = getAppSetting('menu_title', 'DAFTAR MENU MAKAN HARI INI');
 
   const activeMap = {
     master: 'menu-master',
     template: 'menu-template',
     makanan: 'menu-makanan',
+    jadwal: 'menu-jadwal',
   };
 
   res.render('admin/menu', {
@@ -4260,10 +4323,16 @@ function renderAdminMenuPage(req, res, menuSection) {
     editMaster,
     editDayList,
     selectedMasterIds,
+    dapurPetugasList,
+    editPetugas,
+    jadwalPetugasList,
+    editJadwal,
     menuTitle,
     todayYmd: getTodayYmd(),
     selectedTanggal,
+    selectedJadwalDate,
     totalHistory,
+    totalJadwalHistory,
     active: activeMap[menuSection] || 'menu-makanan',
     success: req.query.success,
     titleSuccess: req.query.titleSuccess,
@@ -4285,6 +4354,10 @@ app.get('/admin/menu/template', requireAccess('menu'), (req, res) => {
 
 app.get('/admin/menu/makanan', requireAccess('menu'), (req, res) => {
   return renderAdminMenuPage(req, res, 'makanan');
+});
+
+app.get('/admin/menu/jadwal', requireAccess('menu'), (req, res) => {
+  return renderAdminMenuPage(req, res, 'jadwal');
 });
 
 app.post('/admin/menu/title/update', requireAccess('menu'), (req, res) => {
@@ -4403,6 +4476,80 @@ app.post('/admin/menu/harian/set', requireAccess('menu'), (req, res) => {
 
   const params = new URLSearchParams({ tanggal, success: '1' });
   return res.redirect(`/admin/menu/makanan?${params.toString()}`);
+});
+
+app.post('/admin/menu/petugas/add', requireAccess('menu'), (req, res) => {
+  const nip = (req.body.nip || '').trim();
+  const nama = (req.body.nama || '').trim().toUpperCase();
+  const jabatan = (req.body.jabatan || '').trim();
+  if (!nip || !nama || !jabatan) {
+    return res.redirect('/admin/menu/jadwal?error=Data+petugas+harus+lengkap');
+  }
+
+  db.prepare('INSERT INTO dapur_petugas (nip, nama, jabatan) VALUES (?, ?, ?)').run(nip, nama, jabatan);
+  return res.redirect('/admin/menu/jadwal?success=1');
+});
+
+app.post('/admin/menu/petugas/:id/update', requireAccess('menu'), (req, res) => {
+  const id = Number(req.params.id);
+  const nip = (req.body.nip || '').trim();
+  const nama = (req.body.nama || '').trim().toUpperCase();
+  const jabatan = (req.body.jabatan || '').trim();
+  if (!nip || !nama || !jabatan) {
+    return res.redirect(`/admin/menu/jadwal?editPetugas=${id}&error=Data+petugas+harus+lengkap`);
+  }
+
+  db.prepare('UPDATE dapur_petugas SET nip=?, nama=?, jabatan=? WHERE id=?').run(nip, nama, jabatan, id);
+  return res.redirect('/admin/menu/jadwal?success=1');
+});
+
+app.post('/admin/menu/petugas/:id/delete', requireAccess('menu'), (req, res) => {
+  const id = Number(req.params.id);
+  const usedCount = Number(db.prepare('SELECT COUNT(*) AS c FROM dapur_jadwal WHERE petugas_id=?').get(id)?.c || 0);
+  if (usedCount > 0) {
+    return res.redirect('/admin/menu/jadwal?error=Petugas+masih+dipakai+di+jadwal.+Hapus+jadwalnya+dulu');
+  }
+
+  db.prepare('DELETE FROM dapur_petugas WHERE id=?').run(id);
+  return res.redirect('/admin/menu/jadwal?success=1');
+});
+
+app.post('/admin/menu/jadwal/add', requireAccess('menu'), (req, res) => {
+  const tanggal = /^\d{4}-\d{2}-\d{2}$/.test(String(req.body.tanggal || ''))
+    ? String(req.body.tanggal)
+    : getTodayYmd();
+  const petugasId = Number(req.body.petugas_id || 0);
+  const deskripsiTugas = (req.body.deskripsi_tugas || '').trim();
+  if (!petugasId || !deskripsiTugas) {
+    return res.redirect(`/admin/menu/jadwal?tanggal_jadwal=${encodeURIComponent(tanggal)}&error=Petugas+dan+deskripsi+tugas+harus+diisi`);
+  }
+
+  db.prepare('INSERT INTO dapur_jadwal (tanggal, petugas_id, deskripsi_tugas) VALUES (?, ?, ?)').run(tanggal, petugasId, deskripsiTugas);
+  return res.redirect(`/admin/menu/jadwal?tanggal_jadwal=${encodeURIComponent(tanggal)}&success=1`);
+});
+
+app.post('/admin/menu/jadwal/:id/update', requireAccess('menu'), (req, res) => {
+  const id = Number(req.params.id);
+  const tanggal = /^\d{4}-\d{2}-\d{2}$/.test(String(req.body.tanggal || ''))
+    ? String(req.body.tanggal)
+    : getTodayYmd();
+  const petugasId = Number(req.body.petugas_id || 0);
+  const deskripsiTugas = (req.body.deskripsi_tugas || '').trim();
+  if (!petugasId || !deskripsiTugas) {
+    return res.redirect(`/admin/menu/jadwal?editJadwal=${id}&tanggal_jadwal=${encodeURIComponent(tanggal)}&error=Petugas+dan+deskripsi+tugas+harus+diisi`);
+  }
+
+  db.prepare('UPDATE dapur_jadwal SET tanggal=?, petugas_id=?, deskripsi_tugas=? WHERE id=?').run(tanggal, petugasId, deskripsiTugas, id);
+  return res.redirect(`/admin/menu/jadwal?tanggal_jadwal=${encodeURIComponent(tanggal)}&success=1`);
+});
+
+app.post('/admin/menu/jadwal/:id/delete', requireAccess('menu'), (req, res) => {
+  const id = Number(req.params.id);
+  const tanggalJadwal = /^\d{4}-\d{2}-\d{2}$/.test(String(req.query.tanggal_jadwal || ''))
+    ? String(req.query.tanggal_jadwal)
+    : getTodayYmd();
+  db.prepare('DELETE FROM dapur_jadwal WHERE id=?').run(id);
+  return res.redirect(`/admin/menu/jadwal?tanggal_jadwal=${encodeURIComponent(tanggalJadwal)}&success=1`);
 });
 
 // ── Pentahapan Pembinaan ──────────────────────────────────────────

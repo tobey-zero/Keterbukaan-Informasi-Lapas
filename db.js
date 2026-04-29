@@ -92,6 +92,23 @@ db.exec(`
     FOREIGN KEY (list_id) REFERENCES menu_harian_list(id)
   );
 
+  CREATE TABLE IF NOT EXISTS dapur_petugas (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    nip TEXT NOT NULL,
+    nama TEXT NOT NULL,
+    jabatan TEXT NOT NULL,
+    created_at TEXT NOT NULL DEFAULT (datetime('now','localtime'))
+  );
+
+  CREATE TABLE IF NOT EXISTS dapur_jadwal (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    tanggal TEXT NOT NULL,
+    petugas_id INTEGER NOT NULL,
+    deskripsi_tugas TEXT NOT NULL DEFAULT '',
+    created_at TEXT NOT NULL DEFAULT (datetime('now','localtime')),
+    FOREIGN KEY (petugas_id) REFERENCES dapur_petugas(id)
+  );
+
   CREATE TABLE IF NOT EXISTS pentahapan_pembinaan (
     id INTEGER PRIMARY KEY AUTOINCREMENT,
     nama_wbp TEXT NOT NULL,

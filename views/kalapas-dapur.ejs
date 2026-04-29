@@ -24,6 +24,27 @@
       font-size: 12px;
       font-weight: bold;
     }
+    .dapur-submenu {
+      display: flex;
+      gap: 8px;
+      flex-wrap: wrap;
+      margin-bottom: 10px;
+    }
+    .dapur-submenu a {
+      text-decoration: none;
+      border: 1px solid #93c5fd;
+      color: #1e3a8a;
+      background: #eff6ff;
+      border-radius: 6px;
+      padding: 7px 11px;
+      font-size: 12px;
+      font-weight: bold;
+    }
+    .dapur-submenu a.active {
+      color: #fff;
+      background: #1a4bb8;
+      border-color: rgba(255,255,255,.3);
+    }
     .dapur-filter {
       padding: 10px;
       display: flex;
@@ -174,54 +195,106 @@
       <a href="<%= backUrl %>">⬅ Kembali ke Dashboard Kalapas</a>
     </div>
 
-    <div class="panel">
-      <div class="panel-header">INFORMASI DAPUR</div>
-      <div class="dapur-filter">
-        <form method="GET" action="/kalapas/table/dapur">
-          <div>
-            <span class="label">Tanggal Menu</span>
-            <input type="date" name="tanggal" value="<%= selectedDate %>">
-          </div>
-          <button type="submit">📅 Tampilkan</button>
-          <a href="/kalapas/table/dapur" class="reset">↺ Hari Ini</a>
-        </form>
-        <div class="dapur-meta">
-          <div><strong><%= menuTitle %></strong></div>
-          <div>Tanggal aktif: <%= selectedDateLabel %> | Total tanggal tersimpan: <%= totalHistory %></div>
-        </div>
-      </div>
+    <div class="dapur-submenu">
+      <a href="/kalapas/table/dapur?tab=menu&tanggal=<%= encodeURIComponent(selectedDate) %>" class="<%= activeTab === 'menu' ? 'active' : '' %>">🍽 Menu</a>
+      <a href="/kalapas/table/dapur?tab=jadwal&tanggal=<%= encodeURIComponent(selectedDate) %>" class="<%= activeTab === 'jadwal' ? 'active' : '' %>">👨‍🍳 Jadwal</a>
+    </div>
 
-      <div class="panel-content" style="padding-top:0;">
-        <table class="data-table dapur-table">
-          <thead>
-            <tr>
-              <th>#</th>
-              <th>Foto</th>
-              <th>Waktu</th>
-              <th>Menu Makanan</th>
-            </tr>
-          </thead>
-          <tbody>
-            <% menuList.forEach((item, idx) => { %>
+    <div class="panel">
+      <div class="panel-header"><%= activeTab === 'jadwal' ? 'JADWAL PETUGAS DAPUR' : 'INFORMASI DAPUR' %></div>
+      <% if (activeTab === 'menu') { %>
+        <div class="dapur-filter">
+          <form method="GET" action="/kalapas/table/dapur">
+            <input type="hidden" name="tab" value="menu">
+            <div>
+              <span class="label">Tanggal Menu</span>
+              <input type="date" name="tanggal" value="<%= selectedDate %>">
+            </div>
+            <button type="submit">📅 Tampilkan</button>
+            <a href="/kalapas/table/dapur?tab=menu" class="reset">↺ Hari Ini</a>
+          </form>
+          <div class="dapur-meta">
+            <div><strong><%= menuTitle %></strong></div>
+            <div>Tanggal aktif: <%= selectedDateLabel %> | Total tanggal tersimpan: <%= totalHistory %></div>
+          </div>
+        </div>
+
+        <div class="panel-content" style="padding-top:0;">
+          <table class="data-table dapur-table">
+            <thead>
               <tr>
-                <td><%= idx + 1 %></td>
-                <td>
-                  <% if (item.photoPath) { %>
-                    <img src="<%= item.photoPath %>" alt="Foto menu" class="dapur-photo">
-                  <% } else { %>
-                    <div class="dapur-photo-placeholder">-</div>
-                  <% } %>
-                </td>
-                <td><%= item.waktu || '-' %></td>
-                <td style="white-space:pre-line;"><%= item.menu || '-' %></td>
+                <th>#</th>
+                <th>Foto</th>
+                <th>Waktu</th>
+                <th>Menu Makanan</th>
               </tr>
-            <% }) %>
-            <% if (!menuList.length) { %>
-              <tr><td colspan="4" class="dapur-empty">Belum ada menu pada tanggal ini</td></tr>
-            <% } %>
-          </tbody>
-        </table>
-      </div>
+            </thead>
+            <tbody>
+              <% menuList.forEach((item, idx) => { %>
+                <tr>
+                  <td><%= idx + 1 %></td>
+                  <td>
+                    <% if (item.photoPath) { %>
+                      <img src="<%= item.photoPath %>" alt="Foto menu" class="dapur-photo">
+                    <% } else { %>
+                      <div class="dapur-photo-placeholder">-</div>
+                    <% } %>
+                  </td>
+                  <td><%= item.waktu || '-' %></td>
+                  <td style="white-space:pre-line;"><%= item.menu || '-' %></td>
+                </tr>
+              <% }) %>
+              <% if (!menuList.length) { %>
+                <tr><td colspan="4" class="dapur-empty">Belum ada menu pada tanggal ini</td></tr>
+              <% } %>
+            </tbody>
+          </table>
+        </div>
+      <% } else { %>
+        <div class="dapur-filter">
+          <form method="GET" action="/kalapas/table/dapur">
+            <input type="hidden" name="tab" value="jadwal">
+            <div>
+              <span class="label">Tanggal Jadwal</span>
+              <input type="date" name="tanggal" value="<%= selectedDate %>">
+            </div>
+            <button type="submit">📅 Tampilkan</button>
+            <a href="/kalapas/table/dapur?tab=jadwal" class="reset">↺ Hari Ini</a>
+          </form>
+          <div class="dapur-meta">
+            <div><strong>JADWAL PETUGAS DAPUR / HARI</strong></div>
+            <div>Tanggal aktif: <%= selectedDateLabel %> | Total tanggal jadwal tersimpan: <%= totalJadwalHistory %></div>
+          </div>
+        </div>
+
+        <div class="panel-content" style="padding-top:0;">
+          <table class="data-table dapur-table">
+            <thead>
+              <tr>
+                <th>#</th>
+                <th>NIP</th>
+                <th>Nama</th>
+                <th>Jabatan</th>
+                <th>Deskripsi Tugas</th>
+              </tr>
+            </thead>
+            <tbody>
+              <% jadwalPetugasList.forEach((item, idx) => { %>
+                <tr>
+                  <td><%= idx + 1 %></td>
+                  <td><%= item.nip || '-' %></td>
+                  <td><%= item.nama || '-' %></td>
+                  <td><%= item.jabatan || '-' %></td>
+                  <td style="white-space:pre-line;"><%= item.deskripsiTugas || '-' %></td>
+                </tr>
+              <% }) %>
+              <% if (!jadwalPetugasList.length) { %>
+                <tr><td colspan="5" class="dapur-empty">Belum ada jadwal petugas pada tanggal ini</td></tr>
+              <% } %>
+            </tbody>
+          </table>
+        </div>
+      <% } %>
     </div>
   </div>
 
