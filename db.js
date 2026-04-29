@@ -304,7 +304,9 @@ db.exec(`
     nama_pegawai TEXT NOT NULL,
     nip TEXT NOT NULL DEFAULT '',
     pangkat_gol TEXT NOT NULL DEFAULT '',
+    tmt_pangkat TEXT,
     jabatan TEXT NOT NULL DEFAULT '',
+    tmt_jabatan TEXT,
     agama TEXT NOT NULL DEFAULT '',
     status TEXT NOT NULL DEFAULT '',
     pendidikan TEXT NOT NULL DEFAULT '',
@@ -592,6 +594,11 @@ if (!raziaBuktiColumnNames.includes('tanggal_temuan')) db.exec('ALTER TABLE razi
 const tuUmumBarangColumns = db.prepare("PRAGMA table_info('tu_umum_barang')").all();
 const tuUmumBarangColumnNames = tuUmumBarangColumns.map(col => col.name);
 if (!tuUmumBarangColumnNames.includes('tahun_perolehan')) db.exec("ALTER TABLE tu_umum_barang ADD COLUMN tahun_perolehan TEXT NOT NULL DEFAULT ''");
+
+const tuKepegawaianColumns = db.prepare("PRAGMA table_info('tu_kepegawaian')").all();
+const tuKepegawaianColumnNames = tuKepegawaianColumns.map(col => col.name);
+if (!tuKepegawaianColumnNames.includes('tmt_pangkat')) db.exec('ALTER TABLE tu_kepegawaian ADD COLUMN tmt_pangkat TEXT');
+if (!tuKepegawaianColumnNames.includes('tmt_jabatan')) db.exec('ALTER TABLE tu_kepegawaian ADD COLUMN tmt_jabatan TEXT');
 
 const housingRoomColumns = db.prepare("PRAGMA table_info('housing_rooms')").all();
 const housingRoomColumnNames = housingRoomColumns.map(col => col.name);
@@ -1109,12 +1116,12 @@ seedIfEmpty('tu_umum_barang', () => {
 seedIfEmpty('tu_kepegawaian', () => {
   const insert = db.prepare(`
     INSERT INTO tu_kepegawaian
-      (nama_pegawai, nip, pangkat_gol, jabatan, agama, status, pendidikan, penempatan_seksi, penempatan_bidang, jenis_kelamin, type_pegawai)
-    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+      (nama_pegawai, nip, pangkat_gol, tmt_pangkat, jabatan, tmt_jabatan, agama, status, pendidikan, penempatan_seksi, penempatan_bidang, jenis_kelamin, type_pegawai)
+    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
   `);
   const rows = [
-    ['FONIKA AFFANDI, A.Md.I.P., S.H., M.H.', '198005282000121001', 'Pembina Tingkat I (IV/b)', 'KALAPAS', 'ISLAM', 'MENIKAH', 'STRATA 2', 'TATA USAHA', 'TATA USAHA', 'Laki-Laki', 'STRUKTURAL'],
-    ['MARIA REZKI SANTOSO, A.Md.I.P., S.H., M.H.', '197903112000122001', 'Pembina (IV/a)', 'Kabag Tata Usaha', 'ISLAM', 'MENIKAH', 'STRATA 2', 'TATA USAHA', 'TATA USAHA', 'Perempuan', 'STRUKTURAL'],
+    ['FONIKA AFFANDI, A.Md.I.P., S.H., M.H.', '198005282000121001', 'Pembina Tingkat I (IV/b)', '2024-04-01', 'KALAPAS', '2025-01-15', 'ISLAM', 'MENIKAH', 'STRATA 2', 'TATA USAHA', 'TATA USAHA', 'Laki-Laki', 'STRUKTURAL'],
+    ['MARIA REZKI SANTOSO, A.Md.I.P., S.H., M.H.', '197903112000122001', 'Pembina (IV/a)', '2023-10-01', 'Kabag Tata Usaha', '2024-02-10', 'ISLAM', 'MENIKAH', 'STRATA 2', 'TATA USAHA', 'TATA USAHA', 'Perempuan', 'STRUKTURAL'],
   ];
   rows.forEach(r => insert.run(...r));
 });

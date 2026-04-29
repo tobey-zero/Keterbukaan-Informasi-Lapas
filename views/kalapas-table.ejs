@@ -209,6 +209,31 @@
       color: #ffffff;
       font-weight: 700;
     }
+    .th-sort-wrap {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      flex-wrap: wrap;
+    }
+    .th-sort-links {
+      display: inline-flex;
+      align-items: center;
+      gap: 4px;
+    }
+    .th-sort-link {
+      text-decoration: none;
+      font-size: 12px;
+      font-weight: 700;
+      padding: 0 2px;
+      border: 0;
+      border-radius: 0;
+      color: #94a3b8;
+      background: transparent;
+      line-height: 1.2;
+    }
+    .th-sort-link.active {
+      color: #facc15;
+    }
 
     .finance-hero {
       border: 1px solid #1e40af;
@@ -424,7 +449,20 @@
                 <% headerRows.forEach((headerRow) => { %>
                   <tr>
                     <% (headerRow || []).forEach((cell) => { %>
-                      <th <% if (cell.rowspan) { %>rowspan="<%= cell.rowspan %>"<% } %> <% if (cell.colspan) { %>colspan="<%= cell.colspan %>"<% } %>><%= cell.label %></th>
+                      <th <% if (cell.rowspan) { %>rowspan="<%= cell.rowspan %>"<% } %> <% if (cell.colspan) { %>colspan="<%= cell.colspan %>"<% } %>>
+                        <% if (Array.isArray(cell.sortLinks) && cell.sortLinks.length) { %>
+                          <span class="th-sort-wrap">
+                            <span><%= cell.label %></span>
+                            <span class="th-sort-links">
+                              <% cell.sortLinks.forEach((sortLink) => { %>
+                                <a href="<%= sortLink.href %>" class="th-sort-link <%= sortLink.active ? 'active' : '' %>"><%= sortLink.label %></a>
+                              <% }) %>
+                            </span>
+                          </span>
+                        <% } else { %>
+                          <%= cell.label %>
+                        <% } %>
+                      </th>
                     <% }) %>
                   </tr>
                 <% }) %>
@@ -483,9 +521,32 @@
           <div class="table-wrap">
             <table class="admin-table" id="dataTableSecondary">
               <thead>
-                <tr>
-                  <% secondaryColumns.forEach(col => { %><th><%= col %></th><% }) %>
-                </tr>
+                <% if (typeof secondaryHeaderRows !== 'undefined' && Array.isArray(secondaryHeaderRows) && secondaryHeaderRows.length) { %>
+                  <% secondaryHeaderRows.forEach((headerRow) => { %>
+                    <tr>
+                      <% (headerRow || []).forEach((cell) => { %>
+                        <th <% if (cell.rowspan) { %>rowspan="<%= cell.rowspan %>"<% } %> <% if (cell.colspan) { %>colspan="<%= cell.colspan %>"<% } %>>
+                          <% if (Array.isArray(cell.sortLinks) && cell.sortLinks.length) { %>
+                            <span class="th-sort-wrap">
+                              <span><%= cell.label %></span>
+                              <span class="th-sort-links">
+                                <% cell.sortLinks.forEach((sortLink) => { %>
+                                  <a href="<%= sortLink.href %>" class="th-sort-link <%= sortLink.active ? 'active' : '' %>"><%= sortLink.label %></a>
+                                <% }) %>
+                              </span>
+                            </span>
+                          <% } else { %>
+                            <%= cell.label %>
+                          <% } %>
+                        </th>
+                      <% }) %>
+                    </tr>
+                  <% }) %>
+                <% } else { %>
+                  <tr>
+                    <% secondaryColumns.forEach(col => { %><th><%= col %></th><% }) %>
+                  </tr>
+                <% } %>
               </thead>
               <tbody>
                 <% secondaryRows.forEach(row => { %>

@@ -859,7 +859,12 @@
 
         <div class="quick-nav">
             <a href="/kalapas">📊 Dashboard Kalapas</a>
-            <a href="/">🏢 Krisna</a>
+            <a href="/" class="<%= hasPembinaanStatMismatch ? 'quick-nav-warning' : '' %>">🏢 Krisna
+                <% if (hasPembinaanStatMismatch) { %>
+                    <span class="quick-nav-alert" title="Data pembinaan dan statistik penghuni belum sinkron">!</span>
+                    <span class="quick-nav-tooltip">Pentahapan Pembinaan: <%= totalPentahapanPembinaan %> | Total Penghuni Statistik: <%= totalPenghuniStatistik %> (Selisih <%= pembinaanStatMismatchGap %>)</span>
+                <% } %>
+            </a>
             <a href="/klinik">🏥 Klinik</a>
             <a href="/kalapas/papan-isi" class="<%= !hasPapanIsiTodayUpdate ? 'quick-nav-warning' : '' %>">📋 Papan Isi
                 <% if (!hasPapanIsiTodayUpdate) { %>

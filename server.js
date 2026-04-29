@@ -478,6 +478,32 @@ function formatDateIndo(value) {
   }).format(dateObj);
 }
 
+function parseKepegawaianSortQuery(query = {}) {
+  const sortBy = ['tmt_pangkat', 'tmt_jabatan'].includes(String(query.sortBy || ''))
+    ? String(query.sortBy)
+    : 'tmt_pangkat';
+  const sortDir = String(query.sortDir || '').toLowerCase() === 'desc' ? 'desc' : 'asc';
+  return { sortBy, sortDir };
+}
+
+function sortPegawaiListByTmt(pegawaiList = [], sortBy = 'tmt_pangkat', sortDir = 'asc') {
+  return [...pegawaiList].sort((a, b) => {
+    const aDate = normalizeDateToYmd(a?.[sortBy] || a?.[sortBy === 'tmt_pangkat' ? 'tmtPangkat' : 'tmtJabatan']);
+    const bDate = normalizeDateToYmd(b?.[sortBy] || b?.[sortBy === 'tmt_pangkat' ? 'tmtPangkat' : 'tmtJabatan']);
+
+    if (!aDate && !bDate) {
+      return String(a?.nama_pegawai || a?.namaPegawai || '').localeCompare(String(b?.nama_pegawai || b?.namaPegawai || ''), 'id', { sensitivity: 'base' });
+    }
+    if (!aDate) return 1;
+    if (!bDate) return -1;
+
+    const dateCompare = aDate.localeCompare(bDate);
+    if (dateCompare !== 0) return sortDir === 'desc' ? -dateCompare : dateCompare;
+
+    return String(a?.nama_pegawai || a?.namaPegawai || '').localeCompare(String(b?.nama_pegawai || b?.namaPegawai || ''), 'id', { sensitivity: 'base' });
+  });
+}
+
 function isOnGoingPunishment(selectedYmd, startDateValue, endDateValue) {
   const selected = normalizeDateToYmd(selectedYmd);
   const start = normalizeDateToYmd(startDateValue);
@@ -1434,7 +1460,9 @@ function getTuUmumData() {
       nama_pegawai AS namaPegawai,
       nip,
       pangkat_gol AS pangkatGol,
+      tmt_pangkat AS tmtPangkat,
       jabatan,
+      tmt_jabatan AS tmtJabatan,
       agama,
       status,
       pendidikan,
@@ -2075,6 +2103,12 @@ function getKalapasData() {
       AND UPPER(TRIM(periode_bulan)) = ?
   `).get(currentYear, currentMonthLabel)?.c || 0) > 0;
   const hasGiiatjaMonthlyUpdate = hasGiiatjaPelatihanThisMonth || hasGiiatjaPnbpThisMonth || hasGiiatjaPremiThisMonth;
+  const totalPenghuniStatistik = Number(umum.totalPenghuni) || 0;
+  const totalPentahapanPembinaan = Array.isArray(umum.pentahapanPembinaanDetail)
+    ? umum.pentahapanPembinaanDetail.length
+    : 0;
+  const hasPembinaanStatMismatch = totalPentahapanPembinaan !== totalPenghuniStatistik;
+  const pembinaanStatMismatchGap = Math.abs(totalPentahapanPembinaan - totalPenghuniStatistik);
   const currentYearMonth = `${currentYear}-${currentMonth}`;
   const totalJadwalRaziaThisMonth = (razia.jadwalRazia || []).filter((item) => {
     const normalizedDate = normalizeDateToYmd(item.tanggal);
@@ -2140,6 +2174,10 @@ function getKalapasData() {
     hasDapurTodayUpdate,
     hasKamtibMonthlyPengawalanUpdate,
     hasGiiatjaMonthlyUpdate,
+    hasPembinaanStatMismatch,
+    totalPenghuniStatistik,
+    totalPentahapanPembinaan,
+    pembinaanStatMismatchGap,
     pengaduanDiterimaCount,
     totalPengaduanMasyarakat,
     okupansi,
@@ -3273,6 +3311,9 @@ app.get('/kalapas/table/tu-realisasi', (req, res) => {
 
 app.get('/kalapas/table/tu-umum', (req, res) => {
   const data = getTuUmumData();
+  const { sortBy, sortDir } = parseKepegawaianSortQuery(req.query);
+  const sortedPegawaiList = sortPegawaiListByTmt(data.pegawaiList, sortBy, sortDir);
+  const makeSortUrl = (targetSortBy, targetSortDir) => `/kalapas/table/tu-umum?sortBy=${encodeURIComponent(targetSortBy)}&sortDir=${encodeURIComponent(targetSortDir)}`;
   const rows = data.tuUmumList.map(item => [
     item.kode || '-',
     item.uraian || '-',
@@ -3288,12 +3329,14 @@ app.get('/kalapas/table/tu-umum', (req, res) => {
     item.saldoAkhirNilai || '0',
   ]);
 
-  const pegawaiRows = data.pegawaiList.map((item, index) => [
+  const pegawaiRows = sortedPegawaiList.map((item, index) => [
     String(index + 1),
     item.namaPegawai || '-',
     item.nip || '-',
     item.pangkatGol || '-',
+    item.tmtPangkat ? formatDateIndo(item.tmtPangkat) : '-',
     item.jabatan || '-',
+    item.tmtJabatan ? formatDateIndo(item.tmtJabatan) : '-',
     item.agama || '-',
     item.status || '-',
     item.pendidikan || '-',
@@ -3313,7 +3356,35 @@ app.get('/kalapas/table/tu-umum', (req, res) => {
     columns: ['KODE', 'URAIAN', 'SATUAN', 'TAHUN PEROLEHAN', 'SALDO AWAL QTY', 'SALDO AWAL NILAI', 'BERTAMBAH QTY', 'BERTAMBAH NILAI', 'BERKURANG QTY', 'BERKURANG NILAI', 'SALDO AKHIR QTY', 'SALDO AKHIR NILAI'],
     rows,
     secondarySectionTitle: `DATA KEPEGAWAIAN (${pegawaiRows.length} data)`,
-    secondaryColumns: ['No', 'Nama Pegawai', 'NIP', 'Pangkat/Gol', 'Jabatan', 'Agama', 'Status', 'Pendidikan', 'Penempatan/Seksi', 'Penempatan/Bidang', 'Jenis Kelamin', 'Type Pegawai'],
+    secondaryHeaderRows: [[
+      { label: 'No' },
+      { label: 'Nama Pegawai' },
+      { label: 'NIP' },
+      { label: 'Pangkat/Gol' },
+      {
+        label: 'TMT Pangkat',
+        sortLinks: [
+          { label: '↑', href: makeSortUrl('tmt_pangkat', 'asc'), active: sortBy === 'tmt_pangkat' && sortDir === 'asc' },
+          { label: '↓', href: makeSortUrl('tmt_pangkat', 'desc'), active: sortBy === 'tmt_pangkat' && sortDir === 'desc' },
+        ],
+      },
+      { label: 'Jabatan' },
+      {
+        label: 'TMT Jabatan',
+        sortLinks: [
+          { label: '↑', href: makeSortUrl('tmt_jabatan', 'asc'), active: sortBy === 'tmt_jabatan' && sortDir === 'asc' },
+          { label: '↓', href: makeSortUrl('tmt_jabatan', 'desc'), active: sortBy === 'tmt_jabatan' && sortDir === 'desc' },
+        ],
+      },
+      { label: 'Agama' },
+      { label: 'Status' },
+      { label: 'Pendidikan' },
+      { label: 'Penempatan/Seksi' },
+      { label: 'Penempatan/Bidang' },
+      { label: 'Jenis Kelamin' },
+      { label: 'Type Pegawai' },
+    ]],
+    secondaryColumns: ['No', 'Nama Pegawai', 'NIP', 'Pangkat/Gol', 'TMT Pangkat', 'Jabatan', 'TMT Jabatan', 'Agama', 'Status', 'Pendidikan', 'Penempatan/Seksi', 'Penempatan/Bidang', 'Jenis Kelamin', 'Type Pegawai'],
     secondaryRows: pegawaiRows,
     backUrl: '/kalapas'
   });
@@ -3348,12 +3419,17 @@ app.get('/kalapas/table/tu-bmn', (req, res) => {
 
 app.get('/kalapas/table/kepegawaian', (req, res) => {
   const data = getTuUmumData();
-  const rows = data.pegawaiList.map((item, index) => [
+  const { sortBy, sortDir } = parseKepegawaianSortQuery(req.query);
+  const sortedPegawaiList = sortPegawaiListByTmt(data.pegawaiList, sortBy, sortDir);
+  const makeSortUrl = (targetSortBy, targetSortDir) => `/kalapas/table/kepegawaian?sortBy=${encodeURIComponent(targetSortBy)}&sortDir=${encodeURIComponent(targetSortDir)}`;
+  const rows = sortedPegawaiList.map((item, index) => [
     String(index + 1),
     item.namaPegawai || '-',
     item.nip || '-',
     item.pangkatGol || '-',
+    item.tmtPangkat ? formatDateIndo(item.tmtPangkat) : '-',
     item.jabatan || '-',
+    item.tmtJabatan ? formatDateIndo(item.tmtJabatan) : '-',
     item.agama || '-',
     item.status || '-',
     item.pendidikan || '-',
@@ -3367,7 +3443,35 @@ app.get('/kalapas/table/kepegawaian', (req, res) => {
     pageTitle: 'Data Kepegawaian',
     sectionTitle: 'DATA KEPEGAWAIAN',
     subtitle: `Total data: ${rows.length}`,
-    columns: ['No', 'Nama Pegawai', 'NIP', 'Pangkat/Gol', 'Jabatan', 'Agama', 'Status', 'Pendidikan', 'Penempatan/Seksi', 'Penempatan/Bidang', 'Jenis Kelamin', 'Type Pegawai'],
+    headerRows: [[
+      { label: 'No' },
+      { label: 'Nama Pegawai' },
+      { label: 'NIP' },
+      { label: 'Pangkat/Gol' },
+      {
+        label: 'TMT Pangkat',
+        sortLinks: [
+          { label: '↑', href: makeSortUrl('tmt_pangkat', 'asc'), active: sortBy === 'tmt_pangkat' && sortDir === 'asc' },
+          { label: '↓', href: makeSortUrl('tmt_pangkat', 'desc'), active: sortBy === 'tmt_pangkat' && sortDir === 'desc' },
+        ],
+      },
+      { label: 'Jabatan' },
+      {
+        label: 'TMT Jabatan',
+        sortLinks: [
+          { label: '↑', href: makeSortUrl('tmt_jabatan', 'asc'), active: sortBy === 'tmt_jabatan' && sortDir === 'asc' },
+          { label: '↓', href: makeSortUrl('tmt_jabatan', 'desc'), active: sortBy === 'tmt_jabatan' && sortDir === 'desc' },
+        ],
+      },
+      { label: 'Agama' },
+      { label: 'Status' },
+      { label: 'Pendidikan' },
+      { label: 'Penempatan/Seksi' },
+      { label: 'Penempatan/Bidang' },
+      { label: 'Jenis Kelamin' },
+      { label: 'Type Pegawai' },
+    ]],
+    columns: ['No', 'Nama Pegawai', 'NIP', 'Pangkat/Gol', 'TMT Pangkat', 'Jabatan', 'TMT Jabatan', 'Agama', 'Status', 'Pendidikan', 'Penempatan/Seksi', 'Penempatan/Bidang', 'Jenis Kelamin', 'Type Pegawai'],
     rows,
     backUrl: '/kalapas'
   });
@@ -5664,12 +5768,22 @@ app.get('/admin/tu-umum/barang', requireAccess('tu-umum'), (req, res) => {
 });
 
 app.get('/admin/tu-umum/kepegawaian', requireAccess('tu-umum'), (req, res) => {
+  const { sortBy, sortDir } = parseKepegawaianSortQuery(req.query);
   const pegawaiList = db.prepare('SELECT * FROM tu_kepegawaian ORDER BY id ASC').all();
+  const sortedPegawaiList = sortPegawaiListByTmt(pegawaiList, sortBy, sortDir);
+
+  const filterParams = new URLSearchParams();
+  filterParams.set('sortBy', sortBy);
+  filterParams.set('sortDir', sortDir);
   const editPegawai = req.query.editPegawai ? db.prepare('SELECT * FROM tu_kepegawaian WHERE id=?').get(Number(req.query.editPegawai)) : null;
   res.render('admin/tu-kepegawaian', {
     user: req.session.user,
-    pegawaiList,
+    pegawaiList: sortedPegawaiList,
     editPegawai,
+    sortBy,
+    sortDir,
+    filterQuery: `?${filterParams.toString()}`,
+    filterQueryWithAmp: `&${filterParams.toString()}`,
     active: 'tu-kepegawaian',
     success: req.query.success,
   });
@@ -5814,18 +5928,25 @@ app.post('/admin/tu-umum/:id/delete', requireAccess('tu-umum'), (req, res) => {
 });
 
 app.post('/admin/tu-umum/pegawai/add', requireAccess('tu-umum'), (req, res) => {
+  const sortBy = ['tmt_pangkat', 'tmt_jabatan'].includes(String(req.query.sortBy || ''))
+    ? String(req.query.sortBy)
+    : 'tmt_pangkat';
+  const sortDir = String(req.query.sortDir || '').toLowerCase() === 'desc' ? 'desc' : 'asc';
+  const filterQuery = `?sortBy=${encodeURIComponent(sortBy)}&sortDir=${encodeURIComponent(sortDir)}`;
   const namaPegawai = (req.body.nama_pegawai || '').trim().toUpperCase();
-  if (!namaPegawai) return res.redirect('/admin/tu-umum/kepegawaian');
+  if (!namaPegawai) return res.redirect(`/admin/tu-umum/kepegawaian${filterQuery}`);
 
   db.prepare(`
     INSERT INTO tu_kepegawaian
-      (nama_pegawai, nip, pangkat_gol, jabatan, agama, status, pendidikan, penempatan_seksi, penempatan_bidang, jenis_kelamin, type_pegawai)
-    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+      (nama_pegawai, nip, pangkat_gol, tmt_pangkat, jabatan, tmt_jabatan, agama, status, pendidikan, penempatan_seksi, penempatan_bidang, jenis_kelamin, type_pegawai)
+    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
   `).run(
     namaPegawai,
     (req.body.nip || '').trim(),
     (req.body.pangkat_gol || '').trim(),
+    (req.body.tmt_pangkat || '').trim(),
     (req.body.jabatan || '').trim(),
+    (req.body.tmt_jabatan || '').trim(),
     (req.body.agama || '').trim(),
     (req.body.status || '').trim(),
     (req.body.pendidikan || '').trim(),
@@ -5835,23 +5956,30 @@ app.post('/admin/tu-umum/pegawai/add', requireAccess('tu-umum'), (req, res) => {
     (req.body.type_pegawai || '').trim(),
   );
 
-  res.redirect('/admin/tu-umum/kepegawaian?success=1');
+  res.redirect(`/admin/tu-umum/kepegawaian${filterQuery}&success=1`);
 });
 
 app.post('/admin/tu-umum/pegawai/:id/update', requireAccess('tu-umum'), (req, res) => {
+  const sortBy = ['tmt_pangkat', 'tmt_jabatan'].includes(String(req.query.sortBy || ''))
+    ? String(req.query.sortBy)
+    : 'tmt_pangkat';
+  const sortDir = String(req.query.sortDir || '').toLowerCase() === 'desc' ? 'desc' : 'asc';
+  const filterQuery = `?sortBy=${encodeURIComponent(sortBy)}&sortDir=${encodeURIComponent(sortDir)}`;
   const id = Number(req.params.id);
   const namaPegawai = (req.body.nama_pegawai || '').trim().toUpperCase();
-  if (!namaPegawai) return res.redirect('/admin/tu-umum/kepegawaian');
+  if (!namaPegawai) return res.redirect(`/admin/tu-umum/kepegawaian${filterQuery}`);
 
   db.prepare(`
     UPDATE tu_kepegawaian
-    SET nama_pegawai=?, nip=?, pangkat_gol=?, jabatan=?, agama=?, status=?, pendidikan=?, penempatan_seksi=?, penempatan_bidang=?, jenis_kelamin=?, type_pegawai=?
+    SET nama_pegawai=?, nip=?, pangkat_gol=?, tmt_pangkat=?, jabatan=?, tmt_jabatan=?, agama=?, status=?, pendidikan=?, penempatan_seksi=?, penempatan_bidang=?, jenis_kelamin=?, type_pegawai=?
     WHERE id=?
   `).run(
     namaPegawai,
     (req.body.nip || '').trim(),
     (req.body.pangkat_gol || '').trim(),
+    (req.body.tmt_pangkat || '').trim(),
     (req.body.jabatan || '').trim(),
+    (req.body.tmt_jabatan || '').trim(),
     (req.body.agama || '').trim(),
     (req.body.status || '').trim(),
     (req.body.pendidikan || '').trim(),
@@ -5862,12 +5990,17 @@ app.post('/admin/tu-umum/pegawai/:id/update', requireAccess('tu-umum'), (req, re
     id,
   );
 
-  res.redirect('/admin/tu-umum/kepegawaian?success=1');
+  res.redirect(`/admin/tu-umum/kepegawaian${filterQuery}&success=1`);
 });
 
 app.post('/admin/tu-umum/pegawai/:id/delete', requireAccess('tu-umum'), (req, res) => {
+  const sortBy = ['tmt_pangkat', 'tmt_jabatan'].includes(String(req.query.sortBy || ''))
+    ? String(req.query.sortBy)
+    : 'tmt_pangkat';
+  const sortDir = String(req.query.sortDir || '').toLowerCase() === 'desc' ? 'desc' : 'asc';
+  const filterQuery = `?sortBy=${encodeURIComponent(sortBy)}&sortDir=${encodeURIComponent(sortDir)}`;
   db.prepare('DELETE FROM tu_kepegawaian WHERE id=?').run(Number(req.params.id));
-  res.redirect('/admin/tu-umum/kepegawaian?success=1');
+  res.redirect(`/admin/tu-umum/kepegawaian${filterQuery}&success=1`);
 });
 
 // ── Kamar/Blok ──────────────────────────────────────────────────

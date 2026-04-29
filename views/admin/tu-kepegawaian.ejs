@@ -4,6 +4,21 @@
   <meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Data Kepegawaian TU – Admin Lapas</title>
   <link rel="stylesheet" href="/css/admin.css">
+  <style>
+    .tbl-sort-wrap { display:inline-flex; align-items:center; gap:6px; flex-wrap:wrap; }
+    .tbl-sort-icons { display:inline-flex; gap:4px; align-items:center; }
+    .tbl-sort-icon {
+      text-decoration:none;
+      font-size:12px;
+      font-weight:700;
+      color:#94a3b8;
+      background:transparent;
+      border:0;
+      padding:0 2px;
+      line-height:1.2;
+    }
+    .tbl-sort-icon.active { color:#2563eb; }
+  </style>
 </head>
 <body>
 <div class="admin-wrapper">
@@ -19,12 +34,14 @@
       <div class="card">
         <div class="card-header"><h3>➕ Tambah Data Kepegawaian</h3></div>
         <div class="card-body">
-          <form method="POST" action="/admin/tu-umum/pegawai/add">
+          <form method="POST" action="/admin/tu-umum/pegawai/add<%= filterQuery || '' %>">
             <div class="form-grid col-4" style="margin-bottom:12px;">
               <div class="form-group"><label>Nama Pegawai</label><input type="text" name="nama_pegawai" required></div>
               <div class="form-group"><label>NIP</label><input type="text" name="nip"></div>
               <div class="form-group"><label>Pangkat/Gol</label><input type="text" name="pangkat_gol"></div>
+              <div class="form-group"><label>TMT Pangkat</label><input type="date" name="tmt_pangkat"></div>
               <div class="form-group"><label>Jabatan</label><input type="text" name="jabatan"></div>
+              <div class="form-group"><label>TMT Jabatan</label><input type="date" name="tmt_jabatan"></div>
               <div class="form-group"><label>Agama</label><input type="text" name="agama"></div>
               <div class="form-group"><label>Status</label><input type="text" name="status"></div>
               <div class="form-group"><label>Pendidikan</label><input type="text" name="pendidikan"></div>
@@ -41,12 +58,14 @@
       <% if (editPegawai) { %>
       <div class="edit-panel">
         <h4>✏️ Edit Data Kepegawaian (ID: <%= editPegawai.id %>)</h4>
-        <form method="POST" action="/admin/tu-umum/pegawai/<%= editPegawai.id %>/update">
+        <form method="POST" action="/admin/tu-umum/pegawai/<%= editPegawai.id %>/update<%= filterQuery || '' %>">
           <div class="form-grid col-4" style="margin-bottom:12px;">
             <div class="form-group"><label>Nama Pegawai</label><input type="text" name="nama_pegawai" value="<%= editPegawai.nama_pegawai %>" required></div>
             <div class="form-group"><label>NIP</label><input type="text" name="nip" value="<%= editPegawai.nip || '' %>"></div>
             <div class="form-group"><label>Pangkat/Gol</label><input type="text" name="pangkat_gol" value="<%= editPegawai.pangkat_gol || '' %>"></div>
+            <div class="form-group"><label>TMT Pangkat</label><input type="date" name="tmt_pangkat" value="<%= editPegawai.tmt_pangkat || '' %>"></div>
             <div class="form-group"><label>Jabatan</label><input type="text" name="jabatan" value="<%= editPegawai.jabatan || '' %>"></div>
+            <div class="form-group"><label>TMT Jabatan</label><input type="date" name="tmt_jabatan" value="<%= editPegawai.tmt_jabatan || '' %>"></div>
             <div class="form-group"><label>Agama</label><input type="text" name="agama" value="<%= editPegawai.agama || '' %>"></div>
             <div class="form-group"><label>Status</label><input type="text" name="status" value="<%= editPegawai.status || '' %>"></div>
             <div class="form-group"><label>Pendidikan</label><input type="text" name="pendidikan" value="<%= editPegawai.pendidikan || '' %>"></div>
@@ -57,7 +76,7 @@
           </div>
           <div style="display:flex;gap:8px;">
             <button type="submit" class="btn btn-success btn-sm">💾 Simpan</button>
-            <a href="/admin/tu-umum/kepegawaian" class="btn btn-secondary btn-sm">✕ Batal</a>
+            <a href="/admin/tu-umum/kepegawaian<%= filterQuery || '' %>" class="btn btn-secondary btn-sm">✕ Batal</a>
           </div>
         </form>
       </div>
@@ -74,7 +93,25 @@
                   <th>Nama Pegawai</th>
                   <th>NIP</th>
                   <th>Pangkat/Gol</th>
+                  <th>
+                    <span class="tbl-sort-wrap">
+                      <span>TMT Pangkat</span>
+                      <span class="tbl-sort-icons">
+                        <a href="/admin/tu-umum/kepegawaian?sortBy=tmt_pangkat&sortDir=asc" class="tbl-sort-icon <%= sortBy === 'tmt_pangkat' && sortDir === 'asc' ? 'active' : '' %>" title="Urut naik">↑</a>
+                        <a href="/admin/tu-umum/kepegawaian?sortBy=tmt_pangkat&sortDir=desc" class="tbl-sort-icon <%= sortBy === 'tmt_pangkat' && sortDir === 'desc' ? 'active' : '' %>" title="Urut turun">↓</a>
+                      </span>
+                    </span>
+                  </th>
                   <th>Jabatan</th>
+                  <th>
+                    <span class="tbl-sort-wrap">
+                      <span>TMT Jabatan</span>
+                      <span class="tbl-sort-icons">
+                        <a href="/admin/tu-umum/kepegawaian?sortBy=tmt_jabatan&sortDir=asc" class="tbl-sort-icon <%= sortBy === 'tmt_jabatan' && sortDir === 'asc' ? 'active' : '' %>" title="Urut naik">↑</a>
+                        <a href="/admin/tu-umum/kepegawaian?sortBy=tmt_jabatan&sortDir=desc" class="tbl-sort-icon <%= sortBy === 'tmt_jabatan' && sortDir === 'desc' ? 'active' : '' %>" title="Urut turun">↓</a>
+                      </span>
+                    </span>
+                  </th>
                   <th>Agama</th>
                   <th>Status</th>
                   <th>Pendidikan</th>
@@ -92,7 +129,9 @@
                   <td><%= item.nama_pegawai || '-' %></td>
                   <td><%= item.nip || '-' %></td>
                   <td><%= item.pangkat_gol || '-' %></td>
+                  <td><%= item.tmt_pangkat ? formatDateIndo(item.tmt_pangkat) : '-' %></td>
                   <td><%= item.jabatan || '-' %></td>
+                  <td><%= item.tmt_jabatan ? formatDateIndo(item.tmt_jabatan) : '-' %></td>
                   <td><%= item.agama || '-' %></td>
                   <td><%= item.status || '-' %></td>
                   <td><%= item.pendidikan || '-' %></td>
@@ -102,15 +141,15 @@
                   <td><%= item.type_pegawai || '-' %></td>
                   <td>
                     <div class="actions">
-                      <a href="/admin/tu-umum/kepegawaian?editPegawai=<%= item.id %>" class="btn btn-warning btn-xs">✏️ Edit</a>
-                      <form method="POST" action="/admin/tu-umum/pegawai/<%= item.id %>/delete" style="display:inline" onsubmit="return confirm('Hapus data pegawai ini?')">
+                      <a href="/admin/tu-umum/kepegawaian?editPegawai=<%= item.id %><%= filterQueryWithAmp || '' %>" class="btn btn-warning btn-xs">✏️ Edit</a>
+                      <form method="POST" action="/admin/tu-umum/pegawai/<%= item.id %>/delete<%= filterQuery || '' %>" style="display:inline" onsubmit="return confirm('Hapus data pegawai ini?')">
                         <button class="btn btn-danger btn-xs">🗑 Hapus</button>
                       </form>
                     </div>
                   </td>
                 </tr>
                 <% }) %>
-                <% if (!pegawaiList.length) { %><tr><td colspan="13" style="text-align:center;color:#aaa;padding:20px;">Belum ada data</td></tr><% } %>
+                <% if (!pegawaiList.length) { %><tr><td colspan="15" style="text-align:center;color:#aaa;padding:20px;">Belum ada data</td></tr><% } %>
               </tbody>
             </table>
           </div>
