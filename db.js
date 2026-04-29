@@ -1475,47 +1475,6 @@ seedIfEmpty('giiatja_pelatihan_sertifikat', () => {
   rows.forEach(r => insert.run(...r));
 });
 
-seedIfEmpty('giiatja_pnbp', () => {
-  const insert = db.prepare(`
-    INSERT INTO giiatja_pnbp
-      (tahun, periode_pnbp, jumlah_pnbp, target_realisasi, persentase, keterangan, sort_order)
-    VALUES (?, ?, ?, ?, ?, ?, ?)
-  `);
-  const rows = [
-    ['2026', 'JANUARI', '10.500.000', '10.000.000', '105%', 'TERCAPAI', 1],
-    ['2026', 'FEBRUARI', '8.700.000', '10.000.000', '87%', 'TIDAK TERCAPAI', 2],
-  ];
-  rows.forEach(r => insert.run(...r));
-});
-
-seedIfEmpty('giiatja_pnbp_pendapatan', () => {
-  const insert = db.prepare(`
-    INSERT INTO giiatja_pnbp_pendapatan
-      (tahun, periode_pnbp, kegiatan, peserta, jumlah, sort_order)
-    VALUES (?, ?, ?, ?, ?, ?)
-  `);
-  const rows = [
-    ['2026', 'JANUARI', 'KERAJINAN', '35', '5500000', 1],
-    ['2026', 'JANUARI', 'PANGKAS', '22', '5000000', 2],
-    ['2026', 'FEBRUARI', 'SABLON', '29', '4200000', 1],
-    ['2026', 'FEBRUARI', 'PERTANIAN', '31', '4500000', 2],
-  ];
-  rows.forEach(r => insert.run(...r));
-});
-
-seedIfEmpty('giiatja_premi_wbp', () => {
-  const insert = db.prepare(`
-    INSERT INTO giiatja_premi_wbp
-      (no_registrasi, nama_wbp, periode_bulan, periode_tahun, jenis_kegiatan, premi_didapat, keterangan, sort_order)
-    VALUES (?, ?, ?, ?, ?, ?, ?, ?)
-  `);
-  const rows = [
-    ['BI.301-GJ/2026', 'WBP A.N. L', 'APRIL', '2026', 'PANGKAS', '150.000', '-', 1],
-    ['BI.302-GJ/2026', 'WBP A.N. M', 'APRIL', '2026', 'SABLON', '125.000', '-', 2],
-  ];
-  rows.forEach(r => insert.run(...r));
-});
-
 seedIfEmpty('housing_blocks', () => {
   const insertBlock = db.prepare('INSERT INTO housing_blocks (gedung, nama_block) VALUES (?, ?)');
   const blockRows = [
