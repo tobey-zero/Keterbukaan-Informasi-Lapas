@@ -271,14 +271,6 @@
               <label>Tanggal entri</label>
               <input type="date" name="tanggal_distribusi" value="<%= selectedDistribusiDate || todayYmd %>">
             </div>
-            <div class="form-group" style="min-width: 180px; margin:0;">
-              <label>Sesi/Jam</label>
-              <select name="jam_distribusi">
-                <% expectedDistribusiJam.forEach((jam) => { %>
-                  <option value="<%= jam %>" <%= jam === selectedDistribusiJam ? 'selected' : '' %>><%= jam %></option>
-                <% }) %>
-              </select>
-            </div>
             <div style="display:flex; gap:8px; align-items:center;">
               <button type="submit" class="btn btn-primary btn-sm">🔎 Tampilkan</button>
               <a href="/admin/menu/distribusi" class="btn btn-secondary btn-sm">↺ Hari ini</a>
@@ -287,26 +279,31 @@
 
           <form method="POST" action="/admin/menu/distribusi/entry/save">
             <input type="hidden" name="tanggal_distribusi" value="<%= selectedDistribusiDate || todayYmd %>">
-            <input type="hidden" name="jam_distribusi" value="<%= selectedDistribusiJam || '08:00' %>">
 
             <div style="margin-bottom:10px; font-size:12px; color:#475569; font-weight:700;">
-              Tanggal aktif: <%= formatDateIndo(selectedDistribusiDate || todayYmd) %> | Sesi: <%= selectedDistribusiJam %> | Total tanggal entri tersimpan: <%= totalDistribusiHistory %>
+              Tanggal aktif: <%= formatDateIndo(selectedDistribusiDate || todayYmd) %> | Header sesi: Pagi (08:00), Siang (12:00), Sore (16:00) | Total tanggal entri tersimpan: <%= totalDistribusiHistory %>
             </div>
 
             <div class="table-wrap">
               <table class="admin-table">
-                <thead><tr><th>#</th><th>Nama Blok</th><th>Jumlah Distribusi</th></tr></thead>
+                <thead><tr><th>#</th><th>Nama Blok</th><th>Pagi (08:00)</th><th>Siang (12:00)</th><th>Sore (16:00)</th></tr></thead>
                 <tbody>
                   <% distribusiBlokList.forEach((blok, i) => { %>
                   <tr>
                     <td><%= i + 1 %></td>
                     <td><strong><%= blok.namaBlok || '-' %></strong></td>
                     <td>
-                      <input type="number" min="0" name="jumlah_<%= blok.id %>" value="<%= Number(distribusiByBlokId?.[blok.id] ?? 0) %>" style="max-width:140px;">
+                      <input type="number" min="0" name="jumlah_pagi_<%= blok.id %>" value="<%= Number(distribusiByBlokJam?.[blok.id]?.['08:00'] ?? 0) %>" style="max-width:140px;">
+                    </td>
+                    <td>
+                      <input type="number" min="0" name="jumlah_siang_<%= blok.id %>" value="<%= Number(distribusiByBlokJam?.[blok.id]?.['12:00'] ?? 0) %>" style="max-width:140px;">
+                    </td>
+                    <td>
+                      <input type="number" min="0" name="jumlah_sore_<%= blok.id %>" value="<%= Number(distribusiByBlokJam?.[blok.id]?.['16:00'] ?? 0) %>" style="max-width:140px;">
                     </td>
                   </tr>
                   <% }) %>
-                  <% if (!distribusiBlokList.length) { %><tr><td colspan="3" style="text-align:center;color:#aaa;padding:20px;">Belum ada template blok aktif</td></tr><% } %>
+                  <% if (!distribusiBlokList.length) { %><tr><td colspan="5" style="text-align:center;color:#aaa;padding:20px;">Belum ada template blok aktif</td></tr><% } %>
                 </tbody>
               </table>
             </div>

@@ -2357,9 +2357,6 @@ app.get('/kalapas/table/dapur', (req, res) => {
     ? String(req.query.tanggal)
     : getTodayYmd();
   const selectedBamaMenuHari = String(req.query.menu_hari || '').trim() || 'Menu Hari VIII';
-  const selectedDistribusiJam = ['08:00', '12:00', '16:00'].includes(String(req.query.jam_distribusi || ''))
-    ? String(req.query.jam_distribusi)
-    : '08:00';
 
   const menuTitle = getAppSetting('menu_title', 'DAFTAR MENU MAKAN HARI INI');
   const selectedDateLabel = new Intl.DateTimeFormat('id-ID', {
@@ -2439,15 +2436,22 @@ app.get('/kalapas/table/dapur', (req, res) => {
   const penyimpananById = Object.fromEntries(penyimpananRows.map((item) => [Number(item.bamaId), item]));
 
   const distribusiRows = db.prepare(`
-    SELECT b.nama_blok AS namaBlok, b.sort_order AS sortOrder, e.jumlah
+    SELECT
+      b.id,
+      b.nama_blok AS namaBlok,
+      b.sort_order AS sortOrder,
+      MAX(CASE WHEN e.jam = '08:00' THEN e.jumlah END) AS jumlahPagi,
+      MAX(CASE WHEN e.jam = '12:00' THEN e.jumlah END) AS jumlahSiang,
+      MAX(CASE WHEN e.jam = '16:00' THEN e.jumlah END) AS jumlahSore
     FROM dapur_distribusi_blok b
     LEFT JOIN dapur_distribusi_entri e
       ON e.blok_id = b.id
       AND e.tanggal = ?
-      AND e.jam = ?
+      AND e.jam IN ('08:00', '12:00', '16:00')
     WHERE b.is_active = 1
+    GROUP BY b.id, b.nama_blok, b.sort_order
     ORDER BY b.sort_order ASC, b.id ASC
-  `).all(selectedDate, selectedDistribusiJam);
+  `).all(selectedDate);
   const activeDistribusiBlokCount = Number(db.prepare(`
     SELECT COUNT(*) AS c
     FROM dapur_distribusi_blok
@@ -2477,7 +2481,6 @@ app.get('/kalapas/table/dapur', (req, res) => {
     menuList,
     jadwalPetugasList,
     selectedBamaMenuHari,
-    selectedDistribusiJam,
     distribusiRows,
     distribusiStatusPerJam,
     bamaMasterList,
@@ -4420,19 +4423,19 @@ function renderAdminMenuPage(req, res, menuSection) {
     : null;
   const distribusiEntries = db.prepare(`
     SELECT
-      e.id,
-      e.tanggal,
-      e.jam,
       e.blok_id AS blokId,
-      e.jumlah,
-      b.nama_blok AS namaBlok
+      e.jam,
+      e.jumlah
     FROM dapur_distribusi_entri e
-    INNER JOIN dapur_distribusi_blok b ON b.id = e.blok_id
     WHERE e.tanggal = ?
-      AND e.jam = ?
-    ORDER BY b.sort_order ASC, b.id ASC
-  `).all(selectedDistribusiDate, selectedDistribusiJam);
-  const distribusiByBlokId = Object.fromEntries(distribusiEntries.map((item) => [Number(item.blokId), Number(item.jumlah) || 0]));
+      AND e.jam IN ('08:00', '12:00', '16:00')
+  `).all(selectedDistribusiDate);
+  const distribusiByBlokJam = {};
+  distribusiEntries.forEach((item) => {
+    const blokId = Number(item.blokId);
+    if (!distribusiByBlokJam[blokId]) distribusiByBlokJam[blokId] = {};
+    distribusiByBlokJam[blokId][String(item.jam)] = Number(item.jumlah) || 0;
+  });
   const distribusiStatusPerJam = expectedDistribusiJam.map((jam) => {
     const total = Number(db.prepare(`
       SELECT COUNT(*) AS c
@@ -4534,7 +4537,7 @@ function renderAdminMenuPage(req, res, menuSection) {
     expectedDistribusiJam,
     selectedDistribusiDate,
     selectedDistribusiJam,
-    distribusiByBlokId,
+    distribusiByBlokJam,
     distribusiStatusPerJam,
     totalDistribusiHistory,
     bamaMasterList,
@@ -4819,12 +4822,14 @@ app.post('/admin/menu/distribusi/blok/:id/delete', requireAccess('menu'), (req, 
 
 app.post('/admin/menu/distribusi/entry/save', requireAccess('menu'), (req, res) => {
   const expectedJam = ['08:00', '12:00', '16:00'];
+  const jamFieldMap = {
+    '08:00': 'pagi',
+    '12:00': 'siang',
+    '16:00': 'sore',
+  };
   const tanggal = /^\d{4}-\d{2}-\d{2}$/.test(String(req.body.tanggal_distribusi || ''))
     ? String(req.body.tanggal_distribusi)
     : getTodayYmd();
-  const jam = expectedJam.includes(String(req.body.jam_distribusi || ''))
-    ? String(req.body.jam_distribusi)
-    : expectedJam[0];
 
   const blokList = db.prepare(`
     SELECT id
@@ -4834,7 +4839,7 @@ app.post('/admin/menu/distribusi/entry/save', requireAccess('menu'), (req, res) 
   `).all();
 
   if (!blokList.length) {
-    return res.redirect(`/admin/menu/distribusi?tanggal_distribusi=${encodeURIComponent(tanggal)}&jam_distribusi=${encodeURIComponent(jam)}&error=Template+blok+belum+ada#template-distribusi-card`);
+    return res.redirect(`/admin/menu/distribusi?tanggal_distribusi=${encodeURIComponent(tanggal)}&error=Template+blok+belum+ada#template-distribusi-card`);
   }
 
   const upsert = db.prepare(`
@@ -4845,13 +4850,16 @@ app.post('/admin/menu/distribusi/entry/save', requireAccess('menu'), (req, res) 
   `);
 
   blokList.forEach((blok) => {
-    const rawJumlah = String(req.body[`jumlah_${blok.id}`] || '').trim();
-    const parsed = Number(rawJumlah.replace(/[^0-9-]/g, ''));
-    const jumlah = Number.isFinite(parsed) ? Math.max(0, parsed) : 0;
-    upsert.run(tanggal, jam, Number(blok.id), jumlah);
+    expectedJam.forEach((jam) => {
+      const fieldName = `jumlah_${jamFieldMap[jam]}_${blok.id}`;
+      const rawJumlah = String(req.body[fieldName] || '').trim();
+      const parsed = Number(rawJumlah.replace(/[^0-9-]/g, ''));
+      const jumlah = Number.isFinite(parsed) ? Math.max(0, parsed) : 0;
+      upsert.run(tanggal, jam, Number(blok.id), jumlah);
+    });
   });
 
-  return res.redirect(`/admin/menu/distribusi?tanggal_distribusi=${encodeURIComponent(tanggal)}&jam_distribusi=${encodeURIComponent(jam)}&success=1#entri-distribusi-card`);
+  return res.redirect(`/admin/menu/distribusi?tanggal_distribusi=${encodeURIComponent(tanggal)}&success=1#entri-distribusi-card`);
 });
 
 app.post('/admin/menu/permintaan/save', requireAccess('menu'), (req, res) => {

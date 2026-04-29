@@ -198,7 +198,7 @@
     <div class="dapur-submenu">
       <a href="/kalapas/table/dapur?tab=menu&tanggal=<%= encodeURIComponent(selectedDate) %>" class="<%= activeTab === 'menu' ? 'active' : '' %>">🍽 Menu</a>
       <a href="/kalapas/table/dapur?tab=jadwal&tanggal=<%= encodeURIComponent(selectedDate) %>" class="<%= activeTab === 'jadwal' ? 'active' : '' %>">👨‍🍳 Jadwal Petugas</a>
-      <a href="/kalapas/table/dapur?tab=distribusi&tanggal=<%= encodeURIComponent(selectedDate) %>&jam_distribusi=<%= encodeURIComponent(selectedDistribusiJam || '08:00') %>" class="<%= activeTab === 'distribusi' ? 'active' : '' %>">📦 Distribusi Makanan</a>
+      <a href="/kalapas/table/dapur?tab=distribusi&tanggal=<%= encodeURIComponent(selectedDate) %>" class="<%= activeTab === 'distribusi' ? 'active' : '' %>">📦 Distribusi Makanan</a>
       <a href="/kalapas/table/dapur?tab=permintaan&tanggal=<%= encodeURIComponent(selectedDate) %>&menu_hari=<%= encodeURIComponent(selectedBamaMenuHari || 'Menu Hari VIII') %>" class="<%= activeTab === 'permintaan' ? 'active' : '' %>">📄 Permintaan Bahan Makanan</a>
       <a href="/kalapas/table/dapur?tab=diterima&tanggal=<%= encodeURIComponent(selectedDate) %>&menu_hari=<%= encodeURIComponent(selectedBamaMenuHari || 'Menu Hari VIII') %>" class="<%= activeTab === 'diterima' ? 'active' : '' %>">📥 Penerimaan Bahan Makanan</a>
       <a href="/kalapas/table/dapur?tab=penyimpanan&tanggal=<%= encodeURIComponent(selectedDate) %>&menu_hari=<%= encodeURIComponent(selectedBamaMenuHari || 'Menu Hari VIII') %>" class="<%= activeTab === 'penyimpanan' ? 'active' : '' %>">🏪 Penyimpanan Bahan Makanan</a>
@@ -306,20 +306,12 @@
               <span class="label">Tanggal Distribusi</span>
               <input type="date" name="tanggal" value="<%= selectedDate %>">
             </div>
-            <div>
-              <span class="label">Jam Distribusi</span>
-              <select name="jam_distribusi" style="border:1px solid #cbd5e1;border-radius:6px;padding:7px 10px;font-size:12px;font-weight:700;color:#0f172a;background:#fff;">
-                <% ['08:00', '12:00', '16:00'].forEach((jam) => { %>
-                  <option value="<%= jam %>" <%= jam === selectedDistribusiJam ? 'selected' : '' %>><%= jam %></option>
-                <% }) %>
-              </select>
-            </div>
             <button type="submit">📅 Tampilkan</button>
             <a href="/kalapas/table/dapur?tab=distribusi" class="reset">↺ Hari Ini</a>
           </form>
           <div class="dapur-meta">
             <div><strong>DISTRIBUSI MAKANAN</strong></div>
-            <div>Tanggal aktif: <%= selectedDateLabel %> | Sesi: <%= selectedDistribusiJam %></div>
+            <div>Tanggal aktif: <%= selectedDateLabel %> | Header sesi: Pagi, Siang, Sore</div>
           </div>
         </div>
 
@@ -329,7 +321,9 @@
               <tr>
                 <th>#</th>
                 <th>Nama Blok</th>
-                <th>Jumlah Distribusi</th>
+                <th>Pagi (08:00)</th>
+                <th>Siang (12:00)</th>
+                <th>Sore (16:00)</th>
               </tr>
             </thead>
             <tbody>
@@ -337,11 +331,13 @@
                 <tr>
                   <td><%= idx + 1 %></td>
                   <td style="text-align:left;"><%= item.namaBlok || '-' %></td>
-                  <td><%= item.jumlah ?? '-' %></td>
+                  <td><%= item.jumlahPagi ?? '-' %></td>
+                  <td><%= item.jumlahSiang ?? '-' %></td>
+                  <td><%= item.jumlahSore ?? '-' %></td>
                 </tr>
               <% }) %>
               <% if (!distribusiRows.length) { %>
-                <tr><td colspan="3" class="dapur-empty">Belum ada data distribusi</td></tr>
+                <tr><td colspan="5" class="dapur-empty">Belum ada data distribusi</td></tr>
               <% } %>
             </tbody>
           </table>
