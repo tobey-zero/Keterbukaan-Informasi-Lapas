@@ -1185,6 +1185,7 @@ function getPublicData() {
         COALESCE(NULLIF(TRIM(d.status_integrasi), ''), p.status_integrasi, '-') AS statusIntegrasi
       FROM pentahapan_pembinaan_detail d
       LEFT JOIN pentahapan_pembinaan p ON UPPER(TRIM(p.nama_wbp)) = UPPER(TRIM(d.nama_wbp))
+      WHERE COALESCE(d.is_active, 1) = 1
       ORDER BY d.nama_wbp COLLATE NOCASE ASC`)
     .all()
     .map((item) => ({
@@ -4001,7 +4002,7 @@ app.get('/admin/dashboard', requireAccess('dashboard'), (req, res) => {
     remisi: db.prepare('SELECT COUNT(*) AS c FROM besaran_remisi').get().c,
     menu: db.prepare('SELECT COUNT(*) AS c FROM menu_harian_set').get().c,
     pembinaan: db.prepare('SELECT COUNT(*) AS c FROM pentahapan_pembinaan').get().c,
-    detail: db.prepare('SELECT COUNT(*) AS c FROM pentahapan_pembinaan_detail').get().c,
+    detail: db.prepare('SELECT COUNT(*) AS c FROM pentahapan_pembinaan_detail WHERE COALESCE(is_active, 1) = 1').get().c,
     jadwal: db.prepare('SELECT COUNT(*) AS c FROM jadwal_kegiatan').get().c,
     raziaJadwal: db.prepare('SELECT COUNT(*) AS c FROM razia_jadwal').get().c,
     raziaBarangBukti: db.prepare('SELECT COUNT(*) AS c FROM razia_barang_bukti').get().c,
@@ -5195,20 +5196,218 @@ app.post('/admin/pembinaan/:id/delete', requireAccess('pembinaan'), (req, res) =
 
 // ── Pentahapan Pembinaan Detail ───────────────────────────────────
 app.get('/admin/pembinaan-detail', requireAccess('pembinaan-detail'), (req, res) => {
-  const list = db.prepare('SELECT * FROM pentahapan_pembinaan_detail ORDER BY id').all().map((item) => ({
+  const searchKeyword = String(req.query.search || '').trim();
+  const statusFilter = String(req.query.status || 'semua').trim().toLowerCase();
+  const whereClauses = [];
+  const params = [];
+
+  if (statusFilter === 'aktif') {
+    whereClauses.push('COALESCE(is_active, 1) = 1');
+  } else if (statusFilter === 'nonaktif') {
+    whereClauses.push('COALESCE(is_active, 1) = 0');
+  }
+
+  if (searchKeyword) {
+    whereClauses.push(`(
+      no_reg LIKE ? OR
+      nama_wbp LIKE ? OR
+      jenis_kejahatan LIKE ? OR
+      blok_kamar LIKE ? OR
+      total_remisi LIKE ? OR
+      keterangan LIKE ? OR
+      status_integrasi LIKE ? OR
+      tanggal1 LIKE ? OR
+      tanggal2 LIKE ? OR
+      tanggal3 LIKE ? OR
+      tanggal4 LIKE ?
+    )`);
+    const likeKeyword = `%${searchKeyword}%`;
+    for (let i = 0; i < 11; i += 1) params.push(likeKeyword);
+  }
+
+  const sql = `
+    SELECT *
+    FROM pentahapan_pembinaan_detail
+    ${whereClauses.length ? `WHERE ${whereClauses.join(' AND ')}` : ''}
+    ORDER BY COALESCE(is_active, 1) DESC, id DESC
+  `;
+
+  const list = db.prepare(sql).all(...params).map((item) => ({
     ...item,
     is_status_overdue: isIntegrationOverdue(item.tanggal2, item.status_integrasi),
   }));
   const edit = req.query.edit ? db.prepare('SELECT * FROM pentahapan_pembinaan_detail WHERE id=?').get(Number(req.query.edit)) : null;
-  res.render('admin/pembinaan-detail', { user: req.session.user, list, edit, active: 'pembinaan-detail', success: req.query.success });
+  const activeCount = Number(db.prepare('SELECT COUNT(*) AS c FROM pentahapan_pembinaan_detail WHERE COALESCE(is_active, 1) = 1').get()?.c || 0);
+  const inactiveCount = Number(db.prepare('SELECT COUNT(*) AS c FROM pentahapan_pembinaan_detail WHERE COALESCE(is_active, 1) = 0').get()?.c || 0);
+  res.render('admin/pembinaan-detail', {
+    user: req.session.user,
+    list,
+    edit,
+    active: 'pembinaan-detail',
+    success: req.query.success,
+    error: req.query.error,
+    importSuccess: req.query.importSuccess,
+    searchKeyword,
+    statusFilter,
+    activeCount,
+    inactiveCount,
+  });
+});
+
+app.get('/admin/pembinaan-detail/template.xlsx', requireAccess('pembinaan-detail'), (_req, res) => {
+  const worksheet = XLSX.utils.aoa_to_sheet([
+    ['NO REG', 'NAMA WBP', 'JENIS KEJAHATAN', 'BLOK/KAMAR', 'TANGGAL 1/3', 'TANGGAL 1/2', 'TANGGAL 2/3', 'TANGGAL EKSPIRASI', 'TOTAL REMISI', 'KETERANGAN', 'STATUS INTEGRASI'],
+    ['BI.15-PK/PD/2023', 'NAMA WBP CONTOH', 'NARKOTIKA', 'BLOK A / KAMAR 01', '15 OCT 2020', '15 OCT 2020', '15 OCT 2021', '28 DEC 2026', '4 BULAN 15 HARI', 'AKTIF TEMPAT IBADAH', 'MENUNGGU SK'],
+  ]);
+  const workbook = XLSX.utils.book_new();
+  XLSX.utils.book_append_sheet(workbook, worksheet, 'Template Pembinaan');
+  const fileBuffer = XLSX.write(workbook, { bookType: 'xlsx', type: 'buffer' });
+
+  res.setHeader('Content-Disposition', 'attachment; filename="template-pembinaan-detail.xlsx"');
+  res.setHeader('Content-Type', 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet');
+  return res.send(fileBuffer);
+});
+
+app.post('/admin/pembinaan-detail/import-excel', requireAccess('pembinaan-detail'), remisiExcelUpload.single('excel_file'), (req, res) => {
+  if (!req.file?.buffer) {
+    return res.redirect('/admin/pembinaan-detail?error=File+Excel+belum+dipilih');
+  }
+
+  let workbook;
+  try {
+    workbook = XLSX.read(req.file.buffer, { type: 'buffer' });
+  } catch (_err) {
+    return res.redirect('/admin/pembinaan-detail?error=File+Excel+tidak+valid');
+  }
+
+  const firstSheetName = workbook.SheetNames[0];
+  if (!firstSheetName) {
+    return res.redirect('/admin/pembinaan-detail?error=Sheet+Excel+tidak+ditemukan');
+  }
+
+  const rows = XLSX.utils.sheet_to_json(workbook.Sheets[firstSheetName], { defval: '' });
+  if (!rows.length) {
+    return res.redirect('/admin/pembinaan-detail?error=Data+Excel+kosong');
+  }
+
+  const normalizeRowValue = (row, aliases) => {
+    for (const key of Object.keys(row)) {
+      const normalizedKey = normalizeExcelHeaderKey(key);
+      if (aliases.includes(normalizedKey)) return String(row[key] || '').trim();
+    }
+    return '';
+  };
+
+  const parsedRows = rows.map((row) => {
+    const noReg = normalizeRowValue(row, ['noreg', 'noregistrasi', 'noregistration', 'noregistrasiwbp', 'noregwbp']).toUpperCase();
+    const namaWbp = normalizeRowValue(row, ['namawbp', 'nama']).toUpperCase();
+    const jenisKejahatan = normalizeRowValue(row, ['jeniskejahatan', 'tindakpidana']).toUpperCase();
+    const blokKamar = normalizeRowValue(row, ['blokkamar', 'blok', 'kamar']).toUpperCase();
+    const tanggal1 = normalizeRowValue(row, ['tanggal13', 'tgl13', 'tanggalsepertiga']);
+    const tanggal3 = normalizeRowValue(row, ['tanggal12', 'tgl12', 'tanggalsetengah']);
+    const tanggal2 = normalizeRowValue(row, ['tanggal23', 'tgl23', 'tanggalduapertiga']);
+    const tanggal4 = normalizeRowValue(row, ['tanggalekspirasi', 'ekspirasi', 'tanggalakhir']);
+    const totalRemisi = normalizeRowValue(row, ['totalremisi', 'remisitotal']);
+    const keterangan = normalizeRowValue(row, ['keterangan', 'ket']);
+    const statusIntegrasi = normalizeRowValue(row, ['statusintegrasi', 'status']);
+
+    return {
+      noReg,
+      namaWbp,
+      jenisKejahatan,
+      blokKamar,
+      tanggal1,
+      tanggal2,
+      tanggal3,
+      tanggal4,
+      totalRemisi,
+      keterangan,
+      statusIntegrasi,
+    };
+  }).filter((item) => item.noReg && item.namaWbp);
+
+  if (!parsedRows.length) {
+    return res.redirect('/admin/pembinaan-detail?error=Tidak+ada+baris+valid.+Pastikan+NO+REG+dan+NAMA+WBP+terisi');
+  }
+
+  const selectByNoReg = db.prepare(`
+    SELECT id
+    FROM pentahapan_pembinaan_detail
+    WHERE UPPER(TRIM(no_reg)) = ?
+    ORDER BY COALESCE(is_active, 1) DESC, id DESC
+  `);
+  const updateById = db.prepare(`
+    UPDATE pentahapan_pembinaan_detail
+    SET no_reg=?, nama_wbp=?, jenis_kejahatan=?, blok_kamar=?, tanggal1=?, tanggal2=?, tanggal3=?, tanggal4=?, total_remisi=?, keterangan=?, status_integrasi=?, is_active=1
+    WHERE id=?
+  `);
+  const insertStmt = db.prepare(`
+    INSERT INTO pentahapan_pembinaan_detail
+      (no_reg, nama_wbp, jenis_kejahatan, blok_kamar, tanggal1, tanggal2, tanggal3, tanggal4, total_remisi, keterangan, status_integrasi, is_active)
+    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 1)
+  `);
+  const deactivateDuplicateById = db.prepare('UPDATE pentahapan_pembinaan_detail SET is_active = 0 WHERE id = ?');
+
+  let updatedCount = 0;
+  let insertedCount = 0;
+
+  db.exec('BEGIN');
+  try {
+    parsedRows.forEach((item) => {
+      const existingRows = selectByNoReg.all(item.noReg);
+      if (existingRows.length) {
+        const targetId = Number(existingRows[0].id);
+        updateById.run(
+          item.noReg,
+          item.namaWbp,
+          item.jenisKejahatan,
+          item.blokKamar,
+          item.tanggal1,
+          item.tanggal2,
+          item.tanggal3,
+          item.tanggal4,
+          item.totalRemisi,
+          item.keterangan,
+          item.statusIntegrasi,
+          targetId
+        );
+        existingRows.slice(1).forEach((row) => deactivateDuplicateById.run(Number(row.id)));
+        updatedCount += 1;
+      } else {
+        insertStmt.run(
+          item.noReg,
+          item.namaWbp,
+          item.jenisKejahatan,
+          item.blokKamar,
+          item.tanggal1,
+          item.tanggal2,
+          item.tanggal3,
+          item.tanggal4,
+          item.totalRemisi,
+          item.keterangan,
+          item.statusIntegrasi
+        );
+        insertedCount += 1;
+      }
+
+      syncPembinaanMasterByName(item.namaWbp, item.statusIntegrasi || '-');
+    });
+
+    db.exec('COMMIT');
+    const totalChanged = insertedCount + updatedCount;
+    return res.redirect(`/admin/pembinaan-detail?importSuccess=${totalChanged}`);
+  } catch (_err) {
+    db.exec('ROLLBACK');
+    return res.redirect('/admin/pembinaan-detail?error=Gagal+import+Excel+detail+pembinaan');
+  }
 });
 
 app.post('/admin/pembinaan-detail/add', requireAccess('pembinaan-detail'), (req, res) => {
   const { no_reg, jenis_kejahatan, blok_kamar, tanggal1, tanggal2, tanggal3, tanggal4, total_remisi, keterangan } = req.body;
   const statusIntegrasi = (req.body.status_integrasi || '').trim();
   const nama_wbp = (req.body.nama_wbp || '').toUpperCase();
-  db.prepare(`INSERT INTO pentahapan_pembinaan_detail (no_reg, nama_wbp, jenis_kejahatan, blok_kamar, tanggal1, tanggal2, tanggal3, tanggal4, total_remisi, keterangan, status_integrasi)
-              VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`)
+  db.prepare(`INSERT INTO pentahapan_pembinaan_detail (no_reg, nama_wbp, jenis_kejahatan, blok_kamar, tanggal1, tanggal2, tanggal3, tanggal4, total_remisi, keterangan, status_integrasi, is_active)
+              VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 1)`)
     .run(no_reg, nama_wbp, jenis_kejahatan, blok_kamar, tanggal1, tanggal2, tanggal3, tanggal4, total_remisi, keterangan, statusIntegrasi);
   syncPembinaanMasterByName(nama_wbp, statusIntegrasi);
   res.redirect('/admin/pembinaan-detail?success=1');
@@ -5225,8 +5424,23 @@ app.post('/admin/pembinaan-detail/:id/update', requireAccess('pembinaan-detail')
 });
 
 app.post('/admin/pembinaan-detail/:id/delete', requireAccess('pembinaan-detail'), (req, res) => {
-  db.prepare('DELETE FROM pentahapan_pembinaan_detail WHERE id=?').run(Number(req.params.id));
-  res.redirect('/admin/pembinaan-detail');
+  const id = Number(req.params.id || 0);
+  if (!id) return res.redirect('/admin/pembinaan-detail');
+  db.prepare('UPDATE pentahapan_pembinaan_detail SET is_active = 0 WHERE id=?').run(id);
+  const query = new URLSearchParams({ success: '1' });
+  if (req.body.search) query.set('search', String(req.body.search));
+  if (req.body.status) query.set('status', String(req.body.status));
+  res.redirect(`/admin/pembinaan-detail?${query.toString()}`);
+});
+
+app.post('/admin/pembinaan-detail/:id/activate', requireAccess('pembinaan-detail'), (req, res) => {
+  const id = Number(req.params.id || 0);
+  if (!id) return res.redirect('/admin/pembinaan-detail');
+  db.prepare('UPDATE pentahapan_pembinaan_detail SET is_active = 1 WHERE id=?').run(id);
+  const query = new URLSearchParams({ success: '1' });
+  if (req.body.search) query.set('search', String(req.body.search));
+  if (req.body.status) query.set('status', String(req.body.status));
+  res.redirect(`/admin/pembinaan-detail?${query.toString()}`);
 });
 
 // ── Jadwal Kegiatan ───────────────────────────────────────────────

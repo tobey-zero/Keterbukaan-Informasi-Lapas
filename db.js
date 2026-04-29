@@ -202,7 +202,8 @@ db.exec(`
     tanggal4 TEXT,
     total_remisi TEXT,
     keterangan TEXT,
-    status_integrasi TEXT NOT NULL DEFAULT ''
+    status_integrasi TEXT NOT NULL DEFAULT '',
+    is_active INTEGER NOT NULL DEFAULT 1
   );
 
   CREATE TABLE IF NOT EXISTS jadwal_kegiatan (
@@ -1040,6 +1041,9 @@ const pembinaanDetailColumnNamesAfterMigration = pembinaanDetailColumnsAfterMigr
 if (!pembinaanDetailColumnNamesAfterMigration.includes('status_integrasi')) {
   db.exec("ALTER TABLE pentahapan_pembinaan_detail ADD COLUMN status_integrasi TEXT NOT NULL DEFAULT ''");
 }
+if (!pembinaanDetailColumnNamesAfterMigration.includes('is_active')) {
+  db.exec("ALTER TABLE pentahapan_pembinaan_detail ADD COLUMN is_active INTEGER NOT NULL DEFAULT 1");
+}
 
 db.exec(`
   UPDATE pentahapan_pembinaan_detail
@@ -1048,7 +1052,11 @@ db.exec(`
     blok_kamar = COALESCE(NULLIF(TRIM(blok_kamar), ''), '-'),
     tanggal1 = COALESCE(NULLIF(TRIM(tanggal1), ''), NULLIF(TRIM(tanggal2), ''), ''),
     tanggal3 = COALESCE(NULLIF(TRIM(tanggal3), ''), NULLIF(TRIM(tanggal2), ''), ''),
-    total_remisi = COALESCE(NULLIF(TRIM(total_remisi), ''), '-')
+    total_remisi = COALESCE(NULLIF(TRIM(total_remisi), ''), '-'),
+    is_active = CASE
+      WHEN is_active IS NULL OR is_active NOT IN (0, 1) THEN 1
+      ELSE is_active
+    END
 `);
 
 const wnaColumns = db.prepare("PRAGMA table_info('board_wna_negara')").all();

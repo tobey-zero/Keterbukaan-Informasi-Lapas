@@ -22,6 +22,25 @@
     </div>
     <div class="content-area">
       <% if (success) { %><div class="alert alert-success">✅ Data berhasil disimpan.</div><% } %>
+      <% if (importSuccess) { %><div class="alert alert-success">✅ Import berhasil memproses <%= importSuccess %> data.</div><% } %>
+      <% if (error) { %><div class="alert alert-danger">❌ <%= error %></div><% } %>
+
+      <div class="card">
+        <div class="card-header"><h3>📥 Import Excel Detail Pembinaan</h3></div>
+        <div class="card-body">
+          <div style="display:flex;gap:8px;flex-wrap:wrap;align-items:flex-end;">
+            <a href="/admin/pembinaan-detail/template.xlsx" class="btn btn-secondary btn-sm">⬇️ Download Template</a>
+            <form method="POST" action="/admin/pembinaan-detail/import-excel" enctype="multipart/form-data" style="display:flex;gap:8px;flex-wrap:wrap;align-items:flex-end;">
+              <div class="form-group" style="margin:0;min-width:280px;">
+                <label>File Excel (.xlsx/.xls)</label>
+                <input type="file" name="excel_file" accept=".xlsx,.xls" required>
+              </div>
+              <button type="submit" class="btn btn-primary btn-sm">📥 Import Excel</button>
+            </form>
+          </div>
+          <p style="margin-top:10px;color:#9ca3af;">Jika <strong>No. Registrasi</strong> sama, data lama akan ditimpa oleh data dari Excel.</p>
+        </div>
+      </div>
 
       <!-- Form Tambah -->
       <div class="card">
@@ -167,7 +186,27 @@
 
       <!-- Tabel -->
       <div class="card">
-        <div class="card-header"><h3>Data Detail Pembinaan (<%= list.length %> entri)</h3></div>
+        <div class="card-header"><h3>Data Detail Pembinaan (<%= list.length %> entri ditampilkan | Aktif: <%= activeCount || 0 %> | Nonaktif: <%= inactiveCount || 0 %>)</h3></div>
+        <div class="card-body" style="border-bottom:1px solid rgba(255,255,255,.06);">
+          <form method="GET" action="/admin/pembinaan-detail" class="form-grid col-4">
+            <div class="form-group">
+              <label>Cari Data</label>
+              <input type="text" name="search" value="<%= searchKeyword || '' %>" placeholder="Cari no reg, nama, blok, status, tanggal...">
+            </div>
+            <div class="form-group">
+              <label>Status Data</label>
+              <select name="status">
+                <option value="semua" <%= (statusFilter || 'semua') === 'semua' ? 'selected' : '' %>>Semua</option>
+                <option value="aktif" <%= statusFilter === 'aktif' ? 'selected' : '' %>>Aktif</option>
+                <option value="nonaktif" <%= statusFilter === 'nonaktif' ? 'selected' : '' %>>Nonaktif</option>
+              </select>
+            </div>
+            <div class="form-group" style="display:flex;align-items:flex-end;gap:8px;">
+              <button type="submit" class="btn btn-primary btn-sm">🔎 Terapkan</button>
+              <a href="/admin/pembinaan-detail" class="btn btn-secondary btn-sm">Reset</a>
+            </div>
+          </form>
+        </div>
         <div class="card-body" style="padding:0;">
           <div class="table-wrap">
             <table class="admin-table">
@@ -175,7 +214,7 @@
                 <tr>
                   <th>#</th><th>No. Reg</th><th>Nama WBP</th>
                   <th>Jenis Kejahatan</th><th>Blok/Kamar</th><th>Tgl 1/3</th><th>Tgl 1/2</th><th>Tgl 2/3</th><th>Ekspirasi</th><th>Total Remisi</th>
-                  <th>Ket.</th><th>Status Integrasi</th><th>Aksi</th>
+                  <th>Ket.</th><th>Status Integrasi</th><th>Status Data</th><th>Aksi</th>
                 </tr>
               </thead>
               <tbody>
@@ -193,17 +232,27 @@
                   <td><%= item.total_remisi||'-' %></td>
                   <td><%= item.keterangan||'-' %></td>
                   <td class="<%= item.is_status_overdue ? 'status-overdue' : '' %>"><%= item.status_integrasi||'-' %></td>
+                  <td><%= Number(item.is_active) === 0 ? 'Nonaktif' : 'Aktif' %></td>
                   <td>
                     <div class="actions">
                       <a href="/admin/pembinaan-detail?edit=<%= item.id %>" class="btn btn-warning btn-xs">✏️</a>
-                      <form method="POST" action="/admin/pembinaan-detail/<%= item.id %>/delete" style="display:inline" onsubmit="return confirm('Hapus?')">
-                        <button class="btn btn-danger btn-xs">🗑</button>
-                      </form>
+                      <% if (Number(item.is_active) === 0) { %>
+                        <form method="POST" action="/admin/pembinaan-detail/<%= item.id %>/activate" style="display:inline" onsubmit="return confirm('Aktifkan kembali data ini?')">
+                          <input type="hidden" name="search" value="<%= searchKeyword || '' %>">
+                          <input type="hidden" name="status" value="<%= statusFilter || 'semua' %>">
+                          <button class="btn btn-success btn-xs">✅ Aktifkan</button>
+                        </form>
+                      <% } else { %>
+                        <form method="POST" action="/admin/pembinaan-detail/<%= item.id %>/delete" style="display:inline" onsubmit="return confirm('Nonaktifkan data ini?')">
+                          <input type="hidden" name="search" value="<%= searchKeyword || '' %>">
+                          <input type="hidden" name="status" value="<%= statusFilter || 'semua' %>">
+                          <button class="btn btn-danger btn-xs">⛔ Nonaktifkan</button>
+                        </form>
+                      <% } %>
                     </div>
                   </td>
-                  <% if (!list.length) { %><tr><td colspan="13" style="text-align:center;color:#aaa;padding:20px;">Belum ada data</td></tr><% } %>
                 <% }) %>
-                <% if (!list.length) { %><tr><td colspan="12" style="text-align:center;color:#aaa;padding:20px;">Belum ada data</td></tr><% } %>
+                <% if (!list.length) { %><tr><td colspan="14" style="text-align:center;color:#aaa;padding:20px;">Belum ada data</td></tr><% } %>
               </tbody>
             </table>
           </div>
