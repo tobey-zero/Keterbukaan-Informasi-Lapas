@@ -460,16 +460,6 @@
       <div class="card">
         <div class="card-header"><h3>🗓 Set Menu Harian (Tanggal + List Hari)</h3></div>
         <div class="card-body">
-          <form method="GET" action="/admin/menu/makanan" style="display:flex; gap:10px; flex-wrap:wrap; align-items:end; margin-bottom:12px;">
-            <div class="form-group" style="min-width: 220px; margin:0;">
-              <label>Tanggal tampil</label>
-              <input type="date" name="tanggal" value="<%= selectedTanggal || todayYmd %>">
-            </div>
-            <div style="display:flex; gap:8px; align-items:center;">
-              <button type="submit" class="btn btn-primary btn-sm">🔎 Tampilkan</button>
-              <a href="/admin/menu/makanan" class="btn btn-secondary btn-sm">↺ Hari ini</a>
-            </div>
-          </form>
           <form method="POST" action="/admin/menu/harian/set">
             <input type="hidden" name="tanggal" value="<%= selectedTanggal || todayYmd %>">
             <div style="margin-top:10px; font-size:12px; color:#64748b; font-weight:700; margin-bottom:10px;">
@@ -499,10 +489,24 @@
       <% if (isMakanan) { %>
       <div class="card" id="menu-preview-card">
         <div class="card-header">
-          <h3>
-            <%= `Preview Menu Tanggal ${formatDateIndo(selectedTanggal || todayYmd)}` %>
-            (<%= dailyList.length %> item)
-          </h3>
+          <div style="display:flex; justify-content:space-between; gap:10px; flex-wrap:wrap; align-items:end; width:100%;">
+            <div>
+              <h3>
+                <%= `Preview Menu Tanggal ${formatDateIndo(selectedTanggal || todayYmd)}` %>
+                (<%= dailyList.length %> item)
+              </h3>
+            </div>
+            <form method="GET" action="/admin/menu/makanan" style="display:flex; gap:10px; flex-wrap:wrap; align-items:end; justify-content:flex-end;">
+              <div class="form-group" style="min-width: 220px; margin:0;">
+                <label>Tanggal tampil</label>
+                <input type="date" name="tanggal" value="<%= selectedTanggal || todayYmd %>">
+              </div>
+              <div style="display:flex; gap:8px; align-items:center;">
+                <button type="submit" class="btn btn-primary btn-sm">🔎 Tampilkan</button>
+                <a href="/admin/menu/makanan" class="btn btn-secondary btn-sm">↺ Hari ini</a>
+              </div>
+            </form>
+          </div>
         </div>
         <div class="card-body" style="padding:0;">
           <div class="table-wrap">
