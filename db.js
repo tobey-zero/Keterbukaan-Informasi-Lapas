@@ -92,6 +92,19 @@ db.exec(`
     FOREIGN KEY (list_id) REFERENCES menu_harian_list(id)
   );
 
+  CREATE TABLE IF NOT EXISTS menu_harian_snapshot (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    tanggal TEXT NOT NULL,
+    list_id INTEGER NOT NULL DEFAULT 0,
+    menu_master_id INTEGER,
+    waktu TEXT NOT NULL DEFAULT '',
+    menu TEXT NOT NULL DEFAULT '',
+    photo_path TEXT,
+    sort_order INTEGER NOT NULL DEFAULT 0,
+    created_at TEXT NOT NULL DEFAULT (datetime('now','localtime')),
+    UNIQUE (tanggal, sort_order)
+  );
+
   CREATE TABLE IF NOT EXISTS dapur_petugas (
     id INTEGER PRIMARY KEY AUTOINCREMENT,
     nip TEXT NOT NULL,
@@ -711,6 +724,67 @@ if (menuSetCount === 0) {
       const todayRow = db.prepare("SELECT date('now','localtime') AS ymd").get();
       upsertSet.run(todayRow.ymd, firstList.id);
     }
+  }
+}
+
+const menuSnapshotCount = db.prepare('SELECT COUNT(*) AS c FROM menu_harian_snapshot').get().c;
+if (menuSnapshotCount === 0 || menuSetCount > 0) {
+  const setDates = db.prepare('SELECT tanggal FROM menu_harian_set ORDER BY tanggal ASC').all();
+  const hasSnapshotForDate = db.prepare('SELECT COUNT(*) AS c FROM menu_harian_snapshot WHERE tanggal = ?');
+  const readRowsForDate = db.prepare(`
+    SELECT
+      s.tanggal AS tanggal,
+      s.list_id AS list_id,
+      li.menu_master_id AS menu_master_id,
+      m.waktu AS waktu,
+      m.menu AS menu,
+      m.photo_path AS photo_path,
+      li.sort_order AS sort_order
+    FROM menu_harian_set s
+    INNER JOIN menu_harian_list_item li ON li.list_id = s.list_id
+    INNER JOIN menu_master m ON m.id = li.menu_master_id
+    WHERE s.tanggal = ?
+    ORDER BY li.sort_order ASC,
+      CASE m.waktu
+        WHEN 'MAKAN PAGI' THEN 1
+        WHEN 'SNACK' THEN 2
+        WHEN 'MAKAN SIANG' THEN 3
+        WHEN 'MAKAN SORE' THEN 4
+        ELSE 5
+      END ASC,
+      m.id ASC
+  `);
+  const insertSnapshot = db.prepare(`
+    INSERT INTO menu_harian_snapshot
+      (tanggal, list_id, menu_master_id, waktu, menu, photo_path, sort_order)
+    VALUES (?, ?, ?, ?, ?, ?, ?)
+  `);
+
+  db.exec('BEGIN');
+  try {
+    setDates.forEach((row) => {
+      const tanggal = String(row.tanggal || '').trim();
+      if (!tanggal) return;
+      const existing = Number(hasSnapshotForDate.get(tanggal)?.c || 0);
+      if (existing > 0) return;
+
+      const rows = readRowsForDate.all(tanggal);
+      rows.forEach((item, index) => {
+        insertSnapshot.run(
+          tanggal,
+          Number(item.list_id || 0),
+          Number(item.menu_master_id || 0) || null,
+          String(item.waktu || ''),
+          String(item.menu || ''),
+          item.photo_path || null,
+          Number(item.sort_order || 0) || (index + 1),
+        );
+      });
+    });
+    db.exec('COMMIT');
+  } catch (err) {
+    db.exec('ROLLBACK');
+    throw err;
   }
 }
 

@@ -578,6 +578,154 @@ function formatRupiah(value) {
   return new Intl.NumberFormat('id-ID').format(Number(value) || 0);
 }
 
+function getDailyMenuSnapshotByDate(tanggal) {
+  const normalizedDate = normalizeDateToYmd(tanggal) || String(tanggal || '').trim();
+  if (!normalizedDate) return [];
+
+  return db.prepare(`
+    SELECT
+      tanggal,
+      waktu,
+      menu,
+      photo_path AS photoPath,
+      photo_path,
+      sort_order AS sortOrder
+    FROM menu_harian_snapshot
+    WHERE tanggal = ?
+    ORDER BY sort_order ASC,
+      CASE waktu
+        WHEN 'MAKAN PAGI' THEN 1
+        WHEN 'SNACK' THEN 2
+        WHEN 'MAKAN SIANG' THEN 3
+        WHEN 'MAKAN SORE' THEN 4
+        ELSE 5
+      END ASC,
+      id ASC
+  `).all(normalizedDate);
+}
+
+function getDailyMenuByDate(tanggal) {
+  const normalizedDate = normalizeDateToYmd(tanggal) || String(tanggal || '').trim();
+  if (!normalizedDate) return [];
+
+  const snapshotRows = getDailyMenuSnapshotByDate(normalizedDate);
+  if (snapshotRows.length) return snapshotRows;
+
+  return db.prepare(`SELECT
+    s.tanggal,
+    m.waktu,
+    m.menu,
+    m.photo_path AS photoPath,
+    m.photo_path
+  FROM menu_harian_set s
+  INNER JOIN menu_harian_list_item li ON li.list_id = s.list_id
+  INNER JOIN menu_master m ON m.id = li.menu_master_id
+  WHERE s.tanggal = ?
+  ORDER BY li.sort_order ASC,
+    CASE m.waktu
+      WHEN 'MAKAN PAGI' THEN 1
+      WHEN 'SNACK' THEN 2
+      WHEN 'MAKAN SIANG' THEN 3
+      WHEN 'MAKAN SORE' THEN 4
+      ELSE 5
+    END ASC,
+    m.id ASC`).all(normalizedDate);
+}
+
+function getDailyMenuHistoryRows() {
+  const snapshotRows = db.prepare(`
+    SELECT
+      tanggal,
+      waktu,
+      menu,
+      photo_path AS photoPath,
+      photo_path,
+      sort_order AS sortOrder
+    FROM menu_harian_snapshot
+    ORDER BY tanggal DESC,
+      sort_order ASC,
+      id ASC
+  `).all();
+  if (snapshotRows.length) return snapshotRows;
+
+  return db.prepare(`SELECT
+    s.tanggal,
+    m.waktu,
+    m.menu,
+    m.photo_path AS photoPath,
+    m.photo_path
+  FROM menu_harian_set s
+  INNER JOIN menu_harian_list_item li ON li.list_id = s.list_id
+  INNER JOIN menu_master m ON m.id = li.menu_master_id
+  ORDER BY s.tanggal DESC, li.sort_order ASC, m.id ASC`).all();
+}
+
+function syncMenuSnapshotForDate(tanggal) {
+  const normalizedDate = normalizeDateToYmd(tanggal) || String(tanggal || '').trim();
+  if (!normalizedDate) return 0;
+
+  const selectedSet = db.prepare(`
+    SELECT list_id AS listId
+    FROM menu_harian_set
+    WHERE tanggal = ?
+    LIMIT 1
+  `).get(normalizedDate);
+
+  db.exec('BEGIN');
+  try {
+    db.prepare('DELETE FROM menu_harian_snapshot WHERE tanggal = ?').run(normalizedDate);
+    if (!selectedSet?.listId) {
+      db.exec('COMMIT');
+      return 0;
+    }
+
+    const rows = db.prepare(`
+      SELECT
+        li.menu_master_id AS menuMasterId,
+        li.sort_order AS sortOrder,
+        m.waktu,
+        m.menu,
+        m.photo_path AS photoPath
+      FROM menu_harian_list_item li
+      INNER JOIN menu_master m ON m.id = li.menu_master_id
+      WHERE li.list_id = ?
+      ORDER BY li.sort_order ASC,
+        CASE m.waktu
+          WHEN 'MAKAN PAGI' THEN 1
+          WHEN 'SNACK' THEN 2
+          WHEN 'MAKAN SIANG' THEN 3
+          WHEN 'MAKAN SORE' THEN 4
+          ELSE 5
+        END ASC,
+        m.id ASC
+    `).all(Number(selectedSet.listId));
+
+    const insertSnapshot = db.prepare(`
+      INSERT INTO menu_harian_snapshot
+        (tanggal, list_id, menu_master_id, waktu, menu, photo_path, sort_order)
+      VALUES (?, ?, ?, ?, ?, ?, ?)
+    `);
+
+    rows.forEach((item, index) => {
+      insertSnapshot.run(
+        normalizedDate,
+        Number(selectedSet.listId),
+        Number(item.menuMasterId || 0) || null,
+        String(item.waktu || ''),
+        String(item.menu || ''),
+        item.photoPath || null,
+        Number(item.sortOrder || 0) || (index + 1),
+      );
+    });
+
+    db.exec('COMMIT');
+    return rows.length;
+  } catch (err) {
+    db.exec('ROLLBACK');
+    throw err;
+  }
+}
+
 function normalizePnbpPeriod(value) {
   return String(value || '').trim().toUpperCase();
 }
@@ -1125,38 +1273,8 @@ function getPublicData() {
     `)
     .all(Number(activeRemisiBatch?.id || 0), Number(activeRemisiBatch?.id || 0));
 
-  const menuMakan = db
-    .prepare(`SELECT
-      s.tanggal,
-      m.waktu,
-      m.menu,
-      m.photo_path AS photoPath
-    FROM menu_harian_set s
-    INNER JOIN menu_harian_list_item li ON li.list_id = s.list_id
-    INNER JOIN menu_master m ON m.id = li.menu_master_id
-    WHERE s.tanggal = ?
-    ORDER BY li.sort_order ASC,
-      CASE m.waktu
-        WHEN 'MAKAN PAGI' THEN 1
-        WHEN 'SNACK' THEN 2
-        WHEN 'MAKAN SIANG' THEN 3
-        WHEN 'MAKAN SORE' THEN 4
-        ELSE 5
-      END ASC,
-      m.id ASC`)
-    .all(todayYmd);
-
-  const menuMakanHistory = db
-    .prepare(`SELECT
-      s.tanggal,
-      m.waktu,
-      m.menu,
-      m.photo_path AS photoPath
-    FROM menu_harian_set s
-    INNER JOIN menu_harian_list_item li ON li.list_id = s.list_id
-    INNER JOIN menu_master m ON m.id = li.menu_master_id
-    ORDER BY s.tanggal DESC, li.sort_order ASC, m.id ASC`)
-    .all();
+  const menuMakan = getDailyMenuByDate(todayYmd);
+  const menuMakanHistory = getDailyMenuHistoryRows();
 
   const rawPembinaan = db
     .prepare('SELECT nama_wbp, status_integrasi FROM pentahapan_pembinaan ORDER BY nama_wbp COLLATE NOCASE ASC')
@@ -2540,30 +2658,20 @@ app.get('/kalapas/table/dapur', (req, res) => {
     year: 'numeric'
   }).format(new Date(`${selectedDate}T00:00:00`));
 
-  const menuList = db.prepare(`SELECT
-    s.tanggal,
-    m.waktu,
-    m.menu,
-    m.photo_path AS photoPath
-  FROM menu_harian_set s
-  INNER JOIN menu_harian_list_item li ON li.list_id = s.list_id
-  INNER JOIN menu_master m ON m.id = li.menu_master_id
-  WHERE s.tanggal = ?
-  ORDER BY li.sort_order ASC,
-    CASE m.waktu
-      WHEN 'MAKAN PAGI' THEN 1
-      WHEN 'SNACK' THEN 2
-      WHEN 'MAKAN SIANG' THEN 3
-      WHEN 'MAKAN SORE' THEN 4
-      ELSE 5
-    END ASC,
-    m.id ASC`).all(selectedDate);
+  const menuList = getDailyMenuByDate(selectedDate);
 
-  const historyDates = db.prepare(`
-    SELECT tanggal
-    FROM menu_harian_set
+  const snapshotHistoryDates = db.prepare(`
+    SELECT DISTINCT tanggal
+    FROM menu_harian_snapshot
     ORDER BY tanggal DESC
   `).all().map((item) => String(item.tanggal));
+  const historyDates = snapshotHistoryDates.length
+    ? snapshotHistoryDates
+    : db.prepare(`
+      SELECT tanggal
+      FROM menu_harian_set
+      ORDER BY tanggal DESC
+    `).all().map((item) => String(item.tanggal));
   const jadwalPetugasList = db.prepare(`
     SELECT
       j.id,
@@ -4543,7 +4651,7 @@ function renderAdminMenuPage(req, res, menuSection) {
     ? Number(req.query.previewList)
     : Number(selectedSet?.listId || dayLists[0]?.id || 0);
 
-  const dailyList = selectedListId
+  const templatePreviewList = selectedListId
     ? db.prepare(`SELECT
     li.id,
     ? AS tanggal,
@@ -4565,6 +4673,18 @@ function renderAdminMenuPage(req, res, menuSection) {
     END ASC,
     li.id ASC`).all(selectedTanggal, selectedListId)
     : [];
+  const dailySnapshotRows = getDailyMenuSnapshotByDate(selectedTanggal).map((item, index) => ({
+    id: index + 1,
+    tanggal: item.tanggal,
+    menuMasterId: null,
+    sortOrder: Number(item.sortOrder || 0) || (index + 1),
+    waktu: item.waktu,
+    menu: item.menu,
+    photo_path: item.photo_path || item.photoPath || null,
+  }));
+  const dailyList = menuSection === 'makanan'
+    ? (dailySnapshotRows.length ? dailySnapshotRows : templatePreviewList)
+    : templatePreviewList;
 
   const totalHistory = db.prepare('SELECT COUNT(*) AS c FROM menu_harian_set').get().c;
   const editMaster = req.query.editMaster
@@ -4904,7 +5024,7 @@ app.post('/admin/menu/list/:id/delete', requireAccess('menu'), (req, res) => {
 });
 
 app.post('/admin/menu/harian/set', requireAccess('menu'), (req, res) => {
-  const tanggal = (req.body.tanggal || '').trim() || getTodayYmd();
+  const tanggal = normalizeDateToYmd(req.body.tanggal || '') || getTodayYmd();
   const listId = Number(req.body.list_id || 0);
   if (!Number.isInteger(listId) || listId <= 0) {
     const params = new URLSearchParams({ tanggal, error: 'Pilih list hari terlebih dahulu.' });
@@ -4916,6 +5036,7 @@ app.post('/admin/menu/harian/set', requireAccess('menu'), (req, res) => {
     VALUES (?, ?)
     ON CONFLICT(tanggal) DO UPDATE SET list_id=excluded.list_id
   `).run(tanggal, listId);
+  syncMenuSnapshotForDate(tanggal);
 
   const params = new URLSearchParams({ tanggal, success: '1' });
   return res.redirect(`/admin/menu/makanan?${params.toString()}`);
