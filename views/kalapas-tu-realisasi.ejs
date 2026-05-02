@@ -217,6 +217,14 @@
       <a href="<%= backUrl %>">⬅ Kembali ke Kalapas</a>
     </div>
 
+    <% if (typeof tuSubmenu !== 'undefined' && tuSubmenu) { %>
+      <div class="kalapas-submenu" style="display:flex; gap:8px; flex-wrap:wrap; margin-bottom:10px;">
+        <a href="/kalapas/table/tu-umum?tab=realisasi" class="<%= tuSubmenu.active === 'realisasi' ? 'active' : '' %>" style="text-decoration:none;border:1px solid #93c5fd;color:<%= tuSubmenu.active === 'realisasi' ? '#fff' : '#1e3a8a' %>;background:<%= tuSubmenu.active === 'realisasi' ? '#1a4bb8' : '#eff6ff' %>;border-radius:6px;padding:7px 11px;font-size:12px;font-weight:bold;">📊 Realisasi</a>
+        <a href="/kalapas/table/tu-umum?tab=bmn" class="<%= tuSubmenu.active === 'bmn' ? 'active' : '' %>" style="text-decoration:none;border:1px solid #93c5fd;color:<%= tuSubmenu.active === 'bmn' ? '#fff' : '#1e3a8a' %>;background:<%= tuSubmenu.active === 'bmn' ? '#1a4bb8' : '#eff6ff' %>;border-radius:6px;padding:7px 11px;font-size:12px;font-weight:bold;">📦 BMN</a>
+        <a href="/kalapas/table/tu-umum?tab=kepegawaian" class="<%= tuSubmenu.active === 'kepegawaian' ? 'active' : '' %>" style="text-decoration:none;border:1px solid #93c5fd;color:<%= tuSubmenu.active === 'kepegawaian' ? '#fff' : '#1e3a8a' %>;background:<%= tuSubmenu.active === 'kepegawaian' ? '#1a4bb8' : '#eff6ff' %>;border-radius:6px;padding:7px 11px;font-size:12px;font-weight:bold;">👥 Kepegawaian</a>
+      </div>
+    <% } %>
+
     <div class="panel kalapas-table-panel">
       <div class="panel-header red">
         <span>Realisasi Belanja Bagian Keuangan</span>

@@ -2443,6 +2443,10 @@ function getKalapasData() {
     const normalizedDate = normalizeDateToYmd(item.tanggalTemuan);
     return Boolean(normalizedDate && normalizedDate.startsWith(currentYearMonth));
   }).length;
+  const totalPengawalanThisMonth = (pengawalan.list || []).filter((item) => {
+    const normalizedDate = normalizeDateToYmd(item.tanggal);
+    return Boolean(normalizedDate && normalizedDate.startsWith(currentYearMonth));
+  }).length;
 
   const pengaduanDiterimaCount = Number(db.prepare(`
     SELECT COUNT(*) AS c
@@ -2474,7 +2478,7 @@ function getKalapasData() {
     securitySummary: security.securitySummary,
     pengawalanList: pengawalan.list,
     pengawalanSummary: {
-      totalPengawalan: pengawalan.list.length,
+      totalPengawalan: totalPengawalanThisMonth,
     },
     tuUmumList: tuUmum.tuUmumList,
     pegawaiList: tuUmum.pegawaiList,
@@ -3162,7 +3166,8 @@ app.get('/kalapas/table/razia-jadwal', (req, res) => {
     },
     columns: ['TANGGAL', 'PETUGAS', 'DOKUMENTASI RAZIA'],
     rows,
-    backUrl: '/kalapas'
+    backUrl: '/kalapas',
+    kamtibSubmenu: { active: 'razia-jadwal' }
   });
 });
 
@@ -3235,7 +3240,8 @@ app.get('/kalapas/table/razia-barang-bukti', (req, res) => {
     },
     columns: ['PEMILIK', 'KAMAR/BLOK', 'TANGGAL TEMUAN', 'FOTO BARANG BUKTI'],
     rows,
-    backUrl: '/kalapas'
+    backUrl: '/kalapas',
+    kamtibSubmenu: { active: 'razia-barang-bukti' }
   });
 });
 
@@ -3270,7 +3276,8 @@ app.get('/kalapas/table/strapsel', (req, res) => {
     },
     columns: ['NAMA WBP', 'BLOK HUNIAN', 'TANGGAL MASUK STRAPSEL', 'TANGGAL KELUAR STRAPSEL', 'EXPIRASI', 'PERMASALAHAN', 'BARANG BUKTI', 'DOKUMENTASI'],
     rows,
-    backUrl: '/kalapas'
+    backUrl: '/kalapas',
+    kamtibSubmenu: { active: 'strapsel' }
   });
 });
 
@@ -3320,7 +3327,8 @@ app.get('/kalapas/table/register-f', (req, res) => {
       ]
     ],
     rows,
-    backUrl: '/kalapas'
+    backUrl: '/kalapas',
+    kamtibSubmenu: { active: 'register-f' }
   });
 });
 
@@ -3447,6 +3455,7 @@ app.get('/kalapas/table/kamtib', (req, res) => {
     pengaduanDiterimaCount,
     piketHref: `/kalapas/table/piket-jaga?month=${selectedRaziaMonth}&year=${selectedRaziaYear}`,
     pengaduanHref: `/kalapas/table/pengaduan?month=${selectedRaziaMonth}&year=${selectedRaziaYear}`,
+    kamtibSubmenu: { active: 'ringkasan' },
     backUrl: '/kalapas'
   });
 });
@@ -3459,6 +3468,7 @@ app.get('/kalapas/table/piket-jaga', (req, res) => {
     pageTitle: 'Piket Jaga Kamtib',
     subtitle: `${activeMonthLabel} ${piket.selectedYear}`,
     backUrl: '/kalapas/table/kamtib',
+    kamtibSubmenu: { active: 'piket-jaga' },
     ...piket,
   });
 });
@@ -3475,6 +3485,7 @@ app.get('/kalapas/table/pengaduan', (req, res) => {
     pageTitle: 'Pengaduan Kamtib',
     subtitle: `${activeMonthLabel} ${data.selectedYear} | Total data: ${data.list.length}`,
     backUrl: '/kalapas/table/kamtib',
+    kamtibSubmenu: { active: 'pengaduan' },
     ...data,
   });
 });
@@ -3547,7 +3558,8 @@ app.get('/kalapas/table/pengawalan', (req, res) => {
     },
     columns: ['TANGGAL', 'NAMA WBP', 'PETUGAS', 'KETERANGAN', 'DOKUMENTASI'],
     rows,
-    backUrl: '/kalapas'
+    backUrl: '/kalapas',
+    kamtibSubmenu: { active: 'pengawalan' }
   });
 });
 
@@ -3757,10 +3769,27 @@ app.get('/kalapas/table/tu-realisasi', (req, res) => {
 });
 
 app.get('/kalapas/table/tu-umum', (req, res) => {
+  const activeTab = ['realisasi', 'bmn', 'kepegawaian'].includes(String(req.query.tab || '').toLowerCase())
+    ? String(req.query.tab).toLowerCase()
+    : 'realisasi';
   const data = getTuUmumData();
   const { sortBy, sortDir } = parseKepegawaianSortQuery(req.query);
   const sortedPegawaiList = sortPegawaiListByTmt(data.pegawaiList, sortBy, sortDir);
-  const makeSortUrl = (targetSortBy, targetSortDir) => `/kalapas/table/tu-umum?sortBy=${encodeURIComponent(targetSortBy)}&sortDir=${encodeURIComponent(targetSortDir)}`;
+  const makeSortUrl = (targetSortBy, targetSortDir) => `/kalapas/table/tu-umum?tab=kepegawaian&sortBy=${encodeURIComponent(targetSortBy)}&sortDir=${encodeURIComponent(targetSortDir)}`;
+  const tuSubmenu = { active: activeTab };
+
+  if (activeTab === 'realisasi') {
+    return res.render('kalapas-tu-realisasi', {
+      pageTitle: 'Realisasi Keuangan Tata Usaha',
+      sectionTitle: 'REALISASI KEUANGAN - TATA USAHA',
+      subtitle: 'Ringkasan data realisasi belanja',
+      financeSummary: data.financeSummary,
+      financeIndicator: getFinanceIndicatorSummary(),
+      backUrl: '/kalapas',
+      tuSubmenu,
+    });
+  }
+
   const rows = data.tuUmumList.map(item => [
     item.kode || '-',
     item.uraian || '-',
@@ -3775,6 +3804,18 @@ app.get('/kalapas/table/tu-umum', (req, res) => {
     item.saldoAkhirKuantitas || '0',
     item.saldoAkhirNilai || '0',
   ]);
+
+  if (activeTab === 'bmn') {
+    return res.render('kalapas-table', {
+      pageTitle: 'Laporan BMN',
+      sectionTitle: 'LAPORAN BARANG MILIK NEGARA (BMN)',
+      subtitle: `Total data: ${rows.length}`,
+      columns: ['KODE', 'URAIAN', 'SATUAN', 'TAHUN PEROLEHAN', 'SALDO AWAL QTY', 'SALDO AWAL NILAI', 'BERTAMBAH QTY', 'BERTAMBAH NILAI', 'BERKURANG QTY', 'BERKURANG NILAI', 'SALDO AKHIR QTY', 'SALDO AKHIR NILAI'],
+      rows,
+      backUrl: '/kalapas',
+      tuSubmenu,
+    });
+  }
 
   const pegawaiRows = sortedPegawaiList.map((item, index) => [
     String(index + 1),
@@ -3793,17 +3834,11 @@ app.get('/kalapas/table/tu-umum', (req, res) => {
     item.typePegawai || '-',
   ]);
 
-  res.render('kalapas-table', {
-    pageTitle: 'Tata Usaha',
-    headerTitle: 'TATA USAHA',
-    panelTitle: 'BAGIAN UMUM',
-    sectionTitle: 'TATA USAHA',
-    subtitle: `Total data: ${rows.length}`,
-    financeSummary: data.financeSummary,
-    columns: ['KODE', 'URAIAN', 'SATUAN', 'TAHUN PEROLEHAN', 'SALDO AWAL QTY', 'SALDO AWAL NILAI', 'BERTAMBAH QTY', 'BERTAMBAH NILAI', 'BERKURANG QTY', 'BERKURANG NILAI', 'SALDO AKHIR QTY', 'SALDO AKHIR NILAI'],
-    rows,
-    secondarySectionTitle: `DATA KEPEGAWAIAN (${pegawaiRows.length} data)`,
-    secondaryHeaderRows: [[
+  return res.render('kalapas-table', {
+    pageTitle: 'Data Kepegawaian',
+    sectionTitle: 'DATA KEPEGAWAIAN',
+    subtitle: `Total data: ${pegawaiRows.length}`,
+    headerRows: [[
       { label: 'No' },
       { label: 'Nama Pegawai' },
       { label: 'NIP' },
@@ -3831,9 +3866,10 @@ app.get('/kalapas/table/tu-umum', (req, res) => {
       { label: 'Jenis Kelamin' },
       { label: 'Type Pegawai' },
     ]],
-    secondaryColumns: ['No', 'Nama Pegawai', 'NIP', 'Pangkat/Gol', 'TMT Pangkat', 'Jabatan', 'TMT Jabatan', 'Agama', 'Status', 'Pendidikan', 'Penempatan/Seksi', 'Penempatan/Bidang', 'Jenis Kelamin', 'Type Pegawai'],
-    secondaryRows: pegawaiRows,
-    backUrl: '/kalapas'
+    columns: ['No', 'Nama Pegawai', 'NIP', 'Pangkat/Gol', 'TMT Pangkat', 'Jabatan', 'TMT Jabatan', 'Agama', 'Status', 'Pendidikan', 'Penempatan/Seksi', 'Penempatan/Bidang', 'Jenis Kelamin', 'Type Pegawai'],
+    rows: pegawaiRows,
+    backUrl: '/kalapas',
+    tuSubmenu,
   });
 });
 

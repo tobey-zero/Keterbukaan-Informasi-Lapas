@@ -25,6 +25,27 @@
       font-weight: bold;
       cursor: pointer;
     }
+    .piket-submenu {
+      display: flex;
+      gap: 8px;
+      flex-wrap: wrap;
+      margin-bottom: 10px;
+    }
+    .piket-submenu a {
+      text-decoration: none;
+      border: 1px solid #93c5fd;
+      color: #1e3a8a;
+      background: #eff6ff;
+      border-radius: 6px;
+      padding: 7px 11px;
+      font-size: 12px;
+      font-weight: bold;
+    }
+    .piket-submenu a.active {
+      color: #fff;
+      background: #1a4bb8;
+      border-color: rgba(255,255,255,.3);
+    }
     .piket-filter {
       display: flex;
       gap: 8px;
@@ -189,6 +210,17 @@
         </div>
         <button type="submit">Terapkan</button>
       </form>
+    </div>
+
+    <div class="piket-submenu">
+      <a href="/kalapas/table/kamtib" class="<%= kamtibSubmenu && kamtibSubmenu.active === 'ringkasan' ? 'active' : '' %>">🛡 Ringkasan</a>
+      <a href="/kalapas/table/razia-jadwal" class="<%= kamtibSubmenu && kamtibSubmenu.active === 'razia-jadwal' ? 'active' : '' %>">📅 Giat Razia</a>
+      <a href="/kalapas/table/razia-barang-bukti" class="<%= kamtibSubmenu && kamtibSubmenu.active === 'razia-barang-bukti' ? 'active' : '' %>">📦 Barang Bukti</a>
+      <a href="/kalapas/table/pengawalan" class="<%= kamtibSubmenu && kamtibSubmenu.active === 'pengawalan' ? 'active' : '' %>">🚔 Pengawalan</a>
+      <a href="/kalapas/table/strapsel" class="<%= kamtibSubmenu && kamtibSubmenu.active === 'strapsel' ? 'active' : '' %>">⛓ Strapsel</a>
+      <a href="/kalapas/table/register-f" class="<%= kamtibSubmenu && kamtibSubmenu.active === 'register-f' ? 'active' : '' %>">📘 Register F</a>
+      <a href="/kalapas/table/piket-jaga?month=<%= encodeURIComponent(selectedMonth) %>&year=<%= encodeURIComponent(selectedYear) %>" class="<%= kamtibSubmenu && kamtibSubmenu.active === 'piket-jaga' ? 'active' : '' %>">🧷 Piket Jaga</a>
+      <a href="/kalapas/table/pengaduan?month=<%= encodeURIComponent(selectedMonth) %>&year=<%= encodeURIComponent(selectedYear) %>" class="<%= kamtibSubmenu && kamtibSubmenu.active === 'pengaduan' ? 'active' : '' %>">📢 Pengaduan</a>
     </div>
 
     <div class="piket-board">

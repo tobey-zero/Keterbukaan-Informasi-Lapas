@@ -376,6 +376,27 @@
       </div>
     <% } %>
 
+    <% if (typeof tuSubmenu !== 'undefined' && tuSubmenu) { %>
+      <div class="kalapas-submenu">
+        <a href="/kalapas/table/tu-umum?tab=realisasi" class="<%= tuSubmenu.active === 'realisasi' ? 'active' : '' %>">📊 Realisasi</a>
+        <a href="/kalapas/table/tu-umum?tab=bmn" class="<%= tuSubmenu.active === 'bmn' ? 'active' : '' %>">📦 BMN</a>
+        <a href="/kalapas/table/tu-umum?tab=kepegawaian" class="<%= tuSubmenu.active === 'kepegawaian' ? 'active' : '' %>">👥 Kepegawaian</a>
+      </div>
+    <% } %>
+
+    <% if (typeof kamtibSubmenu !== 'undefined' && kamtibSubmenu) { %>
+      <div class="kalapas-submenu">
+        <a href="/kalapas/table/kamtib" class="<%= kamtibSubmenu.active === 'ringkasan' ? 'active' : '' %>">🛡 Ringkasan</a>
+        <a href="/kalapas/table/razia-jadwal" class="<%= kamtibSubmenu.active === 'razia-jadwal' ? 'active' : '' %>">📅 Giat Razia</a>
+        <a href="/kalapas/table/razia-barang-bukti" class="<%= kamtibSubmenu.active === 'razia-barang-bukti' ? 'active' : '' %>">📦 Barang Bukti</a>
+        <a href="/kalapas/table/pengawalan" class="<%= kamtibSubmenu.active === 'pengawalan' ? 'active' : '' %>">🚔 Pengawalan</a>
+        <a href="/kalapas/table/strapsel" class="<%= kamtibSubmenu.active === 'strapsel' ? 'active' : '' %>">⛓ Strapsel</a>
+        <a href="/kalapas/table/register-f" class="<%= kamtibSubmenu.active === 'register-f' ? 'active' : '' %>">📘 Register F</a>
+        <a href="/kalapas/table/piket-jaga" class="<%= kamtibSubmenu.active === 'piket-jaga' ? 'active' : '' %>">🧷 Piket Jaga</a>
+        <a href="/kalapas/table/pengaduan" class="<%= kamtibSubmenu.active === 'pengaduan' ? 'active' : '' %>">📢 Pengaduan</a>
+      </div>
+    <% } %>
+
     <% if (typeof financeSummary !== 'undefined' && financeSummary) { %>
       <div class="panel kalapas-table-panel">
         <div class="panel-header red">

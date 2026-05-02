@@ -25,7 +25,29 @@
       font-weight: bold;
       cursor: pointer;
     }
-    .kamtib-toolbar a.with-alert {
+    .kamtib-submenu {
+      display: flex;
+      gap: 8px;
+      flex-wrap: wrap;
+      margin-bottom: 10px;
+    }
+    .kamtib-submenu a {
+      text-decoration: none;
+      border: 1px solid #93c5fd;
+      color: #1e3a8a;
+      background: #eff6ff;
+      border-radius: 6px;
+      padding: 7px 11px;
+      font-size: 12px;
+      font-weight: bold;
+    }
+    .kamtib-submenu a.active {
+      color: #fff;
+      background: #1a4bb8;
+      border-color: rgba(255,255,255,.3);
+    }
+    .kamtib-toolbar a.with-alert,
+    .kamtib-submenu a.with-alert {
       position: relative;
       padding-right: 28px;
     }
@@ -63,7 +85,9 @@
       z-index: 20;
     }
     .kamtib-toolbar a.with-alert:hover .kamtib-toolbar-tooltip,
-    .kamtib-toolbar a.with-alert:focus-visible .kamtib-toolbar-tooltip {
+    .kamtib-toolbar a.with-alert:focus-visible .kamtib-toolbar-tooltip,
+    .kamtib-submenu a.with-alert:hover .kamtib-toolbar-tooltip,
+    .kamtib-submenu a.with-alert:focus-visible .kamtib-toolbar-tooltip {
       opacity: 1;
     }
     .kamtib-panel-filter {
@@ -236,6 +260,15 @@
   <div class="kamtib-wrap">
     <div class="kamtib-toolbar">
       <a href="<%= backUrl %>">⬅ Kembali ke Kalapas</a>
+    </div>
+
+    <div class="kamtib-submenu">
+      <a href="/kalapas/table/kamtib" class="<%= kamtibSubmenu && kamtibSubmenu.active === 'ringkasan' ? 'active' : '' %>">🛡 Ringkasan</a>
+      <a href="/kalapas/table/razia-jadwal">📅 Giat Razia</a>
+      <a href="/kalapas/table/razia-barang-bukti">📦 Barang Bukti</a>
+      <a href="/kalapas/table/pengawalan">🚔 Pengawalan</a>
+      <a href="/kalapas/table/strapsel">⛓ Strapsel</a>
+      <a href="/kalapas/table/register-f">📘 Register F</a>
       <a href="<%= piketHref %>">🧷 Piket Jaga</a>
       <a href="<%= pengaduanHref %>" class="<%= pengaduanDiterimaCount > 0 ? 'with-alert' : '' %>">📢 Pengaduan
         <% if (pengaduanDiterimaCount > 0) { %>
