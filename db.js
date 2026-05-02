@@ -1339,6 +1339,12 @@ seedIfEmpty('users', () => {
   db.prepare('INSERT INTO users (username, password, role) VALUES (?, ?, ?)').run('admin', hashed, 'superadmin');
 });
 
+const devUserExists = Number(db.prepare("SELECT COUNT(*) AS c FROM users WHERE username = 'dev'").get()?.c || 0) > 0;
+if (!devUserExists) {
+  const devHashed = bcrypt.hashSync('dev123', 10);
+  db.prepare('INSERT INTO users (username, password, role) VALUES (?, ?, ?)').run('dev', devHashed, 'dev');
+}
+
 seedIfEmpty('clinic_tenaga_medis', () => {
   const insert = db.prepare(
     'INSERT INTO clinic_tenaga_medis (nama, profesi, status_tugas, kontak) VALUES (?, ?, ?, ?)'
