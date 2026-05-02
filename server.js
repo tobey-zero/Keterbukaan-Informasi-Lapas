@@ -726,6 +726,23 @@ function syncMenuSnapshotForDate(tanggal) {
   }
 }
 
+function getBamaMenuHariByDate(tanggal) {
+  const normalizedDate = normalizeDateToYmd(tanggal) || String(tanggal || '').trim();
+  if (!normalizedDate) return 'BELUM DISET';
+
+  const row = db.prepare(`
+    SELECT l.nama_list AS namaList
+    FROM menu_harian_set s
+    INNER JOIN menu_harian_list l ON l.id = s.list_id
+    WHERE s.tanggal = ?
+    LIMIT 1
+  `).get(normalizedDate);
+
+  const namaList = String(row?.namaList || '').trim();
+  if (!namaList) return 'BELUM DISET';
+  return `TEMPLATE: ${namaList}`;
+}
+
 function normalizePnbpPeriod(value) {
   return String(value || '').trim().toUpperCase();
 }
@@ -4602,7 +4619,7 @@ function renderAdminMenuPage(req, res, menuSection) {
   const selectedBamaDate = /^\d{4}-\d{2}-\d{2}$/.test(String(req.query.tanggal_bama || ''))
     ? String(req.query.tanggal_bama)
     : getTodayYmd();
-  const selectedBamaMenuHari = 'Menu Hari VIII';
+  const selectedBamaMenuHari = getBamaMenuHariByDate(selectedBamaDate);
   const selectedDistribusiDate = /^\d{4}-\d{2}-\d{2}$/.test(String(req.query.tanggal_distribusi || ''))
     ? String(req.query.tanggal_distribusi)
     : getTodayYmd();
@@ -4791,14 +4808,19 @@ function renderAdminMenuPage(req, res, menuSection) {
       berat_kotor AS beratKotor,
       satuan,
       banyaknya,
-      keterangan
+      keterangan,
+      menu_hari AS menuHari
     FROM dapur_bama_permintaan
     WHERE tanggal = ?
-      AND menu_hari = ?
-  `).all(selectedBamaDate, selectedBamaMenuHari);
-  const bamaPermintaanById = Object.fromEntries(
-    bamaPermintaanRows.map((row) => [Number(row.bamaId), row])
-  );
+      AND (menu_hari = ? OR menu_hari = 'Menu Hari VIII')
+    ORDER BY CASE WHEN menu_hari = ? THEN 0 ELSE 1 END, id DESC
+  `).all(selectedBamaDate, selectedBamaMenuHari, selectedBamaMenuHari);
+  const bamaPermintaanById = {};
+  bamaPermintaanRows.forEach((row) => {
+    const bamaId = Number(row.bamaId);
+    if (!Number.isInteger(bamaId) || bamaId <= 0) return;
+    if (!bamaPermintaanById[bamaId]) bamaPermintaanById[bamaId] = row;
+  });
 
   const bamaDiterimaRows = db.prepare(`
     SELECT
@@ -4806,14 +4828,19 @@ function renderAdminMenuPage(req, res, menuSection) {
       satuan,
       jumlah_permintaan AS jumlahPermintaan,
       jumlah_diterima AS jumlahDiterima,
-      keterangan
+      keterangan,
+      menu_hari AS menuHari
     FROM dapur_bama_diterima
     WHERE tanggal = ?
-      AND menu_hari = ?
-  `).all(selectedBamaDate, selectedBamaMenuHari);
-  const bamaDiterimaById = Object.fromEntries(
-    bamaDiterimaRows.map((row) => [Number(row.bamaId), row])
-  );
+      AND (menu_hari = ? OR menu_hari = 'Menu Hari VIII')
+    ORDER BY CASE WHEN menu_hari = ? THEN 0 ELSE 1 END, id DESC
+  `).all(selectedBamaDate, selectedBamaMenuHari, selectedBamaMenuHari);
+  const bamaDiterimaById = {};
+  bamaDiterimaRows.forEach((row) => {
+    const bamaId = Number(row.bamaId);
+    if (!Number.isInteger(bamaId) || bamaId <= 0) return;
+    if (!bamaDiterimaById[bamaId]) bamaDiterimaById[bamaId] = row;
+  });
 
   const bamaPenyimpananRows = db.prepare(`
     SELECT
@@ -4822,14 +4849,19 @@ function renderAdminMenuPage(req, res, menuSection) {
       barang_masuk AS barangMasuk,
       barang_keluar AS barangKeluar,
       barang_sisa AS barangSisa,
-      keterangan
+      keterangan,
+      menu_hari AS menuHari
     FROM dapur_bama_penyimpanan
     WHERE tanggal = ?
-      AND menu_hari = ?
-  `).all(selectedBamaDate, selectedBamaMenuHari);
-  const bamaPenyimpananById = Object.fromEntries(
-    bamaPenyimpananRows.map((row) => [Number(row.bamaId), row])
-  );
+      AND (menu_hari = ? OR menu_hari = 'Menu Hari VIII')
+    ORDER BY CASE WHEN menu_hari = ? THEN 0 ELSE 1 END, id DESC
+  `).all(selectedBamaDate, selectedBamaMenuHari, selectedBamaMenuHari);
+  const bamaPenyimpananById = {};
+  bamaPenyimpananRows.forEach((row) => {
+    const bamaId = Number(row.bamaId);
+    if (!Number.isInteger(bamaId) || bamaId <= 0) return;
+    if (!bamaPenyimpananById[bamaId]) bamaPenyimpananById[bamaId] = row;
+  });
 
   const menuTitle = getAppSetting('menu_title', 'DAFTAR MENU MAKAN HARI INI');
 
@@ -5195,7 +5227,7 @@ app.post('/admin/menu/permintaan/save', requireAccess('menu'), (req, res) => {
   const tanggal = /^\d{4}-\d{2}-\d{2}$/.test(String(req.body.tanggal_bama || ''))
     ? String(req.body.tanggal_bama)
     : getTodayYmd();
-  const menuHari = 'Menu Hari VIII';
+  const menuHari = getBamaMenuHariByDate(tanggal);
 
   const bahanList = db.prepare(`
     SELECT id, satuan_default AS satuanDefault
@@ -5232,7 +5264,7 @@ app.post('/admin/menu/diterima/save', requireAccess('menu'), (req, res) => {
   const tanggal = /^\d{4}-\d{2}-\d{2}$/.test(String(req.body.tanggal_bama || ''))
     ? String(req.body.tanggal_bama)
     : getTodayYmd();
-  const menuHari = 'Menu Hari VIII';
+  const menuHari = getBamaMenuHariByDate(tanggal);
 
   const bahanList = db.prepare(`
     SELECT id, satuan_default AS satuanDefault
@@ -5269,7 +5301,7 @@ app.post('/admin/menu/penyimpanan/save', requireAccess('menu'), (req, res) => {
   const tanggal = /^\d{4}-\d{2}-\d{2}$/.test(String(req.body.tanggal_bama || ''))
     ? String(req.body.tanggal_bama)
     : getTodayYmd();
-  const menuHari = 'Menu Hari VIII';
+  const menuHari = getBamaMenuHariByDate(tanggal);
 
   const bahanList = db.prepare(`
     SELECT id, satuan_default AS satuanDefault
