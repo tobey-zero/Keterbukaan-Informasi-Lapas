@@ -699,7 +699,7 @@
         <div class="card-body" style="padding:0;">
           <div class="table-wrap">
             <table class="admin-table">
-              <thead><tr><th>#</th><th>Foto</th><th>Waktu</th><th>Menu</th><th>Aksi</th></tr></thead>
+              <thead><tr><th>#</th><th>Foto</th><th>Waktu</th><th>Menu</th><th>Template Hari</th><th>Aksi</th></tr></thead>
               <tbody>
                 <% masterList.forEach((item, i) => { %>
                 <tr>
@@ -713,6 +713,7 @@
                   </td>
                   <td><strong><%= item.waktu %></strong></td>
                   <td><%= item.menu %></td>
+                  <td><%= item.templateHari || '-' %></td>
                   <td>
                     <div class="actions">
                       <a href="/admin/menu/master?editMaster=<%= item.id %>" class="btn btn-warning btn-xs">✏️ Edit</a>
@@ -723,7 +724,7 @@
                   </td>
                 </tr>
                 <% }) %>
-                <% if (!masterList.length) { %><tr><td colspan="5" style="text-align:center;color:#aaa;padding:20px;">Belum ada master menu</td></tr><% } %>
+                <% if (!masterList.length) { %><tr><td colspan="6" style="text-align:center;color:#aaa;padding:20px;">Belum ada master menu</td></tr><% } %>
               </tbody>
             </table>
           </div>

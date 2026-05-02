@@ -4628,21 +4628,31 @@ function renderAdminMenuPage(req, res, menuSection) {
     ? String(req.query.jam_distribusi)
     : expectedDistribusiJam[0];
   const masterList = db.prepare(`SELECT
-    id,
-    waktu,
-    menu,
-    photo_path,
+    m.id,
+    m.waktu,
+    m.menu,
+    m.photo_path,
+    COALESCE((
+      SELECT GROUP_CONCAT(src.namaList, ', ')
+      FROM (
+        SELECT l.nama_list AS namaList
+        FROM menu_harian_list_item li2
+        INNER JOIN menu_harian_list l ON l.id = li2.list_id
+        WHERE li2.menu_master_id = m.id
+        ORDER BY l.sort_order ASC, l.id ASC
+      ) src
+    ), '') AS templateHari,
     sort_order AS sortOrder
-  FROM menu_master
+  FROM menu_master m
   ORDER BY sort_order ASC,
-    CASE waktu
+    CASE m.waktu
       WHEN 'MAKAN PAGI' THEN 1
       WHEN 'SNACK' THEN 2
       WHEN 'MAKAN SIANG' THEN 3
       WHEN 'MAKAN SORE' THEN 4
       ELSE 5
     END ASC,
-    id ASC`).all();
+    m.id ASC`).all();
 
   const dayLists = db.prepare(`SELECT
     l.id,
