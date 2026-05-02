@@ -461,7 +461,10 @@
         <div class="card-header"><h3>🗓 Set Menu Harian (Tanggal + List Hari)</h3></div>
         <div class="card-body">
           <form method="POST" action="/admin/menu/harian/set">
-            <input type="hidden" name="tanggal" value="<%= selectedTanggal || todayYmd %>">
+            <div class="form-group" style="max-width:240px; margin-bottom:10px;">
+              <label>Tanggal set menu</label>
+              <input type="date" name="tanggal" value="<%= selectedTanggal || todayYmd %>" required>
+            </div>
             <div style="margin-top:10px; font-size:12px; color:#64748b; font-weight:700; margin-bottom:10px;">
               Tanggal aktif: <%= formatDateIndo(selectedTanggal || todayYmd) %> | Total tanggal tersimpan: <%= totalHistory %>
               <% if (selectedSet) { %> | List aktif: <%= selectedSet.namaList %><% } %>

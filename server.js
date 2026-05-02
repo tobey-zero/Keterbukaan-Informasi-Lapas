@@ -2664,7 +2664,7 @@ app.get('/kalapas/table/dapur', (req, res) => {
   const selectedDate = /^\d{4}-\d{2}-\d{2}$/.test(String(req.query.tanggal || ''))
     ? String(req.query.tanggal)
     : getTodayYmd();
-  const selectedBamaMenuHari = 'Menu Hari VIII';
+  const selectedBamaMenuHari = getBamaMenuHariByDate(selectedDate);
 
   const menuTitle = getAppSetting('menu_title', 'DAFTAR MENU MAKAN HARI INI');
   const selectedDateLabel = new Intl.DateTimeFormat('id-ID', {
@@ -2710,28 +2710,46 @@ app.get('/kalapas/table/dapur', (req, res) => {
     ORDER BY sort_order ASC, id ASC
   `).all();
   const permintaanRows = db.prepare(`
-    SELECT bama_id AS bamaId, berat_kotor AS beratKotor, satuan, banyaknya, keterangan
+    SELECT bama_id AS bamaId, berat_kotor AS beratKotor, satuan, banyaknya, keterangan, menu_hari AS menuHari
     FROM dapur_bama_permintaan
     WHERE tanggal = ?
-      AND menu_hari = ?
-  `).all(selectedDate, selectedBamaMenuHari);
-  const permintaanById = Object.fromEntries(permintaanRows.map((item) => [Number(item.bamaId), item]));
+      AND (menu_hari = ? OR menu_hari = 'Menu Hari VIII')
+    ORDER BY CASE WHEN menu_hari = ? THEN 0 ELSE 1 END, id DESC
+  `).all(selectedDate, selectedBamaMenuHari, selectedBamaMenuHari);
+  const permintaanById = {};
+  permintaanRows.forEach((item) => {
+    const bamaId = Number(item.bamaId);
+    if (!Number.isInteger(bamaId) || bamaId <= 0) return;
+    if (!permintaanById[bamaId]) permintaanById[bamaId] = item;
+  });
 
   const diterimaRows = db.prepare(`
-    SELECT bama_id AS bamaId, satuan, jumlah_permintaan AS jumlahPermintaan, jumlah_diterima AS jumlahDiterima, keterangan
+    SELECT bama_id AS bamaId, satuan, jumlah_permintaan AS jumlahPermintaan, jumlah_diterima AS jumlahDiterima, keterangan, menu_hari AS menuHari
     FROM dapur_bama_diterima
     WHERE tanggal = ?
-      AND menu_hari = ?
-  `).all(selectedDate, selectedBamaMenuHari);
-  const diterimaById = Object.fromEntries(diterimaRows.map((item) => [Number(item.bamaId), item]));
+      AND (menu_hari = ? OR menu_hari = 'Menu Hari VIII')
+    ORDER BY CASE WHEN menu_hari = ? THEN 0 ELSE 1 END, id DESC
+  `).all(selectedDate, selectedBamaMenuHari, selectedBamaMenuHari);
+  const diterimaById = {};
+  diterimaRows.forEach((item) => {
+    const bamaId = Number(item.bamaId);
+    if (!Number.isInteger(bamaId) || bamaId <= 0) return;
+    if (!diterimaById[bamaId]) diterimaById[bamaId] = item;
+  });
 
   const penyimpananRows = db.prepare(`
-    SELECT bama_id AS bamaId, satuan, barang_masuk AS barangMasuk, barang_keluar AS barangKeluar, barang_sisa AS barangSisa, keterangan
+    SELECT bama_id AS bamaId, satuan, barang_masuk AS barangMasuk, barang_keluar AS barangKeluar, barang_sisa AS barangSisa, keterangan, menu_hari AS menuHari
     FROM dapur_bama_penyimpanan
     WHERE tanggal = ?
-      AND menu_hari = ?
-  `).all(selectedDate, selectedBamaMenuHari);
-  const penyimpananById = Object.fromEntries(penyimpananRows.map((item) => [Number(item.bamaId), item]));
+      AND (menu_hari = ? OR menu_hari = 'Menu Hari VIII')
+    ORDER BY CASE WHEN menu_hari = ? THEN 0 ELSE 1 END, id DESC
+  `).all(selectedDate, selectedBamaMenuHari, selectedBamaMenuHari);
+  const penyimpananById = {};
+  penyimpananRows.forEach((item) => {
+    const bamaId = Number(item.bamaId);
+    if (!Number.isInteger(bamaId) || bamaId <= 0) return;
+    if (!penyimpananById[bamaId]) penyimpananById[bamaId] = item;
+  });
 
   const distribusiRows = db.prepare(`
     SELECT
