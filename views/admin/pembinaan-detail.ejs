@@ -22,7 +22,8 @@
     </div>
     <div class="content-area">
       <% if (success) { %><div class="alert alert-success">✅ Data berhasil disimpan.</div><% } %>
-      <% if (importSuccess) { %><div class="alert alert-success">✅ Import berhasil memproses <%= importSuccess %> data.</div><% } %>
+      <% if (importSuccess) { %><div class="alert alert-success">✅ Import berhasil memproses <%= importSuccess %> data.<% if (errorCount) { %> (<%= errorCount %> data error tersimpan)<% } %></div><% } %>
+      <% if (errorCount && errorCount > 0) { %><div class="alert alert-warning" style="display:flex;gap:8px;align-items:center;justify-content:space-between;"><span>⚠️ Ada <%= errorCount %> data yang gagal diimport. Silakan download file error untuk melihat detail kesalahan.</span><div style="display:flex;gap:8px;"><a href="/admin/pembinaan-detail/download-error-excel" class="btn btn-warning btn-sm">⬇️ Download Error</a><form method="POST" action="/admin/pembinaan-detail/clear-error" style="display:inline;"><button type="submit" class="btn btn-secondary btn-sm" onclick="return confirm('Hapus data error? Action ini akan menghapus error sementara saat server sedang berjalan.');">🗑 Hapus Error</button></form></div></div><% } %>
       <% if (error) { %><div class="alert alert-danger">❌ <%= error %></div><% } %>
 
       <div class="card">

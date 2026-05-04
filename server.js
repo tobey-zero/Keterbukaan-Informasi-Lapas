@@ -7,6 +7,12 @@ const multer = require('multer');
 const XLSX = require('xlsx');
 const db = require('./db');
 
+// Temporary storage for import errors
+const importErrorStore = {
+  pembinaan: { rows: [], timestamp: null },
+  remisi: { rows: [], timestamp: null }
+};
+
 const app = express();
 const PORT = 3000;
 const PENGADUAN_PORT = 3001;
@@ -5479,6 +5485,7 @@ app.get('/admin/pembinaan-detail', requireAccess('pembinaan-detail'), (req, res)
     success: req.query.success,
     error: req.query.error,
     importSuccess: req.query.importSuccess,
+    errorCount: req.query.errorCount,
     searchKeyword,
     statusFilter,
     activeCount,
@@ -5522,6 +5529,47 @@ app.post('/admin/pembinaan-detail/import-excel', requireAccess('pembinaan-detail
     return res.redirect('/admin/pembinaan-detail?error=Data+Excel+kosong');
   }
 
+  const convertExcelDateToYmd = (value) => {
+    if (!value) return '';
+    const trimmed = String(value).trim();
+    if (!trimmed) return '';
+    
+    // Check if already in YYYY-MM-DD format
+    if (/^\d{4}-\d{2}-\d{2}$/.test(trimmed)) return trimmed;
+    
+    // Try to parse as Excel serial number (numeric)
+    const num = Number(trimmed);
+    if (!isNaN(num) && num > 0) {
+      // Excel serial date: days since 1900-01-01
+      // But Excel has a leap year bug for 1900, so adjust
+      const excelEpoch = new Date(1900, 0, 1);
+      const date = new Date(excelEpoch.getTime() + (num - 1) * 24 * 60 * 60 * 1000);
+      // Adjust for Excel's 1900 leap year bug (Excel thinks 1900 is a leap year)
+      if (num > 60) {
+        date.setDate(date.getDate() - 1);
+      }
+      const year = date.getFullYear();
+      const month = String(date.getMonth() + 1).padStart(2, '0');
+      const day = String(date.getDate()).padStart(2, '0');
+      return `${year}-${month}-${day}`;
+    }
+    
+    // Try to parse other date formats
+    try {
+      const date = new Date(trimmed);
+      if (!isNaN(date.getTime())) {
+        const year = date.getFullYear();
+        const month = String(date.getMonth() + 1).padStart(2, '0');
+        const day = String(date.getDate()).padStart(2, '0');
+        return `${year}-${month}-${day}`;
+      }
+    } catch (_e) {
+      // Do nothing
+    }
+    
+    return '';
+  };
+
   const normalizeRowValue = (row, aliases) => {
     for (const key of Object.keys(row)) {
       const normalizedKey = normalizeExcelHeaderKey(key);
@@ -5530,20 +5578,34 @@ app.post('/admin/pembinaan-detail/import-excel', requireAccess('pembinaan-detail
     return '';
   };
 
-  const parsedRows = rows.map((row) => {
+  const parsedRows = rows.map((row, rowIndex) => {
     const noReg = normalizeRowValue(row, ['noreg', 'noregistrasi', 'noregistration', 'noregistrasiwbp', 'noregwbp']).toUpperCase();
     const namaWbp = normalizeRowValue(row, ['namawbp', 'nama']).toUpperCase();
     const jenisKejahatan = normalizeRowValue(row, ['jeniskejahatan', 'tindakpidana']).toUpperCase();
     const blokKamar = normalizeRowValue(row, ['blokkamar', 'blok', 'kamar']).toUpperCase();
-    const tanggal1 = normalizeRowValue(row, ['tanggal13', 'tgl13', 'tanggalsepertiga']);
-    const tanggal3 = normalizeRowValue(row, ['tanggal12', 'tgl12', 'tanggalsetengah']);
-    const tanggal2 = normalizeRowValue(row, ['tanggal23', 'tgl23', 'tanggalduapertiga']);
-    const tanggal4 = normalizeRowValue(row, ['tanggalekspirasi', 'ekspirasi', 'tanggalakhir']);
+    const tanggal1Raw = normalizeRowValue(row, ['tanggal13', 'tgl13', 'tanggalsepertiga']);
+    const tanggal3Raw = normalizeRowValue(row, ['tanggal12', 'tgl12', 'tanggalsetengah']);
+    const tanggal2Raw = normalizeRowValue(row, ['tanggal23', 'tgl23', 'tanggalduapertiga']);
+    const tanggal4Raw = normalizeRowValue(row, ['tanggalekspirasi', 'ekspirasi', 'tanggalakhir']);
     const totalRemisi = normalizeRowValue(row, ['totalremisi', 'remisitotal']);
     const keterangan = normalizeRowValue(row, ['keterangan', 'ket']);
     const statusIntegrasi = normalizeRowValue(row, ['statusintegrasi', 'status']);
 
+    const tanggal1 = convertExcelDateToYmd(tanggal1Raw);
+    const tanggal2 = convertExcelDateToYmd(tanggal2Raw);
+    const tanggal3 = convertExcelDateToYmd(tanggal3Raw);
+    const tanggal4 = convertExcelDateToYmd(tanggal4Raw);
+
+    const errors = [];
+    if (!noReg) errors.push('NO REG kosong');
+    if (!namaWbp) errors.push('NAMA WBP kosong');
+    if (tanggal1Raw && !tanggal1) errors.push(`Tanggal 1/3 tidak valid: "${tanggal1Raw}"`);
+    if (tanggal2Raw && !tanggal2) errors.push(`Tanggal 2/3 tidak valid: "${tanggal2Raw}"`);
+    if (tanggal3Raw && !tanggal3) errors.push(`Tanggal 1/2 tidak valid: "${tanggal3Raw}"`);
+    if (tanggal4Raw && !tanggal4) errors.push(`Tanggal Ekspirasi tidak valid: "${tanggal4Raw}"`);
+
     return {
+      rowIndex,
       noReg,
       namaWbp,
       jenisKejahatan,
@@ -5555,11 +5617,23 @@ app.post('/admin/pembinaan-detail/import-excel', requireAccess('pembinaan-detail
       totalRemisi,
       keterangan,
       statusIntegrasi,
+      errors,
+      isValid: errors.length === 0
     };
-  }).filter((item) => item.noReg && item.namaWbp);
+  });
 
-  if (!parsedRows.length) {
-    return res.redirect('/admin/pembinaan-detail?error=Tidak+ada+baris+valid.+Pastikan+NO+REG+dan+NAMA+WBP+terisi');
+  const validRows = parsedRows.filter((item) => item.isValid);
+  const errorRows = parsedRows.filter((item) => !item.isValid);
+
+  if (!validRows.length && !errorRows.length) {
+    return res.redirect('/admin/pembinaan-detail?error=Tidak+ada+data+yang+dapat+diproses');
+  }
+
+  if (errorRows.length > 0) {
+    importErrorStore.pembinaan = {
+      rows: errorRows,
+      timestamp: new Date()
+    };
   }
 
   const selectByNoReg = db.prepare(`
@@ -5582,56 +5656,130 @@ app.post('/admin/pembinaan-detail/import-excel', requireAccess('pembinaan-detail
 
   let updatedCount = 0;
   let insertedCount = 0;
+  const processingErrors = [];
 
   db.exec('BEGIN');
   try {
-    parsedRows.forEach((item) => {
-      const existingRows = selectByNoReg.all(item.noReg);
-      if (existingRows.length) {
-        const targetId = Number(existingRows[0].id);
-        updateById.run(
-          item.noReg,
-          item.namaWbp,
-          item.jenisKejahatan,
-          item.blokKamar,
-          item.tanggal1,
-          item.tanggal2,
-          item.tanggal3,
-          item.tanggal4,
-          item.totalRemisi,
-          item.keterangan,
-          item.statusIntegrasi,
-          targetId
-        );
-        existingRows.slice(1).forEach((row) => deactivateDuplicateById.run(Number(row.id)));
-        updatedCount += 1;
-      } else {
-        insertStmt.run(
-          item.noReg,
-          item.namaWbp,
-          item.jenisKejahatan,
-          item.blokKamar,
-          item.tanggal1,
-          item.tanggal2,
-          item.tanggal3,
-          item.tanggal4,
-          item.totalRemisi,
-          item.keterangan,
-          item.statusIntegrasi
-        );
-        insertedCount += 1;
-      }
+    validRows.forEach((item) => {
+      try {
+        const existingRows = selectByNoReg.all(item.noReg);
+        if (existingRows.length) {
+          const targetId = Number(existingRows[0].id);
+          updateById.run(
+            item.noReg,
+            item.namaWbp,
+            item.jenisKejahatan,
+            item.blokKamar,
+            item.tanggal1,
+            item.tanggal2,
+            item.tanggal3,
+            item.tanggal4,
+            item.totalRemisi,
+            item.keterangan,
+            item.statusIntegrasi,
+            targetId
+          );
+          existingRows.slice(1).forEach((row) => deactivateDuplicateById.run(Number(row.id)));
+          updatedCount += 1;
+        } else {
+          insertStmt.run(
+            item.noReg,
+            item.namaWbp,
+            item.jenisKejahatan,
+            item.blokKamar,
+            item.tanggal1,
+            item.tanggal2,
+            item.tanggal3,
+            item.tanggal4,
+            item.totalRemisi,
+            item.keterangan,
+            item.statusIntegrasi
+          );
+          insertedCount += 1;
+        }
 
-      syncPembinaanMasterByName(item.namaWbp, item.statusIntegrasi || '-');
+        syncPembinaanMasterByName(item.namaWbp, item.statusIntegrasi || '-');
+      } catch (rowErr) {
+        processingErrors.push({
+          ...item,
+          errors: [String(rowErr.message || 'Error tidak diketahui')]
+        });
+      }
     });
 
     db.exec('COMMIT');
+    
+    if (processingErrors.length > 0) {
+      importErrorStore.pembinaan.rows.push(...processingErrors);
+    }
+
     const totalChanged = insertedCount + updatedCount;
-    return res.redirect(`/admin/pembinaan-detail?importSuccess=${totalChanged}`);
+    const errorCount = errorRows.length + processingErrors.length;
+    let successMsg = `${totalChanged} data berhasil`;
+    if (errorCount > 0) {
+      successMsg += `. ${errorCount} data error (bisa di-download)`;
+    }
+    return res.redirect(`/admin/pembinaan-detail?importSuccess=${totalChanged}&errorCount=${errorCount}&successMsg=${encodeURIComponent(successMsg)}`);
   } catch (_err) {
     db.exec('ROLLBACK');
     return res.redirect('/admin/pembinaan-detail?error=Gagal+import+Excel+detail+pembinaan');
   }
+});
+
+app.get('/admin/pembinaan-detail/download-error-excel', requireAccess('pembinaan-detail'), (_req, res) => {
+  if (!importErrorStore.pembinaan.rows.length) {
+    return res.redirect('/admin/pembinaan-detail?error=Tidak+ada+data+error+untuk+didownload');
+  }
+
+  const errorRows = importErrorStore.pembinaan.rows.map((item) => ({
+    'NO REG': item.noReg || '-',
+    'NAMA WBP': item.namaWbp || '-',
+    'JENIS KEJAHATAN': item.jenisKejahatan || '-',
+    'BLOK/KAMAR': item.blokKamar || '-',
+    'TANGGAL 1/3': item.tanggal1 || '-',
+    'TANGGAL 1/2': item.tanggal3 || '-',
+    'TANGGAL 2/3': item.tanggal2 || '-',
+    'TANGGAL EKSPIRASI': item.tanggal4 || '-',
+    'TOTAL REMISI': item.totalRemisi || '-',
+    'KETERANGAN': item.keterangan || '-',
+    'STATUS INTEGRASI': item.statusIntegrasi || '-',
+    'ERROR': (item.errors || []).join('; ')
+  }));
+
+  try {
+    const ws = XLSX.utils.json_to_sheet(errorRows);
+    const wb = XLSX.utils.book_new();
+    XLSX.utils.book_append_sheet(wb, ws, 'Error Data');
+
+    // Set column widths
+    const colWidths = [
+      { wch: 12 },
+      { wch: 25 },
+      { wch: 20 },
+      { wch: 15 },
+      { wch: 12 },
+      { wch: 12 },
+      { wch: 12 },
+      { wch: 12 },
+      { wch: 15 },
+      { wch: 20 },
+      { wch: 20 },
+      { wch: 40 }
+    ];
+    ws['!cols'] = colWidths;
+
+    const fileBuffer = XLSX.write(wb, { bookType: 'xlsx', type: 'buffer' });
+    res.setHeader('Content-Disposition', 'attachment; filename="error-pembinaan-detail.xlsx"');
+    res.setHeader('Content-Type', 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet');
+    return res.send(fileBuffer);
+  } catch (_err) {
+    return res.redirect('/admin/pembinaan-detail?error=Gagal+download+file+error');
+  }
+});
+
+app.post('/admin/pembinaan-detail/clear-error', requireAccess('pembinaan-detail'), (_req, res) => {
+  importErrorStore.pembinaan = { rows: [], timestamp: null };
+  return res.redirect('/admin/pembinaan-detail?success=1');
 });
 
 app.post('/admin/pembinaan-detail/add', requireAccess('pembinaan-detail'), (req, res) => {
