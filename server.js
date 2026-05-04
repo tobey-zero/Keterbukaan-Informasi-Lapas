@@ -1778,7 +1778,6 @@ function getGiiatjaData(options = {}) {
   const saranaMasterList = db.prepare(`
     SELECT
       id,
-      kode,
       uraian,
       jumlah_satuan AS jumlahSatuan,
       penempatan_kegiatan AS penempatanKegiatan,
@@ -6325,7 +6324,6 @@ app.get('/admin/giiatja', requireAccess('giiatja'), (req, res) => {
   const saranaPenggunaanList = db.prepare(`
     SELECT
       u.*,
-      m.kode,
       m.uraian,
       m.jumlah_satuan,
       m.penempatan_kegiatan
@@ -6771,42 +6769,38 @@ app.post('/admin/giiatja/pelatihan/:id/delete', requireAccess('giiatja'), (req, 
 });
 
 app.post('/admin/giiatja/sarana/master/add', requireAccess('giiatja'), (req, res) => {
-  const kode = String(req.body.kode || '').trim().toUpperCase();
   const uraian = String(req.body.uraian || '').trim().toUpperCase();
   const jumlahSatuan = String(req.body.jumlah_satuan || '').trim();
   const penempatanKegiatan = String(req.body.penempatan_kegiatan || '').trim().toUpperCase();
-  const sortOrder = Number(req.body.sort_order || 0) || 1;
 
-  if (!kode || !uraian || !jumlahSatuan || !penempatanKegiatan) {
+  if (!uraian || !jumlahSatuan || !penempatanKegiatan) {
     return res.redirect('/admin/giiatja?menu=sarana&error=Semua+kolom+master+sarana+wajib+diisi');
   }
 
-  db.prepare(`
+  const result = db.prepare(`
     INSERT INTO giiatja_sarana_master
-      (kode, uraian, jumlah_satuan, penempatan_kegiatan, sort_order)
-    VALUES (?, ?, ?, ?, ?)
-  `).run(kode, uraian, jumlahSatuan, penempatanKegiatan, sortOrder);
+      (uraian, jumlah_satuan, penempatan_kegiatan, sort_order)
+    VALUES (?, ?, ?, (SELECT COALESCE(MAX(sort_order), 0) + 1 FROM giiatja_sarana_master))
+  `).run(uraian, jumlahSatuan, penempatanKegiatan);
 
   return res.redirect('/admin/giiatja?menu=sarana&success=1');
 });
 
 app.post('/admin/giiatja/sarana/master/:id/update', requireAccess('giiatja'), (req, res) => {
   const id = Number(req.params.id);
-  const kode = String(req.body.kode || '').trim().toUpperCase();
   const uraian = String(req.body.uraian || '').trim().toUpperCase();
   const jumlahSatuan = String(req.body.jumlah_satuan || '').trim();
   const penempatanKegiatan = String(req.body.penempatan_kegiatan || '').trim().toUpperCase();
-  const sortOrder = Number(req.body.sort_order || 0) || 1;
 
-  if (!kode || !uraian || !jumlahSatuan || !penempatanKegiatan) {
+  if (!uraian || !jumlahSatuan || !penempatanKegiatan) {
     return res.redirect(`/admin/giiatja?menu=sarana&editSaranaMaster=${id}&error=Semua+kolom+master+sarana+wajib+diisi`);
   }
 
   db.prepare(`
     UPDATE giiatja_sarana_master
-    SET kode=?, uraian=?, jumlah_satuan=?, penempatan_kegiatan=?, sort_order=?
+    SET uraian=?, jumlah_satuan=?, penempatan_kegiatan=?
     WHERE id=?
-  `).run(kode, uraian, jumlahSatuan, penempatanKegiatan, sortOrder, id);
+  `).run(uraian, jumlahSatuan, penempatanKegiatan, id);
 
   return res.redirect('/admin/giiatja?menu=sarana&success=1');
 });
@@ -6823,7 +6817,6 @@ app.post('/admin/giiatja/sarana/penggunaan/add', requireAccess('giiatja'), (req,
     : getTodayYmd();
   const saranaId = Number(req.body.sarana_id || 0);
   const jumlahDigunakan = String(req.body.jumlah_digunakan || '').trim();
-  const sortOrder = Number(req.body.sort_order || 0) || 1;
 
   if (!saranaId || !jumlahDigunakan) {
     return res.redirect(`/admin/giiatja?menu=sarana&tanggal_sarana=${encodeURIComponent(tanggal)}&error=Data+penggunaan+harian+belum+lengkap`);
@@ -6832,8 +6825,8 @@ app.post('/admin/giiatja/sarana/penggunaan/add', requireAccess('giiatja'), (req,
   db.prepare(`
     INSERT INTO giiatja_sarana_penggunaan_harian
       (tanggal, sarana_id, jumlah_digunakan, sort_order)
-    VALUES (?, ?, ?, ?)
-  `).run(tanggal, saranaId, jumlahDigunakan, sortOrder);
+    VALUES (?, ?, ?, (SELECT COALESCE(MAX(sort_order), 0) + 1 FROM giiatja_sarana_penggunaan_harian WHERE tanggal = ?))
+  `).run(tanggal, saranaId, jumlahDigunakan, tanggal);
 
   return res.redirect(`/admin/giiatja?menu=sarana&tanggal_sarana=${encodeURIComponent(tanggal)}&success=1`);
 });
@@ -6845,7 +6838,6 @@ app.post('/admin/giiatja/sarana/penggunaan/:id/update', requireAccess('giiatja')
     : getTodayYmd();
   const saranaId = Number(req.body.sarana_id || 0);
   const jumlahDigunakan = String(req.body.jumlah_digunakan || '').trim();
-  const sortOrder = Number(req.body.sort_order || 0) || 1;
 
   if (!saranaId || !jumlahDigunakan) {
     return res.redirect(`/admin/giiatja?menu=sarana&editSaranaPenggunaan=${id}&tanggal_sarana=${encodeURIComponent(tanggal)}&error=Data+penggunaan+harian+belum+lengkap`);
@@ -6853,9 +6845,9 @@ app.post('/admin/giiatja/sarana/penggunaan/:id/update', requireAccess('giiatja')
 
   db.prepare(`
     UPDATE giiatja_sarana_penggunaan_harian
-    SET tanggal=?, sarana_id=?, jumlah_digunakan=?, sort_order=?
+    SET tanggal=?, sarana_id=?, jumlah_digunakan=?
     WHERE id=?
-  `).run(tanggal, saranaId, jumlahDigunakan, sortOrder, id);
+  `).run(tanggal, saranaId, jumlahDigunakan, id);
 
   return res.redirect(`/admin/giiatja?menu=sarana&tanggal_sarana=${encodeURIComponent(tanggal)}&success=1`);
 });

@@ -209,9 +209,7 @@ PETUGAS B"></textarea></div>
         <div class="card-body">
           <form method="POST" action="/admin/giiatja/sarana/master/add">
             <div class="form-grid col-4" style="margin-bottom:12px;">
-              <div class="form-group"><label>Urutan</label><input type="number" min="1" name="sort_order" value="1"></div>
-              <div class="form-group"><label>Kode</label><input type="text" name="kode" required placeholder="cth: SRN-01"></div>
-              <div class="form-group"><label>Uraian</label><input type="text" name="uraian" required placeholder="cth: GERGAJI BESI"></div>
+              <div class="form-group"><label>Nama Alat</label><input type="text" name="uraian" required placeholder="cth: GERGAJI BESI"></div>
               <div class="form-group"><label>Jumlah Satuan</label><input type="text" name="jumlah_satuan" required placeholder="cth: 12 UNIT"></div>
               <div class="form-group" style="grid-column: span 2;"><label>Penempatan Tiap Kegiatan Kerja</label><textarea name="penempatan_kegiatan" rows="2" required placeholder="cth: PANGKAS, LAS, BENGKEL"></textarea></div>
             </div>
@@ -225,9 +223,7 @@ PETUGAS B"></textarea></div>
         <h4>✏️ Edit Master Sarana (ID: <%= editSaranaMaster.id %>)</h4>
         <form method="POST" action="/admin/giiatja/sarana/master/<%= editSaranaMaster.id %>/update">
           <div class="form-grid col-4" style="margin-bottom:12px;">
-            <div class="form-group"><label>Urutan</label><input type="number" min="1" name="sort_order" value="<%= editSaranaMaster.sort_order || 1 %>"></div>
-            <div class="form-group"><label>Kode</label><input type="text" name="kode" value="<%= editSaranaMaster.kode || '' %>" required></div>
-            <div class="form-group"><label>Uraian</label><input type="text" name="uraian" value="<%= editSaranaMaster.uraian || '' %>" required></div>
+            <div class="form-group"><label>Nama Alat</label><input type="text" name="uraian" value="<%= editSaranaMaster.uraian || '' %>" required></div>
             <div class="form-group"><label>Jumlah Satuan</label><input type="text" name="jumlah_satuan" value="<%= editSaranaMaster.jumlah_satuan || '' %>" required></div>
             <div class="form-group" style="grid-column: span 2;"><label>Penempatan Tiap Kegiatan Kerja</label><textarea name="penempatan_kegiatan" rows="2" required><%= editSaranaMaster.penempatan_kegiatan || '' %></textarea></div>
           </div>
@@ -244,12 +240,11 @@ PETUGAS B"></textarea></div>
         <div class="card-body" style="padding:0;">
           <div class="table-wrap">
             <table class="admin-table">
-              <thead><tr><th>No</th><th>Kode</th><th>Uraian</th><th>Jumlah Satuan</th><th>Penempatan Tiap Kegiatan Kerja</th><th>Aksi</th></tr></thead>
+              <thead><tr><th>No</th><th>Nama Alat</th><th>Jumlah Satuan</th><th>Penempatan Tiap Kegiatan Kerja</th><th>Aksi</th></tr></thead>
               <tbody>
                 <% saranaMasterList.forEach((item, i) => { %>
                 <tr>
                   <td><%= i + 1 %></td>
-                  <td><%= item.kode || '-' %></td>
                   <td><%= item.uraian || '-' %></td>
                   <td><%= item.jumlah_satuan || '-' %></td>
                   <td style="white-space:pre-line;"><%= item.penempatan_kegiatan || '-' %></td>
@@ -286,13 +281,12 @@ PETUGAS B"></textarea></div>
           <form method="POST" action="/admin/giiatja/sarana/penggunaan/add">
             <input type="hidden" name="tanggal" value="<%= selectedSaranaDate || '' %>">
             <div class="form-grid col-4" style="margin-bottom:12px;">
-              <div class="form-group"><label>Urutan</label><input type="number" min="1" name="sort_order" value="1"></div>
               <div class="form-group">
                 <label>Perlengkapan Sarana</label>
                 <select name="sarana_id" required>
                   <option value="">-- Pilih Master Sarana --</option>
                   <% saranaMasterList.forEach((item) => { %>
-                    <option value="<%= item.id %>"><%= item.kode %> - <%= item.uraian %></option>
+                    <option value="<%= item.id %>"><%= item.uraian %></option>
                   <% }) %>
                 </select>
               </div>
@@ -309,12 +303,11 @@ PETUGAS B"></textarea></div>
         <form method="POST" action="/admin/giiatja/sarana/penggunaan/<%= editSaranaPenggunaan.id %>/update">
           <input type="hidden" name="tanggal" value="<%= selectedSaranaDate || editSaranaPenggunaan.tanggal || '' %>">
           <div class="form-grid col-4" style="margin-bottom:12px;">
-            <div class="form-group"><label>Urutan</label><input type="number" min="1" name="sort_order" value="<%= editSaranaPenggunaan.sort_order || 1 %>"></div>
             <div class="form-group">
               <label>Perlengkapan Sarana</label>
               <select name="sarana_id" required>
                 <% saranaMasterList.forEach((item) => { %>
-                  <option value="<%= item.id %>" <%= Number(editSaranaPenggunaan.sarana_id) === Number(item.id) ? 'selected' : '' %>><%= item.kode %> - <%= item.uraian %></option>
+                  <option value="<%= item.id %>" <%= Number(editSaranaPenggunaan.sarana_id) === Number(item.id) ? 'selected' : '' %>><%= item.uraian %></option>
                 <% }) %>
               </select>
             </div>
@@ -333,12 +326,11 @@ PETUGAS B"></textarea></div>
         <div class="card-body" style="padding:0;">
           <div class="table-wrap">
             <table class="admin-table">
-              <thead><tr><th>No</th><th>Kode</th><th>Uraian</th><th>Jumlah Satuan</th><th>Penempatan Tiap Kegiatan Kerja</th><th>Jumlah Digunakan Harian</th><th>Aksi</th></tr></thead>
+              <thead><tr><th>No</th><th>Nama Alat</th><th>Jumlah Satuan</th><th>Penempatan Tiap Kegiatan Kerja</th><th>Jumlah Digunakan Harian</th><th>Aksi</th></tr></thead>
               <tbody>
                 <% saranaPenggunaanList.forEach((item, i) => { %>
                 <tr>
                   <td><%= i + 1 %></td>
-                  <td><%= item.kode || '-' %></td>
                   <td><%= item.uraian || '-' %></td>
                   <td><%= item.jumlah_satuan || '-' %></td>
                   <td style="white-space:pre-line;"><%= item.penempatan_kegiatan || '-' %></td>
