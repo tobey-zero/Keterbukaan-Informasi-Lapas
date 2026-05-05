@@ -184,7 +184,7 @@
                   <td><strong><%= item.besaran || '-' %></strong></td>
                   <td><strong><%= item.remisiBulan || '-' %></strong></td>
                   <td><strong><%= item.remisiHari || '-' %></strong></td>
-                  <td><%= item.keterangan || '-' %></td>
+                  <td><%= item.keterangan || item.jenis || '-' %></td> 
                 </tr>
               <% }) %>
               <% if (!list.length) { %>
