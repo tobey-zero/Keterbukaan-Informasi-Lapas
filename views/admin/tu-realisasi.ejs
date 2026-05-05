@@ -17,30 +17,62 @@
       <% if (success) { %><div class="alert alert-success">✅ Data berhasil disimpan.</div><% } %>
 
       <div class="card">
-        <div class="card-header"><h3>💰 Data Keuangan (Kelolaan Tata Usaha)</h3></div>
+        <div class="card-header"><h3>💰 Data Realisasi Keuangan</h3></div>
         <div class="card-body">
           <form method="POST" action="/admin/tu-umum/keuangan/update">
-            <div class="form-grid col-4" style="margin-bottom:12px;">
-              <div class="form-group">
-                <label>Total Pagu (Rp)</label>
-                <input type="number" min="0" step="1" name="total_pagu" value="<%= financeSummary.totalPagu %>" required>
+            <div style="margin-bottom:12px;">
+              <h4 style="margin-bottom:10px;">Pagu</h4>
+              <div class="form-grid col-4" style="margin-bottom:12px;">
+                <div class="form-group">
+                  <label>Pegawai (Rp)</label>
+                  <input type="number" min="0" step="1" name="pagu_pegawai" value="<%= financeSummary.paguPegawai %>" required>
+                </div>
+                <div class="form-group">
+                  <label>Barang (Rp)</label>
+                  <input type="number" min="0" step="1" name="pagu_barang" value="<%= financeSummary.paguBarang %>" required>
+                </div>
+                <div class="form-group">
+                  <label>Modal (Rp)</label>
+                  <input type="number" min="0" step="1" name="pagu_modal" value="<%= financeSummary.paguModal %>" required>
+                </div>
+                <div class="form-group">
+                  <label>Total Pagu (otomatis)</label>
+                  <input type="text" value="<%= financeSummary.totalPaguLabel %>" disabled>
+                </div>
               </div>
-              <div class="form-group">
-                <label>Realisasi Belanja (Rp)</label>
-                <input type="number" min="0" step="1" name="realisasi_belanja" value="<%= financeSummary.realisasiBelanja %>" required>
+            </div>
+
+            <div style="margin-bottom:12px;">
+              <h4 style="margin-bottom:10px;">Realisasi</h4>
+              <div class="form-grid col-4" style="margin-bottom:12px;">
+                <div class="form-group">
+                  <label>Pegawai (Rp)</label>
+                  <input type="number" min="0" step="1" name="realisasi_pegawai" value="<%= financeSummary.realisasiPegawai %>" required>
+                </div>
+                <div class="form-group">
+                  <label>Barang (Rp)</label>
+                  <input type="number" min="0" step="1" name="realisasi_barang" value="<%= financeSummary.realisasiBarang %>" required>
+                </div>
+                <div class="form-group">
+                  <label>Modal (Rp)</label>
+                  <input type="number" min="0" step="1" name="realisasi_modal" value="<%= financeSummary.realisasiModal %>" required>
+                </div>
+                <div class="form-group">
+                  <label>Total Realisasi (otomatis)</label>
+                  <input type="text" value="<%= financeSummary.realisasiBelanjaLabel %>" disabled>
+                </div>
               </div>
+            </div>
+
+            <div style="margin-bottom:12px;">
               <div class="form-group">
                 <label>Data Per Tanggal & Jam</label>
                 <input type="datetime-local" name="updated_at" value="<%= financeSummary.updatedAtRaw %>">
               </div>
-              <div class="form-group">
-                <label>Sisa Pagu (otomatis)</label>
-                <input type="text" value="<%= financeSummary.sisaPaguLabel %>" disabled>
-              </div>
             </div>
 
             <div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap;margin-top:6px;">
-              <button type="submit" class="btn btn-primary btn-sm">💾 Simpan Data Keuangan</button>
+              <button type="submit" class="btn btn-primary btn-sm">💾 Simpan Data Realisasi</button>
               <span style="font-size:12px;color:#475569;">Data publik terakhir: <strong><%= financeSummary.updatedAtLabel %></strong></span>
             </div>
           </form>

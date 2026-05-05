@@ -258,24 +258,48 @@
             <span>Data per <%= financeSummary.updatedAtLabel %></span>
           </div>
 
-          <table class="finance-summary-table">
+          <table class="finance-summary-table" style="margin-top:12px;">
             <thead>
               <tr>
-                <th>TOTAL PAGU</th>
-                <th>REALISASI BELANJA</th>
-                <th>SISA PAGU</th>
-                <th>DATA PER TANGGAL & JAM</th>
+                <th style="width:15%;"></th>
+                <th>PEGAWAI</th>
+                <th>BARANG</th>
+                <th>MODAL</th>
+                <th>TOTAL</th>
               </tr>
             </thead>
             <tbody>
               <tr>
-                <td><%= financeSummary.totalPaguLabel %></td>
-                <td><%= financeSummary.realisasiBelanjaLabel %></td>
-                <td><%= financeSummary.sisaPaguLabel %></td>
-                <td><%= financeSummary.updatedAtLabel %></td>
+                <td style="text-align:left;font-weight:bold;background:rgba(15,23,42,.35);">PAGU</td>
+                <td><%= (financeSummary.paguPegawai || 0).toLocaleString('id-ID') %></td>
+                <td><%= (financeSummary.paguBarang || 0).toLocaleString('id-ID') %></td>
+                <td><%= (financeSummary.paguModal || 0).toLocaleString('id-ID') %></td>
+                <td><%= (financeSummary.totalPagu || 0).toLocaleString('id-ID') %></td>
+              </tr>
+              <tr>
+                <td style="text-align:left;font-weight:bold;background:rgba(15,23,42,.35);">REALISASI</td>
+                <td><%= (financeSummary.realisasiPegawai || 0).toLocaleString('id-ID') %></td>
+                <td><%= (financeSummary.realisasiBarang || 0).toLocaleString('id-ID') %></td>
+                <td><%= (financeSummary.realisasiModal || 0).toLocaleString('id-ID') %></td>
+                <td><%= (financeSummary.realisasiBelanja || 0).toLocaleString('id-ID') %></td>
+              </tr>
+              <tr>
+                <td style="text-align:left;font-weight:bold;background:rgba(15,23,42,.35);">PERSENTASE</td>
+                <td><%= financeSummary.persentasePegawai.toFixed(2) %>%</td>
+                <td><%= financeSummary.persentaseBarang.toFixed(2) %>%</td>
+                <td><%= financeSummary.persentaseModal.toFixed(2) %>%</td>
+                <td><%= financeSummary.persentaseTotal.toFixed(2) %>%</td>
+              </tr>
+              <tr>
+                <td style="text-align:left;font-weight:bold;background:rgba(15,23,42,.35);">SISA</td>
+                <td><%= (financeSummary.sisaPegawai || 0).toLocaleString('id-ID') %></td>
+                <td><%= (financeSummary.sisaBarang || 0).toLocaleString('id-ID') %></td>
+                <td><%= (financeSummary.sisaModal || 0).toLocaleString('id-ID') %></td>
+                <td><%= (financeSummary.sisaPagu || 0).toLocaleString('id-ID') %></td>
               </tr>
             </tbody>
           </table>
+          <div style="font-size:12px;color:#dbeafe;margin-top:8px;text-align:right;">Data per <%= financeSummary.updatedAtLabel %></div>
 
           <div class="indikator-block">
             <div class="indikator-title">INDIKATOR PELAKSANAAN ANGGARAN SATKER</div>

@@ -842,9 +842,30 @@ function formatFinanceUpdatedAt(rawValue) {
 }
 
 function getFinanceSummary() {
-  const totalPagu = parseMoneyNumber(getAppSetting('keuangan_total_pagu', '0'));
-  const realisasiBelanja = parseMoneyNumber(getAppSetting('keuangan_realisasi_belanja', '0'));
+  // Get per-category data
+  const paguPegawai = parseMoneyNumber(getAppSetting('keuangan_pagu_pegawai', '0'));
+  const paguBarang = parseMoneyNumber(getAppSetting('keuangan_pagu_barang', '0'));
+  const paguModal = parseMoneyNumber(getAppSetting('keuangan_pagu_modal', '0'));
+  const realisasiPegawai = parseMoneyNumber(getAppSetting('keuangan_realisasi_pegawai', '0'));
+  const realisasiBarang = parseMoneyNumber(getAppSetting('keuangan_realisasi_barang', '0'));
+  const realisasiModal = parseMoneyNumber(getAppSetting('keuangan_realisasi_modal', '0'));
+
+  // Calculate totals
+  const totalPagu = paguPegawai + paguBarang + paguModal;
+  const realisasiBelanja = realisasiPegawai + realisasiBarang + realisasiModal;
   const sisaPagu = Math.max(totalPagu - realisasiBelanja, 0);
+  
+  // Calculate percentages per category
+  const persentasePegawai = paguPegawai > 0 ? ((realisasiPegawai / paguPegawai) * 100) : 0;
+  const persentaseBarang = paguBarang > 0 ? ((realisasiBarang / paguBarang) * 100) : 0;
+  const persentaseModal = paguModal > 0 ? ((realisasiModal / paguModal) * 100) : 0;
+  const persentaseTotal = totalPagu > 0 ? ((realisasiBelanja / totalPagu) * 100) : 0;
+
+  // Calculate sisa per category
+  const sisaPegawai = Math.max(paguPegawai - realisasiPegawai, 0);
+  const sisaBarang = Math.max(paguBarang - realisasiBarang, 0);
+  const sisaModal = Math.max(paguModal - realisasiModal, 0);
+
   const updatedAtRaw = getAppSetting('keuangan_updated_at', getJakartaNowDatetimeLocal());
   const pdfPath = getAppSetting('keuangan_pdf_path', '');
   const chartTotal = Math.max(totalPagu, realisasiBelanja + sisaPagu);
@@ -852,6 +873,19 @@ function getFinanceSummary() {
   const sisaPercent = chartTotal > 0 ? ((sisaPagu / chartTotal) * 100) : 0;
 
   return {
+    paguPegawai,
+    paguBarang,
+    paguModal,
+    realisasiPegawai,
+    realisasiBarang,
+    realisasiModal,
+    persentasePegawai: Number(persentasePegawai.toFixed(2)),
+    persentaseBarang: Number(persentaseBarang.toFixed(2)),
+    persentaseModal: Number(persentaseModal.toFixed(2)),
+    persentaseTotal: Number(persentaseTotal.toFixed(2)),
+    sisaPegawai,
+    sisaBarang,
+    sisaModal,
     totalPagu,
     realisasiBelanja,
     sisaPagu,
@@ -7373,8 +7407,12 @@ app.get('/admin/tu-umum/kepegawaian', requireAccess('tu-umum'), (req, res) => {
 });
 
 app.post('/admin/tu-umum/keuangan/update', pdfUpload.single('keuangan_pdf'), requireAccess('tu-umum'), (req, res) => {
-  const totalPagu = parseMoneyNumber(req.body.total_pagu);
-  const realisasiBelanja = parseMoneyNumber(req.body.realisasi_belanja);
+  const paguPegawai = parseMoneyNumber(req.body.pagu_pegawai);
+  const paguBarang = parseMoneyNumber(req.body.pagu_barang);
+  const paguModal = parseMoneyNumber(req.body.pagu_modal);
+  const realisasiPegawai = parseMoneyNumber(req.body.realisasi_pegawai);
+  const realisasiBarang = parseMoneyNumber(req.body.realisasi_barang);
+  const realisasiModal = parseMoneyNumber(req.body.realisasi_modal);
   const updatedAtRaw = /^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}$/.test(String(req.body.updated_at || '').trim())
     ? String(req.body.updated_at).trim()
     : getJakartaNowDatetimeLocal();
@@ -7383,13 +7421,37 @@ app.post('/admin/tu-umum/keuangan/update', pdfUpload.single('keuangan_pdf'), req
     INSERT INTO app_settings (key, value)
     VALUES (?, ?)
     ON CONFLICT(key) DO UPDATE SET value=excluded.value
-  `).run('keuangan_total_pagu', String(totalPagu));
+  `).run('keuangan_pagu_pegawai', String(paguPegawai));
 
   db.prepare(`
     INSERT INTO app_settings (key, value)
     VALUES (?, ?)
     ON CONFLICT(key) DO UPDATE SET value=excluded.value
-  `).run('keuangan_realisasi_belanja', String(realisasiBelanja));
+  `).run('keuangan_pagu_barang', String(paguBarang));
+
+  db.prepare(`
+    INSERT INTO app_settings (key, value)
+    VALUES (?, ?)
+    ON CONFLICT(key) DO UPDATE SET value=excluded.value
+  `).run('keuangan_pagu_modal', String(paguModal));
+
+  db.prepare(`
+    INSERT INTO app_settings (key, value)
+    VALUES (?, ?)
+    ON CONFLICT(key) DO UPDATE SET value=excluded.value
+  `).run('keuangan_realisasi_pegawai', String(realisasiPegawai));
+
+  db.prepare(`
+    INSERT INTO app_settings (key, value)
+    VALUES (?, ?)
+    ON CONFLICT(key) DO UPDATE SET value=excluded.value
+  `).run('keuangan_realisasi_barang', String(realisasiBarang));
+
+  db.prepare(`
+    INSERT INTO app_settings (key, value)
+    VALUES (?, ?)
+    ON CONFLICT(key) DO UPDATE SET value=excluded.value
+  `).run('keuangan_realisasi_modal', String(realisasiModal));
 
   db.prepare(`
     INSERT INTO app_settings (key, value)
