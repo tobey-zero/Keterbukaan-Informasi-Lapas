@@ -407,7 +407,6 @@
             <thead>
               <tr>
                 <th>NO</th>
-                <th>KODE</th>
                 <th>URAIAN</th>
                 <th>JUMLAH SATUAN</th>
                 <th>PENEMPATAN TIAP KEGIATAN KERJA</th>
@@ -418,7 +417,6 @@
               <% (saranaUsageList || []).forEach((item, index) => { %>
               <tr>
                 <td><%= index + 1 %></td>
-                <td><%= item.kode || '-' %></td>
                 <td><%= item.uraian || '-' %></td>
                 <td><%= item.jumlahSatuan || '-' %></td>
                 <td style="white-space:pre-line;"><%= item.penempatanKegiatan || '-' %></td>

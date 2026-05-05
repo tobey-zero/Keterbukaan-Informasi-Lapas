@@ -1322,7 +1322,6 @@ function getPublicData() {
         d.tanggal2,
         d.tanggal3,
         d.tanggal4,
-        d.total_remisi AS totalRemisi,
         d.keterangan,
         COALESCE(NULLIF(TRIM(d.status_integrasi), ''), p.status_integrasi, '-') AS statusIntegrasi
       FROM pentahapan_pembinaan_detail d
@@ -2940,7 +2939,6 @@ app.get('/kalapas/table/pembinaan', (req, res) => {
     item.tanggal3 || '-',
     item.tanggal2 || '-',
     item.tanggal4 || '-',
-    item.totalRemisi || '-',
     item.keterangan || '-',
     {
       value: item.statusIntegrasi || '-',
@@ -2952,7 +2950,7 @@ app.get('/kalapas/table/pembinaan', (req, res) => {
     pageTitle: 'Pentahapan Pembinaan',
     sectionTitle: 'DETAIL PENTAHAPAN PEMBINAAN',
     subtitle: `Total data: ${rows.length}`,
-    columns: ['NO REG', 'NAMA WARGA BINAAN', 'JENIS KEJAHATAN', 'BLOK/KAMAR', 'TANGGAL 1/3', 'TANGGAL 1/2', 'TANGGAL 2/3', 'TANGGAL EKSPIRASI', 'TOTAL REMISI', 'KETERANGAN PROGRAM PEMBINAAN', 'STATUS INTEGRASI'],
+    columns: ['NO REG', 'NAMA WARGA BINAAN', 'JENIS KEJAHATAN', 'BLOK/KAMAR', 'TANGGAL 1/3', 'TANGGAL 1/2', 'TANGGAL 2/3', 'TANGGAL EKSPIRASI', 'KETERANGAN PROGRAM PEMBINAAN', 'STATUS INTEGRASI'],
     rows,
     backUrl: '/kalapas'
   });
@@ -5451,7 +5449,6 @@ app.get('/admin/pembinaan-detail', requireAccess('pembinaan-detail'), (req, res)
       nama_wbp LIKE ? OR
       jenis_kejahatan LIKE ? OR
       blok_kamar LIKE ? OR
-      total_remisi LIKE ? OR
       keterangan LIKE ? OR
       status_integrasi LIKE ? OR
       tanggal1 LIKE ? OR
@@ -5460,7 +5457,7 @@ app.get('/admin/pembinaan-detail', requireAccess('pembinaan-detail'), (req, res)
       tanggal4 LIKE ?
     )`);
     const likeKeyword = `%${searchKeyword}%`;
-    for (let i = 0; i < 11; i += 1) params.push(likeKeyword);
+    for (let i = 0; i < 10; i += 1) params.push(likeKeyword);
   }
 
   const sql = `
@@ -5495,8 +5492,8 @@ app.get('/admin/pembinaan-detail', requireAccess('pembinaan-detail'), (req, res)
 
 app.get('/admin/pembinaan-detail/template.xlsx', requireAccess('pembinaan-detail'), (_req, res) => {
   const worksheet = XLSX.utils.aoa_to_sheet([
-    ['NO REG', 'NAMA WBP', 'JENIS KEJAHATAN', 'BLOK/KAMAR', 'TANGGAL 1/3', 'TANGGAL 1/2', 'TANGGAL 2/3', 'TANGGAL EKSPIRASI', 'TOTAL REMISI', 'KETERANGAN', 'STATUS INTEGRASI'],
-    ['BI.15-PK/PD/2023', 'NAMA WBP CONTOH', 'NARKOTIKA', 'BLOK A / KAMAR 01', '15 OCT 2020', '15 OCT 2020', '15 OCT 2021', '28 DEC 2026', '4 BULAN 15 HARI', 'AKTIF TEMPAT IBADAH', 'MENUNGGU SK'],
+    ['NO REG', 'NAMA WBP', 'JENIS KEJAHATAN', 'BLOK/KAMAR', 'TANGGAL 1/3', 'TANGGAL 1/2', 'TANGGAL 2/3', 'TANGGAL EKSPIRASI', 'KETERANGAN', 'STATUS INTEGRASI'],
+    ['BI.15-PK/PD/2023', 'NAMA WBP CONTOH', 'NARKOTIKA', 'BLOK A / KAMAR 01', '15 OCT 2020', '15 OCT 2020', '15 OCT 2021', '28 DEC 2026', 'AKTIF TEMPAT IBADAH', 'MENUNGGU SK'],
   ]);
   const workbook = XLSX.utils.book_new();
   XLSX.utils.book_append_sheet(workbook, worksheet, 'Template Pembinaan');
@@ -5587,7 +5584,6 @@ app.post('/admin/pembinaan-detail/import-excel', requireAccess('pembinaan-detail
     const tanggal3Raw = normalizeRowValue(row, ['tanggal12', 'tgl12', 'tanggalsetengah']);
     const tanggal2Raw = normalizeRowValue(row, ['tanggal23', 'tgl23', 'tanggalduapertiga']);
     const tanggal4Raw = normalizeRowValue(row, ['tanggalekspirasi', 'ekspirasi', 'tanggalakhir']);
-    const totalRemisi = normalizeRowValue(row, ['totalremisi', 'remisitotal']);
     const keterangan = normalizeRowValue(row, ['keterangan', 'ket']);
     const statusIntegrasi = normalizeRowValue(row, ['statusintegrasi', 'status']);
 
@@ -5614,7 +5610,6 @@ app.post('/admin/pembinaan-detail/import-excel', requireAccess('pembinaan-detail
       tanggal2,
       tanggal3,
       tanggal4,
-      totalRemisi,
       keterangan,
       statusIntegrasi,
       errors,
@@ -5644,13 +5639,13 @@ app.post('/admin/pembinaan-detail/import-excel', requireAccess('pembinaan-detail
   `);
   const updateById = db.prepare(`
     UPDATE pentahapan_pembinaan_detail
-    SET no_reg=?, nama_wbp=?, jenis_kejahatan=?, blok_kamar=?, tanggal1=?, tanggal2=?, tanggal3=?, tanggal4=?, total_remisi=?, keterangan=?, status_integrasi=?, is_active=1
+    SET no_reg=?, nama_wbp=?, jenis_kejahatan=?, blok_kamar=?, tanggal1=?, tanggal2=?, tanggal3=?, tanggal4=?, keterangan=?, status_integrasi=?, is_active=1
     WHERE id=?
   `);
   const insertStmt = db.prepare(`
     INSERT INTO pentahapan_pembinaan_detail
-      (no_reg, nama_wbp, jenis_kejahatan, blok_kamar, tanggal1, tanggal2, tanggal3, tanggal4, total_remisi, keterangan, status_integrasi, is_active)
-    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 1)
+      (no_reg, nama_wbp, jenis_kejahatan, blok_kamar, tanggal1, tanggal2, tanggal3, tanggal4, keterangan, status_integrasi, is_active)
+    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 1)
   `);
   const deactivateDuplicateById = db.prepare('UPDATE pentahapan_pembinaan_detail SET is_active = 0 WHERE id = ?');
 
@@ -5674,7 +5669,6 @@ app.post('/admin/pembinaan-detail/import-excel', requireAccess('pembinaan-detail
             item.tanggal2,
             item.tanggal3,
             item.tanggal4,
-            item.totalRemisi,
             item.keterangan,
             item.statusIntegrasi,
             targetId
@@ -5691,7 +5685,6 @@ app.post('/admin/pembinaan-detail/import-excel', requireAccess('pembinaan-detail
             item.tanggal2,
             item.tanggal3,
             item.tanggal4,
-            item.totalRemisi,
             item.keterangan,
             item.statusIntegrasi
           );
@@ -5740,7 +5733,6 @@ app.get('/admin/pembinaan-detail/download-error-excel', requireAccess('pembinaan
     'TANGGAL 1/2': item.tanggal3 || '-',
     'TANGGAL 2/3': item.tanggal2 || '-',
     'TANGGAL EKSPIRASI': item.tanggal4 || '-',
-    'TOTAL REMISI': item.totalRemisi || '-',
     'KETERANGAN': item.keterangan || '-',
     'STATUS INTEGRASI': item.statusIntegrasi || '-',
     'ERROR': (item.errors || []).join('; ')
@@ -5761,7 +5753,6 @@ app.get('/admin/pembinaan-detail/download-error-excel', requireAccess('pembinaan
       { wch: 12 },
       { wch: 12 },
       { wch: 12 },
-      { wch: 15 },
       { wch: 20 },
       { wch: 20 },
       { wch: 40 }
@@ -5783,22 +5774,22 @@ app.post('/admin/pembinaan-detail/clear-error', requireAccess('pembinaan-detail'
 });
 
 app.post('/admin/pembinaan-detail/add', requireAccess('pembinaan-detail'), (req, res) => {
-  const { no_reg, jenis_kejahatan, blok_kamar, tanggal1, tanggal2, tanggal3, tanggal4, total_remisi, keterangan } = req.body;
+  const { no_reg, jenis_kejahatan, blok_kamar, tanggal1, tanggal2, tanggal3, tanggal4, keterangan } = req.body;
   const statusIntegrasi = (req.body.status_integrasi || '').trim();
   const nama_wbp = (req.body.nama_wbp || '').toUpperCase();
-  db.prepare(`INSERT INTO pentahapan_pembinaan_detail (no_reg, nama_wbp, jenis_kejahatan, blok_kamar, tanggal1, tanggal2, tanggal3, tanggal4, total_remisi, keterangan, status_integrasi, is_active)
-              VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 1)`)
-    .run(no_reg, nama_wbp, jenis_kejahatan, blok_kamar, tanggal1, tanggal2, tanggal3, tanggal4, total_remisi, keterangan, statusIntegrasi);
+  db.prepare(`INSERT INTO pentahapan_pembinaan_detail (no_reg, nama_wbp, jenis_kejahatan, blok_kamar, tanggal1, tanggal2, tanggal3, tanggal4, keterangan, status_integrasi, is_active)
+              VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 1)`)
+    .run(no_reg, nama_wbp, jenis_kejahatan, blok_kamar, tanggal1, tanggal2, tanggal3, tanggal4, keterangan, statusIntegrasi);
   syncPembinaanMasterByName(nama_wbp, statusIntegrasi);
   res.redirect('/admin/pembinaan-detail?success=1');
 });
 
 app.post('/admin/pembinaan-detail/:id/update', requireAccess('pembinaan-detail'), (req, res) => {
-  const { no_reg, jenis_kejahatan, blok_kamar, tanggal1, tanggal2, tanggal3, tanggal4, total_remisi, keterangan } = req.body;
+  const { no_reg, jenis_kejahatan, blok_kamar, tanggal1, tanggal2, tanggal3, tanggal4, keterangan } = req.body;
   const statusIntegrasi = (req.body.status_integrasi || '').trim();
   const nama_wbp = (req.body.nama_wbp || '').toUpperCase();
-  db.prepare(`UPDATE pentahapan_pembinaan_detail SET no_reg=?, nama_wbp=?, jenis_kejahatan=?, blok_kamar=?, tanggal1=?, tanggal2=?, tanggal3=?, tanggal4=?, total_remisi=?, keterangan=?, status_integrasi=? WHERE id=?`)
-    .run(no_reg, nama_wbp, jenis_kejahatan, blok_kamar, tanggal1, tanggal2, tanggal3, tanggal4, total_remisi, keterangan, statusIntegrasi, Number(req.params.id));
+  db.prepare(`UPDATE pentahapan_pembinaan_detail SET no_reg=?, nama_wbp=?, jenis_kejahatan=?, blok_kamar=?, tanggal1=?, tanggal2=?, tanggal3=?, tanggal4=?, keterangan=?, status_integrasi=? WHERE id=?`)
+    .run(no_reg, nama_wbp, jenis_kejahatan, blok_kamar, tanggal1, tanggal2, tanggal3, tanggal4, keterangan, statusIntegrasi, Number(req.params.id));
   syncPembinaanMasterByName(nama_wbp, statusIntegrasi);
   res.redirect('/admin/pembinaan-detail?success=1');
 });
