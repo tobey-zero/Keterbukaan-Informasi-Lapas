@@ -5848,6 +5848,16 @@ app.post('/admin/pembinaan-detail/:id/activate', requireAccess('pembinaan-detail
   res.redirect(`/admin/pembinaan-detail?${query.toString()}`);
 });
 
+app.post('/admin/pembinaan-detail/:id/delete-permanent', requireAccess('pembinaan-detail'), (req, res) => {
+  const id = Number(req.params.id || 0);
+  if (!id) return res.redirect('/admin/pembinaan-detail');
+  db.prepare('DELETE FROM pentahapan_pembinaan_detail WHERE id=?').run(id);
+  const query = new URLSearchParams({ success: '1' });
+  if (req.body.search) query.set('search', String(req.body.search));
+  if (req.body.status) query.set('status', String(req.body.status));
+  res.redirect(`/admin/pembinaan-detail?${query.toString()}`);
+});
+
 // ── Jadwal Kegiatan ───────────────────────────────────────────────
 app.get('/admin/jadwal', requireAccess('jadwal'), (req, res) => {
   const list = db.prepare('SELECT * FROM jadwal_kegiatan ORDER BY id').all();

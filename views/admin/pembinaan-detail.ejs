@@ -241,6 +241,11 @@
                           <button class="btn btn-danger btn-xs">⛔ Nonaktifkan</button>
                         </form>
                       <% } %>
+                      <form method="POST" action="/admin/pembinaan-detail/<%= item.id %>/delete-permanent" style="display:inline" onsubmit="return confirm('⚠️ Yakin hapus permanen? Data tidak bisa dipulihkan!')">
+                        <input type="hidden" name="search" value="<%= searchKeyword || '' %>">
+                        <input type="hidden" name="status" value="<%= statusFilter || 'semua' %>">
+                        <button class="btn btn-xs" style="background:#dc2626;color:white;border:none;padding:4px 8px;border-radius:4px;cursor:pointer;">🗑️ Hapus</button>
+                      </form>
                     </div>
                   </td>
                 <% }) %>
