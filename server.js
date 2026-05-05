@@ -1324,7 +1324,7 @@ function getPublicData() {
 
   const besaranRemisi = db
     .prepare(`
-      SELECT jenis, nama, besaran, remisi_bulan AS remisiBulan, remisi_hari AS remisiHari
+      SELECT jenis, nama, agama, besaran, remisi_bulan AS remisiBulan, remisi_hari AS remisiHari, keterangan
       FROM besaran_remisi
       WHERE (? = 0 OR batch_id = ?)
       ORDER BY nama COLLATE NOCASE ASC
@@ -2923,21 +2923,25 @@ app.get('/kalapas/table/remisi', (req, res) => {
     whereClauses.push(`(
       LOWER(COALESCE(r.nama, '')) LIKE ?
       OR LOWER(COALESCE(r.jenis, '')) LIKE ?
+      OR LOWER(COALESCE(r.agama, '')) LIKE ?
       OR LOWER(COALESCE(r.besaran, '')) LIKE ?
+      OR LOWER(COALESCE(r.keterangan, '')) LIKE ?
       OR LOWER(COALESCE(b.label, '')) LIKE ?
     )`);
-    params.push(likeValue, likeValue, likeValue, likeValue);
+    params.push(likeValue, likeValue, likeValue, likeValue, likeValue, likeValue);
   }
 
   const whereSql = whereClauses.length ? `WHERE ${whereClauses.join(' AND ')}` : '';
   const list = db.prepare(`
-n    SELECT
+    SELECT
       r.id,
       r.nama,
+      r.agama,
       r.besaran,
       r.remisi_bulan AS remisiBulan,
       r.remisi_hari AS remisiHari,
       r.jenis,
+      r.keterangan,
       r.batch_id AS batchId,
       COALESCE(b.label, 'BATCH TIDAK DIKETAHUI') AS batchLabel,
       COALESCE(b.is_active, 0) AS batchIsActive
@@ -4492,8 +4496,8 @@ app.post('/admin/remisi/batch/create', requireAccess('remisi'), (req, res) => {
 
 app.get('/admin/remisi/template.xlsx', requireAccess('remisi'), (_req, res) => {
   const worksheet = XLSX.utils.aoa_to_sheet([
-    ['KETERANGAN', 'NAMA WBP', 'BESARAN REMISI', 'TOTAL BULAN REMISI', 'TOTAL HARI REMISI'],
-    ['REMISI UMUM', 'NAMA WBP CONTOH', '4 BULAN', '10', '20'],
+    ['KETERANGAN', 'NAMA WBP', 'AGAMA', 'BESARAN REMISI', 'TOTAL BULAN REMISI', 'TOTAL HARI REMISI', 'KETERANGAN'],
+    ['REMISI UMUM', 'NAMA WBP CONTOH', 'ISLAM', '4 BULAN', '10', '20', 'Keterangan tambahan'],
   ]);
   const workbook = XLSX.utils.book_new();
   XLSX.utils.book_append_sheet(workbook, worksheet, 'Template Remisi');
@@ -4543,15 +4547,19 @@ app.post('/admin/remisi/import-excel', requireAccess('remisi'), remisiExcelUploa
   const parsedRows = rows.map((row) => {
     const jenis = normalizeRowValue(row, ['keterangan', 'jenis', 'jenisremisi']).toUpperCase();
     const nama = normalizeRowValue(row, ['namawbp', 'nama']).toUpperCase();
+    const agama = normalizeRowValue(row, ['agama']).toUpperCase();
     const besaran = normalizeRowValue(row, ['besaranremisi', 'besaran']);
     const remisiBulan = normalizeRowValue(row, ['remisibulan', 'totalbulanremisi', 'bulan']);
     const remisiHari = normalizeRowValue(row, ['remisihari', 'totalhariremisi', 'hari']);
+    const keterangan = normalizeRowValue(row, ['keterangan', 'ket']);
     return {
       jenis: jenis || 'REMISI UMUM',
       nama,
+      agama,
       besaran,
       remisiBulan,
       remisiHari,
+      keterangan,
     };
   }).filter((row) => row.nama && row.besaran);
 
@@ -4568,11 +4576,11 @@ app.post('/admin/remisi/import-excel', requireAccess('remisi'), remisiExcelUploa
     const batchId = Number(batchInsert.lastInsertRowid);
 
     const insertRemisi = db.prepare(`
-      INSERT INTO besaran_remisi (jenis, nama, besaran, remisi_bulan, remisi_hari, batch_id)
-      VALUES (?, ?, ?, ?, ?, ?)
+      INSERT INTO besaran_remisi (jenis, nama, agama, besaran, remisi_bulan, remisi_hari, keterangan, batch_id)
+      VALUES (?, ?, ?, ?, ?, ?, ?, ?)
     `);
     parsedRows.forEach((row) => {
-      insertRemisi.run(row.jenis, row.nama, row.besaran, row.remisiBulan, row.remisiHari, batchId);
+      insertRemisi.run(row.jenis, row.nama, row.agama, row.besaran, row.remisiBulan, row.remisiHari, row.keterangan, batchId);
     });
 
     if (setActive || !getActiveRemisiBatch()) {
@@ -4660,20 +4668,20 @@ app.post('/admin/remisi/add', requireAccess('remisi'), (req, res) => {
   const batchId = Number(req.body.batch_id || 0);
   if (!batchId) return res.redirect('/admin/remisi?error=Pilih+batch+remisi+terlebih+dahulu');
 
-  const { jenis, besaran, remisi_bulan, remisi_hari } = req.body;
+  const { jenis, besaran, remisi_bulan, remisi_hari, agama, keterangan } = req.body;
   const nama = (req.body.nama || '').toUpperCase();
-  db.prepare('INSERT INTO besaran_remisi (jenis, nama, besaran, remisi_bulan, remisi_hari, batch_id) VALUES (?, ?, ?, ?, ?, ?)')
-    .run(jenis, nama, besaran, remisi_bulan || '', remisi_hari || '', batchId);
+  db.prepare('INSERT INTO besaran_remisi (jenis, nama, agama, besaran, remisi_bulan, remisi_hari, keterangan, batch_id) VALUES (?, ?, ?, ?, ?, ?, ?, ?)')
+    .run(jenis, nama, agama || '', besaran, remisi_bulan || '', remisi_hari || '', keterangan || '', batchId);
   res.redirect(`/admin/remisi?success=1&batch=${batchId}`);
 });
 
 app.post('/admin/remisi/:id/update', requireAccess('remisi'), (req, res) => {
   const batchId = Number(req.body.batch_id || 0);
   if (!batchId) return res.redirect('/admin/remisi?error=Batch+remisi+tidak+valid');
-  const { jenis, besaran, remisi_bulan, remisi_hari } = req.body;
+  const { jenis, besaran, remisi_bulan, remisi_hari, agama, keterangan } = req.body;
   const nama = (req.body.nama || '').toUpperCase();
-  db.prepare('UPDATE besaran_remisi SET jenis=?, nama=?, besaran=?, remisi_bulan=?, remisi_hari=?, batch_id=? WHERE id=?')
-    .run(jenis, nama, besaran, remisi_bulan || '', remisi_hari || '', batchId, Number(req.params.id));
+  db.prepare('UPDATE besaran_remisi SET jenis=?, nama=?, agama=?, besaran=?, remisi_bulan=?, remisi_hari=?, keterangan=?, batch_id=? WHERE id=?')
+    .run(jenis, nama, agama || '', besaran, remisi_bulan || '', remisi_hari || '', keterangan || '', batchId, Number(req.params.id));
   res.redirect(`/admin/remisi?success=1${batchId ? `&batch=${batchId}` : ''}`);
 });
 

@@ -25,6 +25,7 @@ db.exec(`
     id INTEGER PRIMARY KEY AUTOINCREMENT,
     jenis TEXT NOT NULL,
     nama TEXT NOT NULL,
+    agama TEXT NOT NULL DEFAULT '',
     besaran TEXT NOT NULL
   );
 
@@ -853,6 +854,8 @@ const remisiColumnNames = remisiColumns.map(col => col.name);
 if (!remisiColumnNames.includes('remisi_bulan')) db.exec("ALTER TABLE besaran_remisi ADD COLUMN remisi_bulan TEXT NOT NULL DEFAULT ''");
 if (!remisiColumnNames.includes('remisi_hari')) db.exec("ALTER TABLE besaran_remisi ADD COLUMN remisi_hari TEXT NOT NULL DEFAULT ''");
 if (!remisiColumnNames.includes('batch_id')) db.exec('ALTER TABLE besaran_remisi ADD COLUMN batch_id INTEGER');
+if (!remisiColumnNames.includes('agama')) db.exec("ALTER TABLE besaran_remisi ADD COLUMN agama TEXT NOT NULL DEFAULT ''");
+if (!remisiColumnNames.includes('keterangan')) db.exec("ALTER TABLE besaran_remisi ADD COLUMN keterangan TEXT NOT NULL DEFAULT ''");
 
 const remisiBatchColumns = db.prepare("PRAGMA table_info('remisi_batches')").all();
 const remisiBatchColumnNames = remisiBatchColumns.map(col => col.name);
@@ -1183,22 +1186,22 @@ seedIfEmpty('statistik', () => {
 
 seedIfEmpty('besaran_remisi', () => {
   const insert = db.prepare(
-    'INSERT INTO besaran_remisi (jenis, nama, besaran, remisi_bulan, remisi_hari) VALUES (?, ?, ?, ?, ?)'
+    'INSERT INTO besaran_remisi (jenis, nama, agama, besaran, remisi_bulan, remisi_hari, keterangan) VALUES (?, ?, ?, ?, ?, ?, ?)'
   );
   const rows = [
-    ['REMISI UMUM', 'MUHAMAD RIDWAN IX TIFANI', '4 BULAN', '', ''],
-    ['REMISI UMUM', 'SYEKWAN BIN SAYUTI', '3 BULAN', '', ''],
-    ['REMISI UMUM', 'ALFANTSYAR ANDI SAPUTRA ALS', '4 BULAN', '', ''],
-    ['REMISI UMUM', 'ACHMAD SUTENO SAPUTRA', '4 BULAN', '', ''],
-    ['REMISI UMUM', 'GHIFARI SYAHRU RAMADHAN ALS', '3 BULAN', '', ''],
-    ['REMISI UMUM', 'GALUH ANDREAN ALS GALUH', '3 BULAN', '', ''],
-    ['REMISI UMUM', 'TRI JOHAN WAHYUDI ALS JOHAN', '3 BULAN', '', ''],
-    ['REMISI UMUM', 'ERWANTO BIN PARDIN', '4 BULAN', '', ''],
-    ['REMISI UMUM', 'AZIS FERDIYANTO BIN SUPARJAN', '4 BULAN', '', ''],
-    ['REMISI UMUM', 'WAHYUDI HARTONO BIN DJOKO', '4 BULAN', '', ''],
-    ['REMISI UMUM', 'DEDE CAHYA BIN AGUS', '4 BULAN', '', ''],
-    ['REMISI UMUM', 'IRAWAN JAYA BIN ZAINAL ABIDIN', '4 BULAN', '', ''],
-    ['REMISI UMUM', 'ASRUL SANI ALS ANDEK ALS', '4 BULAN', '', ''],
+    ['REMISI UMUM', 'MUHAMAD RIDWAN IX TIFANI', 'ISLAM', '4 BULAN', '', '', ''],
+    ['REMISI UMUM', 'SYEKWAN BIN SAYUTI', 'ISLAM', '3 BULAN', '', '', ''],
+    ['REMISI UMUM', 'ALFANTSYAR ANDI SAPUTRA ALS', 'ISLAM', '4 BULAN', '', '', ''],
+    ['REMISI UMUM', 'ACHMAD SUTENO SAPUTRA', 'ISLAM', '4 BULAN', '', '', ''],
+    ['REMISI UMUM', 'GHIFARI SYAHRU RAMADHAN ALS', 'ISLAM', '3 BULAN', '', '', ''],
+    ['REMISI UMUM', 'GALUH ANDREAN ALS GALUH', 'KRISTEN', '3 BULAN', '', '', ''],
+    ['REMISI UMUM', 'TRI JOHAN WAHYUDI ALS JOHAN', 'ISLAM', '3 BULAN', '', '', ''],
+    ['REMISI UMUM', 'ERWANTO BIN PARDIN', 'ISLAM', '4 BULAN', '', '', ''],
+    ['REMISI UMUM', 'AZIS FERDIYANTO BIN SUPARJAN', 'ISLAM', '4 BULAN', '', '', ''],
+    ['REMISI UMUM', 'WAHYUDI HARTONO BIN DJOKO', 'ISLAM', '4 BULAN', '', '', ''],
+    ['REMISI UMUM', 'DEDE CAHYA BIN AGUS', 'ISLAM', '4 BULAN', '', '', ''],
+    ['REMISI UMUM', 'IRAWAN JAYA BIN ZAINAL ABIDIN', 'ISLAM', '4 BULAN', '', '', ''],
+    ['REMISI UMUM', 'ASRUL SANI ALS ANDEK ALS', 'ISLAM', '4 BULAN', '', '', ''],
   ];
   rows.forEach(r => insert.run(...r));
 });

@@ -164,6 +164,7 @@
                 <th>#</th>
                 <th>Batch</th>
                 <th>Nama Warga Binaan</th>
+                <th>Agama</th>
                 <th>Besaran Remisi</th>
                 <th>Total Bulan Remisi</th>
                 <th>Total Hari Remisi</th>
@@ -178,15 +179,16 @@
                     <strong><%= item.batchLabel || '-' %></strong>
                     <span class="batch-pill <%= Number(item.batchIsActive) === 1 ? 'active' : '' %>"><%= Number(item.batchIsActive) === 1 ? 'AKTIF' : 'ARSIP' %></span>
                   </td>
-                  <td><%= formatDateIndo(item.nama || '-') %></td>
-                  <td><strong><%= formatDateIndo(item.besaran || '-') %></strong></td>
+                  <td><%= item.nama || '-' %></td>
+                  <td><%= item.agama || '-' %></td>
+                  <td><strong><%= item.besaran || '-' %></strong></td>
                   <td><strong><%= item.remisiBulan || '-' %></strong></td>
                   <td><strong><%= item.remisiHari || '-' %></strong></td>
-                  <td><%= formatDateIndo(item.jenis || '-') %></td>
+                  <td><%= item.keterangan || '-' %></td>
                 </tr>
               <% }) %>
               <% if (!list.length) { %>
-                <tr><td colspan="7" class="kalapas-empty">Data remisi tidak ditemukan</td></tr>
+                <tr><td colspan="8" class="kalapas-empty">Data remisi tidak ditemukan</td></tr>
               <% } %>
             </tbody>
           </table>
