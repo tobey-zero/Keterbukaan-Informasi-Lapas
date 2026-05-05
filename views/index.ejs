@@ -198,7 +198,6 @@
                                 <th>TANGGAL 1/2</th>
                                 <th>TANGGAL 2/3</th>
                                 <th>TANGGAL EKSPIRASI AKHIR</th>
-                                <th>TOTAL REMISI</th>
                                 <th>KETERANGAN PROGRAM PEMBINAAN</th>
                                 <th>STATUS INTEGRASI</th>
                             </tr>
@@ -232,9 +231,6 @@
                                     </td>
                                     <td>
                                         <%= item.totalRemisi %>
-                                    </td>
-                                    <td>
-                                        <%= item.keterangan %>
                                     </td>
                                     <td class="<%= item.isStatusOverdue ? 'status-overdue-cell' : '' %>">
                                         <%= item.statusIntegrasi %>
