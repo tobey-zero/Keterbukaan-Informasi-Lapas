@@ -165,7 +165,8 @@
                 <th>Batch</th>
                 <th>Nama Warga Binaan</th>
                 <th>Besaran Remisi</th>
-                <th>Remisi Total</th>
+                <th>Total Bulan Remisi</th>
+                <th>Total Hari Remisi</th>
                 <th>Keterangan</th>
               </tr>
             </thead>
@@ -179,12 +180,13 @@
                   </td>
                   <td><%= formatDateIndo(item.nama || '-') %></td>
                   <td><strong><%= formatDateIndo(item.besaran || '-') %></strong></td>
-                  <td><strong><%= formatDateIndo(item.remisiTotal || '-') %></strong></td>
+                  <td><strong><%= item.remisiBulan || '-' %></strong></td>
+                  <td><strong><%= item.remisiHari || '-' %></strong></td>
                   <td><%= formatDateIndo(item.jenis || '-') %></td>
                 </tr>
               <% }) %>
               <% if (!list.length) { %>
-                <tr><td colspan="6" class="kalapas-empty">Data remisi tidak ditemukan</td></tr>
+                <tr><td colspan="7" class="kalapas-empty">Data remisi tidak ditemukan</td></tr>
               <% } %>
             </tbody>
           </table>

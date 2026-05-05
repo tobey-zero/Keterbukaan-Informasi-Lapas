@@ -125,7 +125,8 @@
                             <tr>
                                 <th>NAMA WARGA BINAAN</th>
                                 <th>BESARAN REMISI</th>
-                                <th>REMISI TOTAL</th>
+                                <th>TOTAL BULAN REMISI</th>
+                                <th>TOTAL HARI REMISI</th>
                                 <th>KETERANGAN</th>
                             </tr>
                         </thead>
@@ -139,7 +140,10 @@
                                         <%= item.besaran %>
                                     </td>
                                     <td>
-                                        <%= item.remisiTotal || '-' %>
+                                        <%= item.remisiBulan || '-' %>
+                                    </td>
+                                    <td>
+                                        <%= item.remisiHari || '-' %>
                                     </td>
                                     <td>
                                         <%= item.jenis %>

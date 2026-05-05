@@ -219,8 +219,12 @@
                 <input type="text" name="besaran" placeholder="cth: 4 BULAN" required>
               </div>
               <div class="form-group">
-                <label>Remisi Total</label>
-                <input type="text" name="remisi_total" placeholder="cth: 12 BULAN" required>
+                <label>Total Bulan Remisi</label>
+                <input type="text" name="remisi_bulan" placeholder="cth: 10">
+              </div>
+              <div class="form-group">
+                <label>Total Hari Remisi</label>
+                <input type="text" name="remisi_hari" placeholder="cth: 20">
               </div>
             </div>
             <button type="submit" class="btn btn-primary btn-sm" <%= selectedBatchId ? '' : 'disabled' %>>➕ Tambah</button>
@@ -256,8 +260,12 @@
               <input type="text" name="besaran" value="<%= edit.besaran %>" required>
             </div>
             <div class="form-group">
-              <label>Remisi Total</label>
-              <input type="text" name="remisi_total" value="<%= edit.remisi_total || edit.besaran %>" required>
+              <label>Total Bulan Remisi</label>
+              <input type="text" name="remisi_bulan" value="<%= edit.remisi_bulan || '' %>">
+            </div>
+            <div class="form-group">
+              <label>Total Hari Remisi</label>
+              <input type="text" name="remisi_hari" value="<%= edit.remisi_hari || '' %>">
             </div>
           </div>
           <div style="display:flex;gap:8px;">
@@ -274,7 +282,7 @@
           <div class="table-wrap">
             <table class="admin-table">
               <thead>
-                <tr><th>#</th><th>Nama WBP</th><th>Besaran Remisi</th><th>Remisi Total</th><th>Keterangan</th><th>Aksi</th></tr>
+                <tr><th>#</th><th>Nama WBP</th><th>Besaran Remisi</th><th>Bulan Remisi</th><th>Hari Remisi</th><th>Keterangan</th><th>Aksi</th></tr>
               </thead>
               <tbody>
                 <% list.forEach((item, i) => { %>
@@ -282,7 +290,8 @@
                   <td><%= i+1 %></td>
                   <td><%= item.nama %></td>
                   <td><strong><%= item.besaran %></strong></td>
-                  <td><strong><%= item.remisi_total || item.besaran %></strong></td>
+                  <td><strong><%= item.remisi_bulan || '-' %></strong></td>
+                  <td><strong><%= item.remisi_hari || '-' %></strong></td>
                   <td><%= item.jenis %></td>
                   <td>
                     <div class="actions">
