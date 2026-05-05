@@ -124,6 +124,7 @@
                         <thead>
                             <tr>
                                 <th>NAMA WARGA BINAAN</th>
+                                <th>AGAMA</th>
                                 <th>BESARAN REMISI</th>
                                 <th>TOTAL BULAN REMISI</th>
                                 <th>TOTAL HARI REMISI</th>
@@ -137,6 +138,9 @@
                                         <%= item.nama %>
                                     </td>
                                     <td>
+                                        <%= item.agama || '-' %>
+                                    </td>
+                                    <td>
                                         <%= item.besaran %>
                                     </td>
                                     <td>
@@ -146,7 +150,7 @@
                                         <%= item.remisiHari || '-' %>
                                     </td>
                                     <td>
-                                        <%= item.jenis %>
+                                        <%= item.keterangan || item.jenis || '-' %>
                                     </td>
                                 </tr>
                                 <% }) %>
@@ -234,7 +238,7 @@
                                         <%= formatDateIndo(item.tanggal4) %>
                                     </td>
                                     <td>
-                                        <%= item.totalRemisi %>
+                                        <%= item.keterangan || '-' %>
                                     </td>
                                     <td class="<%= item.isStatusOverdue ? 'status-overdue-cell' : '' %>">
                                         <%= item.statusIntegrasi %>
